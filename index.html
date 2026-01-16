@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Leni's Wurmdle</title>
+    <style>
+        /* --- DESIGN & CSS --- */
+        :root {
+            --col-count: 5;
+            --game-count: 4;
+        }
+
+        body {
+            background-color: #121213;
+            color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; box-sizing: border-box;
+            background: #121213; border-bottom: 1px solid #333; z-index: 10; height: 60px;
+        }
+        h1 { margin: 0; font-size: 1.1rem; color: #538d4e; text-shadow: 1px 1px 0 #000; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555;
+            padding: 8px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; font-weight: bold;
+        }
+
+        /* START MENÜ */
+        #setup-area {
+            flex-grow: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; gap: 20px;
+            width: 100%; padding: 20px; box-sizing: border-box; background: #121213;
+        }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .label { color: #888; font-size: 0.9rem; text-transform: uppercase; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; }
+        .lang-btn.active { background: #538d4e; color: white; }
+        input[type="number"] {
+            padding: 15px; font-size: 1.5rem; width: 100px; text-align: center;
+            background: #222; border: 2px solid #538d4e; color: white; border-radius: 10px;
+        }
+        .start-btn {
+            background-color: #538d4e; padding: 15px 50px; font-size: 1.5rem;
+            border: none; color: white; font-weight: bold; border-radius: 30px; margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(83, 141, 78, 0.4);
+        }
+
+        /* SPIEL BEREICH */
+        #game-scroll-area {
+            flex-grow: 1; overflow-y: auto; width: 100%; display: none;
+            justify-content: center; padding: 20px 0; background: #121213;
+        }
+        #game-container {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 25px; width: 100%; max-width: 1200px;
+            align-content: flex-start; padding-bottom: 50px;
+        }
+
+        /* KARTE FÜR EIN SPIEL */
+        .board-card {
+            background: #1e1e1f; border: 2px solid #444; border-radius: 12px;
+            padding: 10px; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative;
+        }
+        .board-header {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; margin-bottom: 8px; font-size: 0.8rem; color: #aaa; font-weight: bold;
+        }
+        .help-btn {
+            background: #333; border: 1px solid #555; color: #ffd700;
+            border-radius: 50%; width: 28px; height: 28px; cursor: pointer;
+            font-size: 1rem; display: flex; justify-content: center; align-items: center;
+        }
+        .board {
+            display: grid; grid-template-columns: repeat(var(--col-count), 1fr);
+            gap: 4px; width: calc(34px * var(--col-count)); 
+        }
+        .tile {
+            width: 100%; aspect-ratio: 1; border: 2px solid #3a3a3c;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; font-weight: bold; text-transform: uppercase;
+            background: #121213; border-radius: 4px;
+            transition: transform 0.1s, border-color 0.1s;
+        }
+        
+        /* Wackel-Animation bei Fehler */
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); border-color: #3a3a3c; }
+            20%, 60% { transform: translateX(-5px); border-color: #ff5555; }
+            40%, 80% { transform: translateX(5px); border-color: #ff5555; }
+        }
+
+        .solution-text {
+            margin-top: 10px; color: #ff5555; font-weight: bold; font-size: 1rem;
+            display: none; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 5px;
+        }
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .solved-overlay { opacity: 0.4; }
+
+        /* --- TASTATUR PRO (HEATMAP) --- */
+        #keyboard-container {
+            display: none; width: 100%; max-width: 800px; padding: 5px;
+            background-color: #121213; padding-bottom: 20px; border-top: 1px solid #333;
+        }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; }
+        
+        .key {
+            position: relative; 
+            font-weight: bold; border: 0; padding: 1px; margin: 0 2px; height: 55px;
+            border-radius: 4px; cursor: pointer; background-color: #333; color: white;
+            flex: 1; font-size: 1.1rem; -webkit-tap-highlight-color: transparent; overflow: hidden;
+        }
+        .key-heatmap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-wrap: wrap; z-index: 1;
+        }
+        .key-pixel {
+            flex-grow: 1; flex-basis: calc(100% / 4); /* Basisgröße */
+            background: #818384; border: 0.5px solid #333; box-sizing: border-box;
+        }
+        .key-char {
+            position: relative; z-index: 2; pointer-events: none;
+            text-shadow: 0px 0px 3px black, 0px 0px 4px black;
+            display: flex; width: 100%; height: 100%; justify-content: center; align-items: center;
+        }
+        .key-large { flex: 1.5; font-size: 0.8rem; background: #555; display: flex; justify-content: center; align-items: center; }
+
+        /* TOAST */
+        #msg-toast {
+            position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 15px 30px; border-radius: 30px;
+            font-weight: bold; display: none; z-index: 2000; box-shadow: 0 5px 20px rgba(0,0,0,0.5); text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Leni's Wurmdle 🐛</h1>
+        <button class="menu-btn" onclick="location.reload()">HAUPTMENÜ</button>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <div class="setting-row">
+            <span class="label">Sprache</span>
+            <div class="toggle-group">
+                <button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button>
+                <button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button>
+            </div>
+        </div>
+
+        <div class="setting-row">
+            <span class="label">Wie viele Spiele?</span>
+            <input type="number" id="board-count" value="4" min="1" max="64">
+        </div>
+
+        <div class="setting-row">
+            <span class="label">Buchstaben pro Wort</span>
+            <input type="number" id="letter-count" value="5">
+            <span id="range-info" style="color:#555; font-size:0.8rem; margin-top:5px;">(Lade Daten...)</span>
+        </div>
+        
+        <button class="start-btn" onclick="startGame()">STARTEN</button>
+    </div>
+
+    <div id="game-scroll-area">
+        <div id="game-container"></div>
+    </div>
+
+    <div id="keyboard-container"></div>
+
+    <script>
+        /* --- CONFIG --- */
+        let currentLang = 'de';
+        let cleanWordList = []; // Liste der gültigen Wörter
+        let gameWords = [];     // Wörter der aktuellen Länge
+        let games = [];         // Spiel-Objekte
+        let wordLength = 5;
+        let maxGuesses = 6;
+        let currentGuess = "";
+        let isGameActive = false;
+        let totalGames = 4;
+
+        const keysDE = ["QWERTZUIOP", "ASDFGHJKL", "YXCVBNM"];
+        const keysEN = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+        /* --- INITIALISIERUNG --- */
+        window.onload = () => {
+            setTimeout(() => loadWords('de'), 100);
+            
+            document.addEventListener('keydown', (e) => {
+                if (!isGameActive) return;
+                const key = e.key.toUpperCase();
+                if (key === 'ENTER') { handleKey('ENTER'); e.preventDefault(); }
+                else if (key === 'BACKSPACE') { handleKey('BACK'); e.preventDefault(); }
+                else if (/^[A-Z]$/.test(key) && !e.ctrlKey) { handleKey(key); }
+            });
+        };
+
+        /* --- LADE LOKALE DATEIEN --- */
+        async function loadWords(lang) {
+            currentLang = lang;
+            const statusEl = document.getElementById('range-info');
+            const inputEl = document.getElementById('letter-count');
+            const startBtn = document.querySelector('.start-btn');
+            
+            document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
+            document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
+            
+            startBtn.innerText = "LADE...";
+            startBtn.style.opacity = "0.5";
+            statusEl.innerText = "Lese Datei...";
+
+            try {
+                // Lokale Datei laden
+                const filename = (lang === 'de') ? 'de.txt' : 'en.txt';
+                const response = await fetch(filename);
+                if (!response.ok) throw new Error("Datei '" + filename + "' nicht gefunden!");
+                const text = await response.text();
+
+                const lines = text.split('\n');
+                cleanWordList = []; 
+                let min = 100, max = 0;
+
+                // FILTER: Nur A-Z, Länge 3-20
+                for (let i = 0; i < lines.length; i++) {
+                    let w = lines[i].trim().toUpperCase();
+                    if (w.length >= 3 && w.length <= 20 && /^[A-Z]+$/.test(w)) {
+                        cleanWordList.push(w);
+                        if (w.length < min) min = w.length;
+                        if (w.length > max) max = w.length;
+                    }
+                }
+
+                if (cleanWordList.length === 0) throw new Error("Keine gültigen Wörter in " + filename);
+
+                inputEl.min = min;
+                inputEl.max = max;
+                if (inputEl.value < min) inputEl.value = 5;
+                if (inputEl.value > max) inputEl.value = max;
+                
+                statusEl.innerText = `${cleanWordList.length} Wörter bereit (${min}-${max})`;
+                startBtn.innerText = "STARTEN";
+                startBtn.style.opacity = "1";
+
+            } catch (error) {
+                console.error(error);
+                alert("Fehler: " + error.message + "\nHast du die Dateien 'de.txt' und 'en.txt'?");
+                statusEl.innerText = "Fehler!";
+            }
+        }
+
+        /* --- SPIEL STARTEN --- */
+        function startGame() {
+            totalGames = parseInt(document.getElementById('board-count').value);
+            wordLength = parseInt(document.getElementById('letter-count').value);
+            const btn = document.querySelector('.start-btn');
+
+            if(btn.innerText !== "STARTEN") return;
+
+            // 1. Wörter filtern
+            gameWords = cleanWordList.filter(w => w.length === wordLength);
+
+            if (gameWords.length < totalGames) {
+                alert(`Zu wenige Wörter mit ${wordLength} Buchstaben!\n(Verfügbar: ${gameWords.length})`);
+                return;
+            }
+
+            // 2. Fairness-Algorithmus: Versuche = Länge + Spiele
+            maxGuesses = wordLength + totalGames;
+            if(totalGames > 10) maxGuesses += 2; // Extra Puffer bei vielen Spielen
+
+            isGameActive = true;
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            document.documentElement.style.setProperty('--game-count', totalGames);
+
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('game-scroll-area').style.display = 'flex';
+            document.getElementById('keyboard-container').style.display = 'block';
+
+            games = [];
+            currentGuess = "";
+            const container = document.getElementById('game-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < totalGames; i++) {
+                const randomWord = gameWords[Math.floor(Math.random() * gameWords.length)];
+                games.push({ id: i, word: randomWord, guesses: [], solved: false });
+                
+                let html = `
+                <div class="board-card" id="card-${i}">
+                    <div class="board-header">
+                        <span>SPIEL ${i+1}</span>
+                        <button class="help-btn" onclick="giveHint(${i})" title="Hilfe">💡</button>
+                    </div>
+                    <div class="board" id="board-${i}">`;
+                    
+                for (let r = 0; r < maxGuesses * wordLength; r++) {
+                    html += `<div class="tile" id="tile-${i}-${r}"></div>`;
+                }
+                
+                html += `</div>
+                         <div class="solution-text" id="sol-${i}"></div>
+                    </div>`;
+                container.innerHTML += html;
+            }
+
+            createKeyboard();
+        }
+
+        /* --- HILFE --- */
+        function giveHint(gameId) {
+            if(!isGameActive) return;
+            const game = games[gameId];
+            if(game.solved || game.guesses.length >= maxGuesses) return;
+            const idx = Math.floor(Math.random() * wordLength);
+            const char = game.word[idx];
+            showToast(`Spiel ${gameId+1} Tipp: "${char}" an Pos ${idx+1}`);
+        }
+
+        /* --- KEYBOARD + HEATMAP --- */
+        function createKeyboard() {
+            const kbContainer = document.getElementById('keyboard-container');
+            kbContainer.innerHTML = '';
+            const layout = (currentLang === 'de') ? keysDE : keysEN;
+
+            layout.forEach((rowStr, index) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'keyboard-row';
+                
+                if (index === layout.length - 1) rowDiv.innerHTML += `<button class="key key-large" onclick="handleKey('ENTER')">ENTER</button>`;
+
+                for (let char of rowStr) {
+                    const keyBtn = document.createElement('div');
+                    keyBtn.className = 'key';
+                    keyBtn.onclick = () => handleKey(char);
+                    keyBtn.id = `key-${char}`;
+
+                    // Heatmap Grid
+                    let heatmapHTML = `<div class="key-heatmap">`;
+                    for(let i=0; i<totalGames; i++) {
+                        heatmapHTML += `<div class="key-pixel" id="pixel-${char}-${i}"></div>`;
+                    }
+                    heatmapHTML += `</div>`;
+                    
+                    // Buchstabe
+                    let charHTML = `<div class="key-char">${char}</div>`;
+
+                    keyBtn.innerHTML = heatmapHTML + charHTML;
+                    rowDiv.appendChild(keyBtn);
+                }
+
+                if (index === layout.length - 1) rowDiv.innerHTML += `<button class="key key-large" onclick="handleKey('BACK')">⌫</button>`;
+                kbContainer.appendChild(rowDiv);
+            });
+        }
+
+        function handleKey(key) {
+            if (!isGameActive) return;
+            if (key === 'ENTER') submitGuess();
+            else if (key === 'BACK') {
+                currentGuess = currentGuess.slice(0, -1);
+                updateGridPreview();
+            } else {
+                if (currentGuess.length < wordLength) {
+                    currentGuess += key;
+                    updateGridPreview();
+                }
+            }
+        }
+
+        function updateGridPreview() {
+            games.forEach(game => {
+                if (game.solved || game.guesses.length >= maxGuesses) return;
+                const startIdx = game.guesses.length * wordLength;
+                for(let i=0; i<wordLength; i++) {
+                     const tile = document.getElementById(`tile-${game.id}-${startIdx + i}`);
+                     tile.classList.remove('shake-effect');
+                     tile.innerText = currentGuess[i] || "";
+                     tile.style.borderColor = currentGuess[i] ? "#888" : "#3a3a3c";
+                }
+            });
+        }
+
+        function submitGuess() {
+            if (currentGuess.length !== wordLength) {
+                showToast("Zu kurz!");
+                return;
+            }
+            
+            // --- VALIDIERUNG ---
+            if (!gameWords.includes(currentGuess)) {
+                showToast("Wort unbekannt!");
+                shakeRows(); // Wackeln!
+                return;
+            }
+
+            games.forEach(game => {
+                if (game.solved || game.guesses.length >= maxGuesses) return;
+
+                const wordArr = game.word.split('');
+                const guessArr = currentGuess.split('');
+                const startIdx = game.guesses.length * wordLength;
+                let status = new Array(wordLength).fill(0); 
+
+                // Grün
+                for (let i = 0; i < wordLength; i++) {
+                    if (guessArr[i] === wordArr[i]) {
+                        status[i] = 2; wordArr[i] = null; guessArr[i] = null;
+                    }
+                }
+                // Gelb
+                for (let i = 0; i < wordLength; i++) {
+                    if (guessArr[i] === null) continue;
+                    const idx = wordArr.indexOf(guessArr[i]);
+                    if (idx > -1) {
+                        status[i] = 1; wordArr[idx] = null;
+                    }
+                }
+
+                // Farben auf Brett
+                for (let i = 0; i < wordLength; i++) {
+                    const tile = document.getElementById(`tile-${game.id}-${startIdx + i}`);
+                    tile.style.borderColor = "transparent";
+                    if (status[i] === 2) tile.classList.add('correct');
+                    else if (status[i] === 1) tile.classList.add('present');
+                    else tile.classList.add('absent');
+                }
+
+                game.guesses.push(currentGuess);
+
+                if (currentGuess === game.word) {
+                    game.solved = true;
+                    document.getElementById(`card-${game.id}`).classList.add('solved-overlay');
+                }
+            });
+
+            updateKeyboardColors(); // Heatmap Update
+            currentGuess = "";
+            
+            // Ende?
+            const allFinished = games.every(g => g.solved || g.guesses.length >= maxGuesses);
+            if (allFinished) {
+                const allWon = games.every(g => g.solved);
+                if (allWon) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
+                else {
+                    showToast("Fertig!");
+                    games.forEach(g => {
+                        if(!g.solved) {
+                            const sol = document.getElementById(`sol-${g.id}`);
+                            sol.innerText = g.word; sol.style.display = "block";
+                        }
+                    });
+                }
+                isGameActive = false;
+            }
+        }
+
+        function shakeRows() {
+            games.forEach(game => {
+                if (!game.solved && game.guesses.length < maxGuesses) {
+                    const startIdx = game.guesses.length * wordLength;
+                    for (let i = 0; i < wordLength; i++) {
+                        const tile = document.getElementById(`tile-${game.id}-${startIdx + i}`);
+                        tile.classList.remove('shake-effect');
+                        void tile.offsetWidth;
+                        tile.classList.add('shake-effect');
+                    }
+                }
+            });
+        }
+
+        function updateKeyboardColors() {
+            // Heatmap Logik
+            games.forEach(game => {
+                const gId = game.id;
+                let charStatus = {};
+
+                game.guesses.forEach(guess => {
+                    const wordArr = game.word.split('');
+                    const guessArr = guess.split('');
+                    let stat = new Array(wordLength).fill(1); // 1 = Grau
+
+                    for(let i=0; i<wordLength; i++) {
+                        if(guessArr[i] === wordArr[i]) { stat[i] = 3; wordArr[i]=null; guessArr[i]=null; }
+                    }
+                    for(let i=0; i<wordLength; i++) {
+                        if(guessArr[i] && wordArr.includes(guessArr[i])) { stat[i] = 2; }
+                    }
+
+                    guess.split('').forEach((char, i) => {
+                        if (stat[i] > (charStatus[char] || 0)) charStatus[char] = stat[i];
+                    });
+                });
+
+                for (const [char, status] of Object.entries(charStatus)) {
+                    const pixel = document.getElementById(`pixel-${char}-${gId}`);
+                    if (pixel) {
+                        pixel.style.backgroundColor = 
+                            (status === 3) ? '#538d4e' : 
+                            (status === 2) ? '#b59f3b' : 
+                            (status === 1) ? '#3a3a3c' : '#818384';
+                    }
+                }
+            });
+        }
+
+        function showToast(txt) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = txt;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+    </script>
+</body>
+</html>
