@@ -3,44 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Leni's Wurmdle</title>
+    <title>Lenis coole Spielesammlung</title>
     <style>
-        /* --- DESIGN & CSS --- */
-        :root {
-            --col-count: 5;
-            --game-count: 4;
-        }
-
+        /* --- GLOBAL --- */
+        :root { --col-count: 5; --game-count: 4; }
         body {
-            background-color: #121213;
-            color: white;
+            background-color: #121213; color: white;
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            user-select: none;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
         }
 
         /* HEADER */
         header {
             display: flex; align-items: center; justify-content: space-between;
-            width: 100%; padding: 10px 15px; box-sizing: border-box;
-            background: #121213; border-bottom: 1px solid #333; z-index: 10; height: 60px;
+            width: 100%; padding: 10px 15px; background: #121213;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
         }
-        h1 { margin: 0; font-size: 1.1rem; color: #538d4e; text-shadow: 1px 1px 0 #000; }
+        h1 { margin: 0; font-size: 1.0rem; color: #538d4e; text-shadow: 1px 1px 0 #000; }
         .menu-btn {
             background: #333; color: white; border: 1px solid #555;
-            padding: 8px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; font-weight: bold;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
         }
 
-        /* START MENÜ */
+        /* --- HAUPTMENÜ --- */
+        #main-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #121213; z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px;
+        }
+        .mode-card {
+            background: #1e1e1f; border: 2px solid #538d4e; border-radius: 20px;
+            padding: 25px; width: 85%; max-width: 320px; text-align: center;
+            cursor: pointer; transition: transform 0.1s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .mode-card:active { transform: scale(0.95); }
+        .mode-icon { font-size: 3.5rem; margin-bottom: 10px; display: block; }
+        .mode-title { font-size: 1.5rem; font-weight: bold; color: white; }
+        .mode-desc { color: #888; font-size: 0.9rem; margin-top: 5px; }
+
+        /* --- SETUP AREA (WORDLE) --- */
         #setup-area {
-            flex-grow: 1; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; gap: 20px;
-            width: 100%; padding: 20px; box-sizing: border-box; background: #121213;
+            flex-grow: 1; display: none; flex-direction: column;
+            justify-content: center; align-items: center; gap: 15px;
+            width: 100%; padding: 20px; box-sizing: border-box;
         }
         .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
         .label { color: #888; font-size: 0.9rem; text-transform: uppercase; }
@@ -48,54 +55,38 @@
         .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; }
         .lang-btn.active { background: #538d4e; color: white; }
         input[type="number"] {
-            padding: 15px; font-size: 1.5rem; width: 100px; text-align: center;
+            padding: 10px; font-size: 1.3rem; width: 100px; text-align: center;
             background: #222; border: 2px solid #538d4e; color: white; border-radius: 10px;
         }
         .start-btn {
             background-color: #538d4e; padding: 15px 50px; font-size: 1.5rem;
-            border: none; color: white; font-weight: bold; border-radius: 30px; margin-top: 30px;
+            border: none; color: white; font-weight: bold; border-radius: 30px; margin-top: 20px;
             box-shadow: 0 5px 15px rgba(83, 141, 78, 0.4);
         }
 
-        /* SPIEL BEREICH */
+        /* --- GAME: WURMDLE --- */
         #game-scroll-area {
             flex-grow: 1; overflow-y: auto; width: 100%; display: none;
-            justify-content: center; padding: 20px 0; background: #121213;
+            justify-content: center; padding: 20px 0;
         }
         #game-container {
-            display: flex; flex-wrap: wrap; justify-content: center;
-            gap: 25px; width: 100%; max-width: 1200px;
-            align-content: flex-start; padding-bottom: 50px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 25px;
+            width: 100%; max-width: 1200px; padding-bottom: 50px;
         }
-
-        /* KARTE FÜR EIN SPIEL */
         .board-card {
             background: #1e1e1f; border: 2px solid #444; border-radius: 12px;
             padding: 10px; display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative;
         }
-        .board-header {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%; margin-bottom: 8px; font-size: 0.8rem; color: #aaa; font-weight: bold;
-        }
-        .help-btn {
-            background: #333; border: 1px solid #555; color: #ffd700;
-            border-radius: 50%; width: 28px; height: 28px; cursor: pointer;
-            font-size: 1rem; display: flex; justify-content: center; align-items: center;
-        }
-        .board {
-            display: grid; grid-template-columns: repeat(var(--col-count), 1fr);
-            gap: 4px; width: calc(34px * var(--col-count)); 
-        }
+        .board { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 4px; }
         .tile {
-            width: 100%; aspect-ratio: 1; border: 2px solid #3a3a3c;
+            width: 34px; height: 34px; border: 2px solid #3a3a3c;
             display: flex; justify-content: center; align-items: center;
             font-size: 1.2rem; font-weight: bold; text-transform: uppercase;
             background: #121213; border-radius: 4px;
-            transition: transform 0.1s, border-color 0.1s;
         }
-        
-        /* Wackel-Animation bei Fehler */
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
         .shake-effect { animation: shake 0.4s ease-in-out; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); border-color: #3a3a3c; }
@@ -103,59 +94,143 @@
             40%, 80% { transform: translateX(5px); border-color: #ff5555; }
         }
 
-        .solution-text {
-            margin-top: 10px; color: #ff5555; font-weight: bold; font-size: 1rem;
-            display: none; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 5px;
+        /* --- GAME: LILLY SPELLING (HEX) --- */
+        #lilly-area {
+            flex-grow: 1; width: 100%; display: none; flex-direction: column;
+            align-items: center; padding: 10px; box-sizing: border-box; overflow-y: auto;
         }
-        .correct { background-color: #538d4e; border-color: #538d4e; }
-        .present { background-color: #b59f3b; border-color: #b59f3b; }
-        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
-        .solved-overlay { opacity: 0.4; }
+        #lilly-input {
+            font-size: 2rem; font-weight: bold; color: white; min-height: 50px;
+            border-bottom: 2px solid #555; margin-bottom: 20px; text-transform: uppercase;
+            width: 80%; text-align: center;
+        }
+        .cursor { animation: blink 1s infinite; border-right: 2px solid #538d4e; }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        /* --- TASTATUR PRO (HEATMAP) --- */
+        #honeycomb {
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+            width: 280px; height: 260px; position: relative;
+        }
+        .hex-btn {
+            width: 80px; height: 70px; background: #e0e0e0; color: #121213;
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; font-weight: bold; cursor: pointer;
+            position: absolute; transition: transform 0.1s;
+        }
+        .hex-btn:active { transform: scale(0.9); }
+        .hex-center { background: #ffd700; color: black; z-index: 2; }
+        
+        /* Hex Positionen */
+        .pos-0 { top: 35%; left: 35%; }
+        .pos-1 { top: 5%; left: 35%; }
+        .pos-2 { top: 20%; left: 63%; }
+        .pos-3 { top: 50%; left: 63%; }
+        .pos-4 { top: 65%; left: 35%; }
+        .pos-5 { top: 50%; left: 7%; }
+        .pos-6 { top: 20%; left: 7%; }
+
+        .lilly-controls { display: flex; gap: 15px; margin-top: 20px; }
+        .action-btn {
+            border: 1px solid #555; background: #333; color: white;
+            padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;
+        }
+        .finish-btn { background: #ff5555; color: white; margin-top: 20px; border: none; font-size: 0.9rem; padding: 10px 20px;}
+
+        #lilly-words {
+            margin-top: 20px; width: 90%; max-height: 100px; overflow-y: auto;
+            border: 1px solid #333; padding: 10px; border-radius: 10px; font-size: 0.9rem; color: #aaa; text-align: center;
+        }
+        .found-word { display: inline-block; padding: 3px 8px; background: #333; margin: 3px; border-radius: 4px; color: white;}
+
+        /* --- STATS MODAL --- */
+        #results-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 500; display: none;
+            flex-direction: column; align-items: center; padding: 20px; overflow-y: auto;
+        }
+        .res-header { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; margin-top: 40px;}
+        .res-score-circle {
+            width: 120px; height: 120px; border-radius: 50%; border: 5px solid #538d4e;
+            display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold;
+            margin-bottom: 20px; color: white; background: #222;
+        }
+        .res-cols { display: flex; width: 100%; max-width: 600px; gap: 10px; flex-grow: 1; }
+        .res-col { flex: 1; display: flex; flex-direction: column; border: 1px solid #444; border-radius: 10px; padding: 10px; height: 300px;}
+        .res-col h3 { text-align: center; margin: 0 0 10px 0; font-size: 1rem; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .res-list { overflow-y: auto; flex-grow: 1; font-size: 0.9rem; }
+        .res-item { padding: 2px 5px; border-bottom: 1px solid #333; }
+        .close-res-btn {
+            margin-top: 20px; padding: 15px 40px; background: #538d4e; color: white; border: none;
+            border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer;
+        }
+
+        /* --- HUD --- */
+        #status-panel {
+            position: fixed; top: 70px; right: 20px;
+            background: rgba(30, 30, 31, 0.95); border: 1px solid #555; border-radius: 8px;
+            padding: 10px 15px; display: none; flex-direction: column; gap: 5px; z-index: 100;
+        }
+        .status-good { color: #538d4e; font-weight: bold; }
+        .status-bad { color: #ff5555; font-weight: bold; }
+
+        /* --- KEYBOARD --- */
         #keyboard-container {
             display: none; width: 100%; max-width: 800px; padding: 5px;
             background-color: #121213; padding-bottom: 20px; border-top: 1px solid #333;
         }
         .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; }
-        
         .key {
-            position: relative; 
-            font-weight: bold; border: 0; padding: 1px; margin: 0 2px; height: 55px;
+            position: relative; font-weight: bold; border: 0; padding: 1px; margin: 0 2px; height: 55px;
             border-radius: 4px; cursor: pointer; background-color: #333; color: white;
-            flex: 1; font-size: 1.1rem; -webkit-tap-highlight-color: transparent; overflow: hidden;
+            flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
         }
-        .key-heatmap {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-wrap: wrap; z-index: 1;
-        }
-        .key-pixel {
-            flex-grow: 1; flex-basis: calc(100% / 4); /* Basisgröße */
-            background: #818384; border: 0.5px solid #333; box-sizing: border-box;
-        }
-        .key-char {
-            position: relative; z-index: 2; pointer-events: none;
-            text-shadow: 0px 0px 3px black, 0px 0px 4px black;
-            display: flex; width: 100%; height: 100%; justify-content: center; align-items: center;
-        }
-        .key-large { flex: 1.5; font-size: 0.8rem; background: #555; display: flex; justify-content: center; align-items: center; }
-
-        /* TOAST */
+        .key-heatmap { position: absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-wrap:wrap; z-index:1; pointer-events:none;}
+        .key-pixel { flex-grow:1; flex-basis:calc(100%/4); background:#818384; border:0.5px solid #333; box-sizing:border-box;}
+        .key-char { position:relative; z-index:2; pointer-events:none; text-shadow:0 0 3px black;}
+        .key-large { flex: 1.5; font-size: 0.8rem; background: #555; }
+        
         #msg-toast {
             position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
             background: white; color: black; padding: 15px 30px; border-radius: 30px;
-            font-weight: bold; display: none; z-index: 2000; box-shadow: 0 5px 20px rgba(0,0,0,0.5); text-align: center;
+            font-weight: bold; display: none; z-index: 2000; text-align: center;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Leni's Wurmdle 🐛</h1>
+        <h1>Lenis coole Spielesammlung 🎮</h1>
         <button class="menu-btn" onclick="location.reload()">HAUPTMENÜ</button>
     </header>
 
     <div id="msg-toast">Nachricht</div>
+
+    <div id="main-menu">
+        <div class="mode-card" onclick="openWurmdleSetup()">
+            <span class="mode-icon">🐛</span>
+            <div class="mode-title">Wurmdle</div>
+            <div class="mode-desc">Errate das Wort! (DE/EN)</div>
+        </div>
+        <div class="mode-card" onclick="startLillyGame()">
+            <span class="mode-icon">🐱</span>
+            <div class="mode-title">Lillys Spelling Game</div>
+            <div class="mode-desc">Finde die Wörter (English only)</div>
+        </div>
+        <div id="loading-msg" style="color:#555; margin-top:20px;">Bereit.</div>
+    </div>
+
+    <div id="status-panel">
+        <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
+            <span>Erledigt:</span><span style="color:white; font-weight:bold;" id="hud-progress">0/0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
+            <span>Versuche:</span><span style="color:white; font-weight:bold;" id="hud-guesses">0</span>
+        </div>
+        <div style="margin-top:5px; border-top:1px solid #444; padding-top:5px; text-align:center;">
+            <span id="hud-status-text" class="status-good">SIEG MÖGLICH</span>
+        </div>
+    </div>
 
     <div id="setup-area">
         <div class="setting-row">
@@ -165,138 +240,146 @@
                 <button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button>
             </div>
         </div>
-
-        <div class="setting-row">
-            <span class="label">Wie viele Spiele?</span>
-            <input type="number" id="board-count" value="4" min="1" max="64">
-        </div>
-
-        <div class="setting-row">
-            <span class="label">Buchstaben pro Wort</span>
-            <input type="number" id="letter-count" value="5">
-            <span id="range-info" style="color:#555; font-size:0.8rem; margin-top:5px;">(Lade Daten...)</span>
-        </div>
-        
-        <button class="start-btn" onclick="startGame()">STARTEN</button>
+        <div class="setting-row"><span class="label">Anzahl Spiele</span><input type="number" id="board-count" value="4" min="1" max="64"></div>
+        <div class="setting-row"><span class="label">Buchstaben</span><input type="number" id="letter-count" value="5"></div>
+        <div class="setting-row"><span class="label" style="color:#b59f3b;">+ Extra Versuche</span><input type="number" id="extra-guesses" value="0"></div>
+        <button class="start-btn" onclick="startWurmdle()">STARTEN</button>
     </div>
 
-    <div id="game-scroll-area">
-        <div id="game-container"></div>
+    <div id="game-scroll-area"><div id="game-container"></div></div>
+
+    <div id="lilly-area">
+        <div style="color:#ffd700; margin-bottom:10px;">Punkte: <span id="lilly-score">0</span></div>
+        <div id="lilly-input"><span id="lilly-text"></span><span class="cursor"></span></div>
+        <div id="honeycomb"></div>
+        <div class="lilly-controls">
+            <button class="action-btn" onclick="lillyDelete()">⌫</button>
+            <button class="action-btn" onclick="shuffleLilly()">Mischen 🔀</button>
+            <button class="action-btn" style="background:#538d4e;" onclick="lillySubmit()">ENTER</button>
+        </div>
+        <button class="finish-btn action-btn" onclick="finishLillyGame()">BEENDEN & AUSWERTUNG</button>
+        <div id="lilly-words">Gefundene Wörter erscheinen hier...</div>
+    </div>
+
+    <div id="results-modal">
+        <div class="res-header">SPIEL BEENDET</div>
+        <div class="res-score-circle" id="res-final-score">0</div>
+        <div style="color:#aaa; margin-bottom:20px;">PUNKTE (MAX <span id="res-max-pts">0</span>)</div>
+        <div class="res-cols">
+            <div class="res-col" style="border-color:#538d4e;">
+                <h3 style="color:#538d4e;">GEFUNDEN (<span id="count-found">0</span>)</h3>
+                <div class="res-list" id="list-found"></div>
+            </div>
+            <div class="res-col" style="border-color:#ff5555;">
+                <h3 style="color:#ff5555;">VERPASST (<span id="count-missed">0</span>)</h3>
+                <div class="res-list" id="list-missed"></div>
+            </div>
+        </div>
+        <button class="close-res-btn" onclick="location.reload()">ZURÜCK ZUM MENÜ</button>
     </div>
 
     <div id="keyboard-container"></div>
 
     <script>
-        /* --- CONFIG --- */
+        /* --- DATEN & VARS --- */
         let currentLang = 'de';
-        let cleanWordList = []; // Liste der gültigen Wörter
-        let gameWords = [];     // Wörter der aktuellen Länge
-        let games = [];         // Spiel-Objekte
-        let wordLength = 5;
-        let maxGuesses = 6;
-        let currentGuess = "";
-        let isGameActive = false;
-        let totalGames = 4;
+        let cleanWordList = [];
+        // Wurmdle Vars
+        let gameWords = []; let games = []; let wordLength=5; let maxGuesses=6; let currentGuess=""; 
+        let isGameActive = false; let totalGames=4; let activeMode = null;
+        // Lilly Vars
+        let lillyLetters = []; let lillyCenter = ""; let lillyFound = []; let lillyScore = 0; 
+        let validLillyWords = []; let maxLillyPoints = 0;
 
         const keysDE = ["QWERTZUIOP", "ASDFGHJKL", "YXCVBNM"];
         const keysEN = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
-        /* --- INITIALISIERUNG --- */
+        /* --- INIT --- */
         window.onload = () => {
+            // Standardmäßig DE für Wurmdle vorladen
             setTimeout(() => loadWords('de'), 100);
             
             document.addEventListener('keydown', (e) => {
-                if (!isGameActive) return;
                 const key = e.key.toUpperCase();
-                if (key === 'ENTER') { handleKey('ENTER'); e.preventDefault(); }
-                else if (key === 'BACKSPACE') { handleKey('BACK'); e.preventDefault(); }
-                else if (/^[A-Z]$/.test(key) && !e.ctrlKey) { handleKey(key); }
+                if(activeMode === 'wurmdle') {
+                    if (key === 'ENTER') { handleKey('ENTER'); e.preventDefault(); }
+                    else if (key === 'BACKSPACE') { handleKey('BACK'); e.preventDefault(); }
+                    else if (/^[A-Z]$/.test(key) && !e.ctrlKey) { handleKey(key); }
+                } else if(activeMode === 'lilly') {
+                    if (key === 'ENTER') { lillySubmit(); e.preventDefault(); }
+                    else if (key === 'BACKSPACE') { lillyDelete(); e.preventDefault(); }
+                    else if (/^[A-Z]$/.test(key) && !e.ctrlKey) { lillyType(key); }
+                }
             });
         };
 
-        /* --- LADE LOKALE DATEIEN --- */
+        /* --- WORD LOADING --- */
         async function loadWords(lang) {
             currentLang = lang;
-            const statusEl = document.getElementById('range-info');
-            const inputEl = document.getElementById('letter-count');
-            const startBtn = document.querySelector('.start-btn');
+            const msg = document.getElementById('loading-msg');
+            msg.innerText = "Lade Wörterbuch...";
             
-            document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
-            document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
-            
-            startBtn.innerText = "LADE...";
-            startBtn.style.opacity = "0.5";
-            statusEl.innerText = "Lese Datei...";
+            // Toggle nur aktualisieren, wenn sichtbar (Wurmdle Setup)
+            if(document.getElementById('btn-de')) {
+                document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
+                document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
+            }
 
             try {
-                // Lokale Datei laden
                 const filename = (lang === 'de') ? 'de.txt' : 'en.txt';
                 const response = await fetch(filename);
-                if (!response.ok) throw new Error("Datei '" + filename + "' nicht gefunden!");
+                if (!response.ok) throw new Error("Offline/Fehler");
                 const text = await response.text();
-
                 const lines = text.split('\n');
-                cleanWordList = []; 
-                let min = 100, max = 0;
-
-                // FILTER: Nur A-Z, Länge 3-20
+                
+                cleanWordList = [];
                 for (let i = 0; i < lines.length; i++) {
                     let w = lines[i].trim().toUpperCase();
                     if (w.length >= 3 && w.length <= 20 && /^[A-Z]+$/.test(w)) {
                         cleanWordList.push(w);
-                        if (w.length < min) min = w.length;
-                        if (w.length > max) max = w.length;
                     }
                 }
-
-                if (cleanWordList.length === 0) throw new Error("Keine gültigen Wörter in " + filename);
-
-                inputEl.min = min;
-                inputEl.max = max;
-                if (inputEl.value < min) inputEl.value = 5;
-                if (inputEl.value > max) inputEl.value = max;
-                
-                statusEl.innerText = `${cleanWordList.length} Wörter bereit (${min}-${max})`;
-                startBtn.innerText = "STARTEN";
-                startBtn.style.opacity = "1";
+                msg.innerText = `${cleanWordList.length} Wörter bereit.`;
+                if(document.querySelector('.start-btn')) document.querySelector('.start-btn').innerText = "STARTEN";
 
             } catch (error) {
                 console.error(error);
-                alert("Fehler: " + error.message + "\nHast du die Dateien 'de.txt' und 'en.txt'?");
-                statusEl.innerText = "Fehler!";
+                msg.innerText = "Fehler beim Laden!";
+                alert("Fehler: " + error.message);
             }
         }
 
-        /* --- SPIEL STARTEN --- */
-        function startGame() {
+        /* --- NAVIGATION --- */
+        async function openWurmdleSetup() {
+            // Default Deutsch
+            await loadWords('de');
+            if(cleanWordList.length === 0) return;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('setup-area').style.display = 'flex';
+        }
+
+        /* ================= WURMDLE LOGIC ================= */
+        function startWurmdle() {
+            activeMode = 'wurmdle';
             totalGames = parseInt(document.getElementById('board-count').value);
             wordLength = parseInt(document.getElementById('letter-count').value);
-            const btn = document.querySelector('.start-btn');
+            const extra = parseInt(document.getElementById('extra-guesses').value) || 0;
 
-            if(btn.innerText !== "STARTEN") return;
-
-            // 1. Wörter filtern
             gameWords = cleanWordList.filter(w => w.length === wordLength);
+            if (gameWords.length < totalGames) { alert("Zu wenige Wörter!"); return; }
 
-            if (gameWords.length < totalGames) {
-                alert(`Zu wenige Wörter mit ${wordLength} Buchstaben!\n(Verfügbar: ${gameWords.length})`);
-                return;
-            }
-
-            // 2. Fairness-Algorithmus: Versuche = Länge + Spiele
-            maxGuesses = wordLength + totalGames;
-            if(totalGames > 10) maxGuesses += 2; // Extra Puffer bei vielen Spielen
+            maxGuesses = wordLength + totalGames + extra;
+            if(totalGames > 10 && extra === 0) maxGuesses += 2;
 
             isGameActive = true;
             document.documentElement.style.setProperty('--col-count', wordLength);
-            document.documentElement.style.setProperty('--game-count', totalGames);
 
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('game-scroll-area').style.display = 'flex';
             document.getElementById('keyboard-container').style.display = 'block';
+            document.getElementById('status-panel').style.display = 'flex';
 
-            games = [];
-            currentGuess = "";
+            games = []; currentGuess = "";
             const container = document.getElementById('game-container');
             container.innerHTML = '';
 
@@ -306,84 +389,60 @@
                 
                 let html = `
                 <div class="board-card" id="card-${i}">
-                    <div class="board-header">
-                        <span>SPIEL ${i+1}</span>
-                        <button class="help-btn" onclick="giveHint(${i})" title="Hilfe">💡</button>
-                    </div>
+                    <div class="board-header"><span>SPIEL ${i+1}</span><button class="help-btn" onclick="giveHint(${i})">💡</button></div>
                     <div class="board" id="board-${i}">`;
-                    
-                for (let r = 0; r < maxGuesses * wordLength; r++) {
-                    html += `<div class="tile" id="tile-${i}-${r}"></div>`;
-                }
-                
-                html += `</div>
-                         <div class="solution-text" id="sol-${i}"></div>
-                    </div>`;
+                for (let r = 0; r < maxGuesses * wordLength; r++) html += `<div class="tile" id="tile-${i}-${r}"></div>`;
+                html += `</div><div class="solution-text" id="sol-${i}"></div></div>`;
                 container.innerHTML += html;
             }
-
-            createKeyboard();
+            createKeyboard(); updateHUD();
         }
 
-        /* --- HILFE --- */
+        function updateHUD() {
+            const solvedCount = games.filter(g => g.solved).length;
+            let usedGuesses = games.length > 0 ? games[0].guesses.length : 0;
+            const remainingGuesses = maxGuesses - usedGuesses;
+            const remainingGames = totalGames - solvedCount;
+            document.getElementById('hud-progress').innerText = `${solvedCount} / ${totalGames}`;
+            document.getElementById('hud-guesses').innerText = remainingGuesses;
+            const st = document.getElementById('hud-status-text');
+            if (remainingGuesses < remainingGames) { st.innerText = "NICHT SCHAFFBAR"; st.className = "status-bad"; }
+            else { st.innerText = "SIEG MÖGLICH"; st.className = "status-good"; }
+        }
+
         function giveHint(gameId) {
             if(!isGameActive) return;
             const game = games[gameId];
             if(game.solved || game.guesses.length >= maxGuesses) return;
             const idx = Math.floor(Math.random() * wordLength);
-            const char = game.word[idx];
-            showToast(`Spiel ${gameId+1} Tipp: "${char}" an Pos ${idx+1}`);
+            showToast(`Tipp: "${game.word[idx]}" an Pos ${idx+1}`);
         }
 
-        /* --- KEYBOARD + HEATMAP --- */
         function createKeyboard() {
-            const kbContainer = document.getElementById('keyboard-container');
-            kbContainer.innerHTML = '';
+            const kb = document.getElementById('keyboard-container'); kb.innerHTML = '';
             const layout = (currentLang === 'de') ? keysDE : keysEN;
-
-            layout.forEach((rowStr, index) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'keyboard-row';
-                
-                if (index === layout.length - 1) rowDiv.innerHTML += `<button class="key key-large" onclick="handleKey('ENTER')">ENTER</button>`;
-
+            layout.forEach((rowStr, idx) => {
+                const row = document.createElement('div'); row.className = 'keyboard-row';
+                if (idx === layout.length - 1) appendKey(row, 'ENTER', 'key-large', ()=>handleKey('ENTER'));
                 for (let char of rowStr) {
-                    const keyBtn = document.createElement('div');
-                    keyBtn.className = 'key';
-                    keyBtn.onclick = () => handleKey(char);
-                    keyBtn.id = `key-${char}`;
-
-                    // Heatmap Grid
-                    let heatmapHTML = `<div class="key-heatmap">`;
-                    for(let i=0; i<totalGames; i++) {
-                        heatmapHTML += `<div class="key-pixel" id="pixel-${char}-${i}"></div>`;
-                    }
-                    heatmapHTML += `</div>`;
-                    
-                    // Buchstabe
-                    let charHTML = `<div class="key-char">${char}</div>`;
-
-                    keyBtn.innerHTML = heatmapHTML + charHTML;
-                    rowDiv.appendChild(keyBtn);
+                    const k = document.createElement('div'); k.className='key'; k.id=`key-${char}`; k.onclick=()=>handleKey(char);
+                    let hm = `<div class="key-heatmap">`;
+                    for(let i=0; i<totalGames; i++) hm += `<div class="key-pixel" id="pixel-${char}-${i}"></div>`;
+                    k.innerHTML = hm + `</div><div class="key-char">${char}</div>`;
+                    row.appendChild(k);
                 }
-
-                if (index === layout.length - 1) rowDiv.innerHTML += `<button class="key key-large" onclick="handleKey('BACK')">⌫</button>`;
-                kbContainer.appendChild(rowDiv);
+                if (idx === layout.length - 1) appendKey(row, '⌫', 'key-large', ()=>handleKey('BACK'));
+                kb.appendChild(row);
             });
+        }
+        function appendKey(parent, text, cls, action) {
+            const b = document.createElement('button'); b.className = 'key '+cls; b.innerText = text; b.onclick = action; parent.appendChild(b);
         }
 
         function handleKey(key) {
-            if (!isGameActive) return;
             if (key === 'ENTER') submitGuess();
-            else if (key === 'BACK') {
-                currentGuess = currentGuess.slice(0, -1);
-                updateGridPreview();
-            } else {
-                if (currentGuess.length < wordLength) {
-                    currentGuess += key;
-                    updateGridPreview();
-                }
-            }
+            else if (key === 'BACK') { currentGuess = currentGuess.slice(0, -1); updateGridPreview(); }
+            else { if (currentGuess.length < wordLength) { currentGuess += key; updateGridPreview(); } }
         }
 
         function updateGridPreview() {
@@ -400,133 +459,203 @@
         }
 
         function submitGuess() {
-            if (currentGuess.length !== wordLength) {
-                showToast("Zu kurz!");
-                return;
-            }
-            
-            // --- VALIDIERUNG ---
-            if (!gameWords.includes(currentGuess)) {
-                showToast("Wort unbekannt!");
-                shakeRows(); // Wackeln!
-                return;
-            }
+            if (currentGuess.length !== wordLength) { showToast("Zu kurz!"); return; }
+            if (!gameWords.includes(currentGuess)) { showToast("Wort unbekannt!"); shakeRows(); return; }
 
             games.forEach(game => {
                 if (game.solved || game.guesses.length >= maxGuesses) return;
-
-                const wordArr = game.word.split('');
-                const guessArr = currentGuess.split('');
+                const wArr = game.word.split(''); const gArr = currentGuess.split('');
                 const startIdx = game.guesses.length * wordLength;
-                let status = new Array(wordLength).fill(0); 
+                let status = new Array(wordLength).fill(0);
+                for (let i=0; i<wordLength; i++) if (gArr[i]===wArr[i]) { status[i]=2; wArr[i]=null; gArr[i]=null; }
+                for (let i=0; i<wordLength; i++) if (gArr[i]!==null && wArr.indexOf(gArr[i])>-1) { status[i]=1; wArr[wArr.indexOf(gArr[i])]=null; }
 
-                // Grün
-                for (let i = 0; i < wordLength; i++) {
-                    if (guessArr[i] === wordArr[i]) {
-                        status[i] = 2; wordArr[i] = null; guessArr[i] = null;
-                    }
+                for (let i=0; i<wordLength; i++) {
+                    const t = document.getElementById(`tile-${game.id}-${startIdx + i}`);
+                    t.style.borderColor="transparent";
+                    if(status[i]===2) t.classList.add('correct');
+                    else if(status[i]===1) t.classList.add('present');
+                    else t.classList.add('absent');
                 }
-                // Gelb
-                for (let i = 0; i < wordLength; i++) {
-                    if (guessArr[i] === null) continue;
-                    const idx = wordArr.indexOf(guessArr[i]);
-                    if (idx > -1) {
-                        status[i] = 1; wordArr[idx] = null;
-                    }
-                }
-
-                // Farben auf Brett
-                for (let i = 0; i < wordLength; i++) {
-                    const tile = document.getElementById(`tile-${game.id}-${startIdx + i}`);
-                    tile.style.borderColor = "transparent";
-                    if (status[i] === 2) tile.classList.add('correct');
-                    else if (status[i] === 1) tile.classList.add('present');
-                    else tile.classList.add('absent');
-                }
-
                 game.guesses.push(currentGuess);
-
-                if (currentGuess === game.word) {
-                    game.solved = true;
-                    document.getElementById(`card-${game.id}`).classList.add('solved-overlay');
-                }
+                if (currentGuess === game.word) { game.solved = true; document.getElementById(`card-${game.id}`).classList.add('solved-overlay'); }
             });
 
-            updateKeyboardColors(); // Heatmap Update
-            currentGuess = "";
-            
-            // Ende?
-            const allFinished = games.every(g => g.solved || g.guesses.length >= maxGuesses);
-            if (allFinished) {
-                const allWon = games.every(g => g.solved);
-                if (allWon) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
+            updateKeyboardColors(); currentGuess = ""; updateHUD();
+            if (games.every(g => g.solved || g.guesses.length >= maxGuesses)) {
+                if (games.every(g => g.solved)) showToast("🎉 GEWONNEN! 🎉");
                 else {
-                    showToast("Fertig!");
-                    games.forEach(g => {
-                        if(!g.solved) {
-                            const sol = document.getElementById(`sol-${g.id}`);
-                            sol.innerText = g.word; sol.style.display = "block";
-                        }
-                    });
+                    showToast("Vorbei!");
+                    games.forEach(g => { if(!g.solved) { const s=document.getElementById(`sol-${g.id}`); s.innerText=g.word; s.style.display="block"; } });
                 }
                 isGameActive = false;
             }
         }
-
-        function shakeRows() {
-            games.forEach(game => {
-                if (!game.solved && game.guesses.length < maxGuesses) {
-                    const startIdx = game.guesses.length * wordLength;
-                    for (let i = 0; i < wordLength; i++) {
-                        const tile = document.getElementById(`tile-${game.id}-${startIdx + i}`);
-                        tile.classList.remove('shake-effect');
-                        void tile.offsetWidth;
-                        tile.classList.add('shake-effect');
-                    }
+        function shakeRows() { games.forEach(g => { if(!g.solved && g.guesses.length < maxGuesses) { const s = g.guesses.length*wordLength; for(let i=0;i<wordLength;i++) { const t=document.getElementById(`tile-${g.id}-${s+i}`); t.classList.remove('shake-effect'); void t.offsetWidth; t.classList.add('shake-effect'); } } }); }
+        function updateKeyboardColors() {
+            games.forEach(g => {
+                let status = {};
+                g.guesses.forEach(guess => {
+                     const wArr = g.word.split(''); const gArr = guess.split('');
+                     let loc = new Array(wordLength).fill(1);
+                     for(let i=0; i<wordLength; i++) if(gArr[i]===wArr[i]) { loc[i]=3; wArr[i]=null; gArr[i]=null; }
+                     for(let i=0; i<wordLength; i++) if(gArr[i] && wArr.includes(gArr[i])) loc[i]=2;
+                     guess.split('').forEach((c,i) => { if(loc[i]>(status[c]||0)) status[c]=loc[i]; });
+                });
+                for(const [c,s] of Object.entries(status)) {
+                    const p = document.getElementById(`pixel-${c}-${g.id}`);
+                    if(p) p.style.backgroundColor = (s===3)?'#538d4e':(s===2)?'#b59f3b':(s===1)?'#3a3a3c':'#818384';
                 }
             });
         }
 
-        function updateKeyboardColors() {
-            // Heatmap Logik
-            games.forEach(game => {
-                const gId = game.id;
-                let charStatus = {};
+        /* ================= LILLY SPELLING LOGIC ================= */
+        async function startLillyGame() {
+            // ZWINGEND ENGLISCH LADEN
+            showToast("Lade English Dictionary...");
+            await loadWords('en');
 
-                game.guesses.forEach(guess => {
-                    const wordArr = game.word.split('');
-                    const guessArr = guess.split('');
-                    let stat = new Array(wordLength).fill(1); // 1 = Grau
+            if(cleanWordList.length === 0) return;
+            activeMode = 'lilly';
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('lilly-area').style.display = 'flex';
+            
+            // 1. Finde ein Pangramm (7 unique Buchstaben)
+            let pangrams = cleanWordList.filter(w => new Set(w.split('')).size === 7);
+            if(pangrams.length === 0) { alert("Kein Pangramm gefunden!"); return; }
+            
+            const sourceWord = pangrams[Math.floor(Math.random() * pangrams.length)];
+            const uniqueChars = Array.from(new Set(sourceWord.split('')));
+            
+            // Mischen
+            for (let i = uniqueChars.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [uniqueChars[i], uniqueChars[j]] = [uniqueChars[j], uniqueChars[i]];
+            }
 
-                    for(let i=0; i<wordLength; i++) {
-                        if(guessArr[i] === wordArr[i]) { stat[i] = 3; wordArr[i]=null; guessArr[i]=null; }
-                    }
-                    for(let i=0; i<wordLength; i++) {
-                        if(guessArr[i] && wordArr.includes(guessArr[i])) { stat[i] = 2; }
-                    }
+            lillyCenter = uniqueChars[0];
+            lillyLetters = uniqueChars;
+            lillyFound = []; lillyScore = 0; maxLillyPoints = 0;
 
-                    guess.split('').forEach((char, i) => {
-                        if (stat[i] > (charStatus[char] || 0)) charStatus[char] = stat[i];
-                    });
-                });
-
-                for (const [char, status] of Object.entries(charStatus)) {
-                    const pixel = document.getElementById(`pixel-${char}-${gId}`);
-                    if (pixel) {
-                        pixel.style.backgroundColor = 
-                            (status === 3) ? '#538d4e' : 
-                            (status === 2) ? '#b59f3b' : 
-                            (status === 1) ? '#3a3a3c' : '#818384';
-                    }
-                }
+            // Suche ALLE validen Wörter und berechne max Punkte
+            validLillyWords = cleanWordList.filter(w => {
+                if(w.length < 4) return false;
+                if(!w.includes(lillyCenter)) return false;
+                for(let char of w) if(!lillyLetters.includes(char)) return false;
+                return true;
             });
+
+            // Punkte berechnen
+            validLillyWords.forEach(w => maxLillyPoints += calcWordScore(w));
+
+            renderLillyBoard();
+            updateLillyScore();
+        }
+
+        function renderLillyBoard() {
+            const container = document.getElementById('honeycomb');
+            container.innerHTML = '';
+            
+            lillyLetters.forEach((char, index) => {
+                const btn = document.createElement('div');
+                btn.className = `hex-btn pos-${index}`;
+                if(index === 0) btn.classList.add('hex-center'); 
+                btn.innerText = char;
+                btn.onclick = () => lillyType(char);
+                container.appendChild(btn);
+            });
+        }
+
+        function lillyType(char) {
+            if(lillyLetters.includes(char)) {
+                document.getElementById('lilly-text').innerText += char;
+            }
+        }
+        function lillyDelete() {
+            let t = document.getElementById('lilly-text').innerText;
+            document.getElementById('lilly-text').innerText = t.slice(0, -1);
+        }
+        function shuffleLilly() {
+            let outer = lillyLetters.slice(1);
+            for (let i = outer.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [outer[i], outer[j]] = [outer[j], outer[i]];
+            }
+            lillyLetters = [lillyLetters[0], ...outer];
+            renderLillyBoard();
+        }
+
+        function calcWordScore(word) {
+            if(word.length === 4) return 1;
+            let pts = word.length;
+            const unique = new Set(word.split('')).size;
+            if(unique === 7) pts += 7;
+            return pts;
+        }
+
+        function lillySubmit() {
+            const textEl = document.getElementById('lilly-text');
+            const word = textEl.innerText;
+            
+            if(word.length < 4) { showToast("Zu kurz (min 4)"); return; }
+            if(!word.includes(lillyCenter)) { showToast("Muss Gelb enthalten!"); return; }
+            if(lillyFound.includes(word)) { showToast("Schon gefunden!"); textEl.innerText=""; return; }
+            
+            if(validLillyWords.includes(word)) {
+                const pts = calcWordScore(word);
+                const isPangram = (new Set(word.split('')).size === 7);
+                if(isPangram) { showToast(`🦄 PANGRAMM! +${pts} 🦄`); }
+                else { showToast(`Super! +${pts}`); }
+
+                lillyFound.push(word);
+                lillyScore += pts;
+                updateLillyScore();
+                
+                const span = document.createElement('span');
+                span.className = 'found-word';
+                span.innerText = word + (isPangram ? " 🌟" : "");
+                document.getElementById('lilly-words').prepend(span); 
+                textEl.innerText = "";
+            } else {
+                showToast("Nicht in Liste.");
+                textEl.classList.add('shake-effect');
+                setTimeout(()=>textEl.classList.remove('shake-effect'), 500);
+            }
+        }
+
+        function updateLillyScore() {
+            document.getElementById('lilly-score').innerText = lillyScore;
+        }
+
+        function finishLillyGame() {
+            const modal = document.getElementById('results-modal');
+            const listFound = document.getElementById('list-found');
+            const listMissed = document.getElementById('list-missed');
+            
+            const finalPercent = Math.round((lillyScore / maxLillyPoints) * 100);
+            document.getElementById('res-final-score').innerText = finalPercent;
+            document.getElementById('res-max-pts').innerText = maxLillyPoints;
+
+            document.getElementById('count-found').innerText = lillyFound.length;
+            document.getElementById('count-missed').innerText = validLillyWords.length - lillyFound.length;
+
+            listFound.innerHTML = "";
+            lillyFound.sort().forEach(w => {
+                listFound.innerHTML += `<div class="res-item" style="color:#538d4e;">${w} (${calcWordScore(w)})</div>`;
+            });
+
+            listMissed.innerHTML = "";
+            const missed = validLillyWords.filter(w => !lillyFound.includes(w)).sort();
+            missed.forEach(w => {
+                listMissed.innerHTML += `<div class="res-item" style="color:#aaa;">${w} (${calcWordScore(w)})</div>`;
+            });
+
+            modal.style.display = 'flex';
         }
 
         function showToast(txt) {
-            const t = document.getElementById('msg-toast');
-            t.innerText = txt;
-            t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 3000);
+            const t = document.getElementById('msg-toast'); t.innerText = txt; t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2000);
         }
     </script>
 </body>
