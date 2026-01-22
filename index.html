@@ -43,6 +43,18 @@
         .mode-title { font-size: 1.5rem; font-weight: bold; color: white; }
         .mode-desc { color: #888; font-size: 0.9rem; margin-top: 5px; }
 
+        /* --- LANG SELECT MODAL (NEU) --- */
+        #lang-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 300; display: none;
+            flex-direction: column; justify-content: center; align-items: center; gap: 20px;
+        }
+        .lang-card {
+            background: #333; padding: 20px 40px; border-radius: 15px; border: 2px solid #aaa;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; width: 200px; text-align: center;
+        }
+        .lang-card:hover { background: #444; border-color: white; }
+
         /* --- SETUP AREA (WORDLE) --- */
         #setup-area {
             flex-grow: 1; display: none; flex-direction: column;
@@ -121,7 +133,6 @@
         .hex-btn:active { transform: scale(0.9); }
         .hex-center { background: #ffd700; color: black; z-index: 2; }
         
-        /* Hex Positionen */
         .pos-0 { top: 35%; left: 35%; }
         .pos-1 { top: 5%; left: 35%; }
         .pos-2 { top: 20%; left: 63%; }
@@ -130,12 +141,13 @@
         .pos-5 { top: 50%; left: 7%; }
         .pos-6 { top: 20%; left: 7%; }
 
-        .lilly-controls { display: flex; gap: 15px; margin-top: 20px; }
+        .lilly-controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
         .action-btn {
             border: 1px solid #555; background: #333; color: white;
-            padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;
+            padding: 12px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;
         }
-        .finish-btn { background: #ff5555; color: white; margin-top: 20px; border: none; font-size: 0.9rem; padding: 10px 20px;}
+        .hint-btn { background: #3a7bd5; border: none; }
+        .finish-btn { background: #ff5555; border: none; width: 100%; margin-top: 10px; max-width: 300px;}
 
         #lilly-words {
             margin-top: 20px; width: 90%; max-height: 100px; overflow-y: auto;
@@ -143,13 +155,31 @@
         }
         .found-word { display: inline-block; padding: 3px 8px; background: #333; margin: 3px; border-radius: 4px; color: white;}
 
+        /* --- HINT MODAL --- */
+        #hint-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 600; display: none;
+            flex-direction: column; align-items: center; padding: 20px; overflow-y: auto;
+        }
+        .hint-table-container { overflow-x: auto; width: 100%; display: flex; justify-content: center; margin-bottom: 20px; }
+        .hint-table { border-collapse: collapse; color: white; font-size: 0.9rem; }
+        .hint-table th, .hint-table td { border: 1px solid #555; padding: 8px; text-align: center; }
+        .hint-table th { background: #333; color: #ffd700; }
+        .hint-table .row-header { font-weight: bold; background: #222; }
+        .hint-table .sum-col { font-weight: bold; color: #aaa; }
+        .two-letter-list { 
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 600px; 
+            margin-bottom: 20px; color: #ddd; font-family: monospace; font-size: 1.1rem;
+        }
+        .two-letter-item { background: #222; padding: 5px 10px; border-radius: 5px; border: 1px solid #444; }
+
         /* --- STATS MODAL --- */
         #results-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 500; display: none;
             flex-direction: column; align-items: center; padding: 20px; overflow-y: auto;
         }
-        .res-header { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; margin-top: 40px;}
+        .res-header { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; margin-top: 40px; text-align: center; }
         .res-score-circle {
             width: 120px; height: 120px; border-radius: 50%; border: 5px solid #538d4e;
             display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold;
@@ -165,14 +195,24 @@
             border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer;
         }
 
-        /* --- HUD --- */
+        /* --- HUD (SMART) --- */
         #status-panel {
             position: fixed; top: 70px; right: 20px;
             background: rgba(30, 30, 31, 0.95); border: 1px solid #555; border-radius: 8px;
             padding: 10px 15px; display: none; flex-direction: column; gap: 5px; z-index: 100;
+            cursor: pointer; transition: all 0.3s ease;
         }
         .status-good { color: #538d4e; font-weight: bold; }
         .status-bad { color: #ff5555; font-weight: bold; }
+        
+        #status-panel.minimized {
+            width: 40px; height: 40px; padding: 0; border-radius: 50%;
+            justify-content: center; align-items: center; background: #333;
+        }
+        .hud-content { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .hud-icon { display: none; font-size: 1.5rem; }
+        #status-panel.minimized .hud-content { display: none; }
+        #status-panel.minimized .hud-icon { display: block; }
 
         /* --- KEYBOARD --- */
         #keyboard-container {
@@ -212,24 +252,35 @@
             <div class="mode-title">Wurmdle</div>
             <div class="mode-desc">Errate das Wort! (DE/EN)</div>
         </div>
-        <div class="mode-card" onclick="startLillyGame()">
+        <div class="mode-card" onclick="openLillyLangSelect()">
             <span class="mode-icon">🐱</span>
             <div class="mode-title">Lillys Spelling Game</div>
-            <div class="mode-desc">Finde die Wörter (English only)</div>
+            <div class="mode-desc">Finde die Wörter (DE/EN)</div>
         </div>
         <div id="loading-msg" style="color:#555; margin-top:20px;">Bereit.</div>
     </div>
 
-    <div id="status-panel">
-        <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
-            <span>Erledigt:</span><span style="color:white; font-weight:bold;" id="hud-progress">0/0</span>
+    <div id="lang-modal">
+        <h2 style="color:white; margin-bottom:30px;">Wähle deine Sprache:</h2>
+        <div class="lang-card" onclick="selectLillyLang('de')">🇩🇪 DEUTSCH</div>
+        <div class="lang-card" onclick="selectLillyLang('en')">🇺🇸 ENGLISH</div>
+        <button class="close-res-btn" style="background:#555; margin-top:30px;" onclick="document.getElementById('lang-modal').style.display='none'">Abbrechen</button>
+    </div>
+
+    <div id="status-panel" onclick="toggleHUD()" title="Klicken zum Verkleinern/Vergrößern">
+        <div class="hud-content">
+            <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
+                <span>Erledigt:</span><span style="color:white; font-weight:bold;" id="hud-progress">0/0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
+                <span>Versuche:</span><span style="color:white; font-weight:bold;" id="hud-guesses">0</span>
+            </div>
+            <div style="margin-top:5px; border-top:1px solid #444; padding-top:5px; text-align:center;">
+                <span id="hud-status-text" class="status-good">SIEG MÖGLICH</span>
+            </div>
+            <div style="text-align:center; font-size:0.7rem; color:#666; margin-top:5px;">(Klick mich)</div>
         </div>
-        <div style="display:flex; justify-content:space-between; gap:15px; color:#aaa;">
-            <span>Versuche:</span><span style="color:white; font-weight:bold;" id="hud-guesses">0</span>
-        </div>
-        <div style="margin-top:5px; border-top:1px solid #444; padding-top:5px; text-align:center;">
-            <span id="hud-status-text" class="status-good">SIEG MÖGLICH</span>
-        </div>
+        <div class="hud-icon">📊</div>
     </div>
 
     <div id="setup-area">
@@ -256,13 +307,24 @@
             <button class="action-btn" onclick="lillyDelete()">⌫</button>
             <button class="action-btn" onclick="shuffleLilly()">Mischen 🔀</button>
             <button class="action-btn" style="background:#538d4e;" onclick="lillySubmit()">ENTER</button>
+            <button class="action-btn hint-btn" onclick="showHints()">TIPPS 💡</button>
         </div>
-        <button class="finish-btn action-btn" onclick="finishLillyGame()">BEENDEN & AUSWERTUNG</button>
+        <button class="action-btn finish-btn" onclick="finishLillyGame()">BEENDEN & AUSWERTUNG</button>
         <div id="lilly-words">Gefundene Wörter erscheinen hier...</div>
     </div>
 
+    <div id="hint-modal">
+        <div class="res-header">HINWEISE (GRID)</div>
+        <div class="hint-table-container">
+            <div id="grid-container"></div>
+        </div>
+        <div style="color:#aaa; margin-bottom:10px;">ZWEI BUCHSTABEN LISTE</div>
+        <div id="two-letter-container" class="two-letter-list"></div>
+        <button class="close-res-btn" onclick="document.getElementById('hint-modal').style.display='none'">SCHLIESSEN</button>
+    </div>
+
     <div id="results-modal">
-        <div class="res-header">SPIEL BEENDET</div>
+        <div class="res-header" id="res-header-text">SPIEL BEENDET</div>
         <div class="res-score-circle" id="res-final-score">0</div>
         <div style="color:#aaa; margin-bottom:20px;">PUNKTE (MAX <span id="res-max-pts">0</span>)</div>
         <div class="res-cols">
@@ -296,7 +358,6 @@
 
         /* --- INIT --- */
         window.onload = () => {
-            // Standardmäßig DE für Wurmdle vorladen
             setTimeout(() => loadWords('de'), 100);
             
             document.addEventListener('keydown', (e) => {
@@ -313,13 +374,16 @@
             });
         };
 
+        function toggleHUD() {
+            document.getElementById('status-panel').classList.toggle('minimized');
+        }
+
         /* --- WORD LOADING --- */
         async function loadWords(lang) {
             currentLang = lang;
             const msg = document.getElementById('loading-msg');
             msg.innerText = "Lade Wörterbuch...";
             
-            // Toggle nur aktualisieren, wenn sichtbar (Wurmdle Setup)
             if(document.getElementById('btn-de')) {
                 document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
                 document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
@@ -351,11 +415,20 @@
 
         /* --- NAVIGATION --- */
         async function openWurmdleSetup() {
-            // Default Deutsch
             await loadWords('de');
             if(cleanWordList.length === 0) return;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('setup-area').style.display = 'flex';
+        }
+
+        /* NEU: LILLY LANGUAGE SELECTION */
+        function openLillyLangSelect() {
+             document.getElementById('lang-modal').style.display = 'flex';
+        }
+        
+        function selectLillyLang(lang) {
+             document.getElementById('lang-modal').style.display = 'none';
+             startLillyGame(lang);
         }
 
         /* ================= WURMDLE LOGIC ================= */
@@ -378,6 +451,7 @@
             document.getElementById('game-scroll-area').style.display = 'flex';
             document.getElementById('keyboard-container').style.display = 'block';
             document.getElementById('status-panel').style.display = 'flex';
+            document.getElementById('status-panel').classList.remove('minimized');
 
             games = []; currentGuess = "";
             const container = document.getElementById('game-container');
@@ -483,7 +557,7 @@
 
             updateKeyboardColors(); currentGuess = ""; updateHUD();
             if (games.every(g => g.solved || g.guesses.length >= maxGuesses)) {
-                if (games.every(g => g.solved)) showToast("🎉 GEWONNEN! 🎉");
+                if (games.every(g => g.solved)) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
                 else {
                     showToast("Vorbei!");
                     games.forEach(g => { if(!g.solved) { const s=document.getElementById(`sol-${g.id}`); s.innerText=g.word; s.style.display="block"; } });
@@ -510,19 +584,18 @@
         }
 
         /* ================= LILLY SPELLING LOGIC ================= */
-        async function startLillyGame() {
-            // ZWINGEND ENGLISCH LADEN
-            showToast("Lade English Dictionary...");
-            await loadWords('en');
+        async function startLillyGame(lang) {
+            showToast("Lade Wörterbuch...");
+            await loadWords(lang);
 
             if(cleanWordList.length === 0) return;
             activeMode = 'lilly';
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('lilly-area').style.display = 'flex';
             
-            // 1. Finde ein Pangramm (7 unique Buchstaben)
+            // 1. Finde ein Pangramm
             let pangrams = cleanWordList.filter(w => new Set(w.split('')).size === 7);
-            if(pangrams.length === 0) { alert("Kein Pangramm gefunden!"); return; }
+            if(pangrams.length === 0) { alert("Kein Pangramm gefunden in " + lang); return; }
             
             const sourceWord = pangrams[Math.floor(Math.random() * pangrams.length)];
             const uniqueChars = Array.from(new Set(sourceWord.split('')));
@@ -537,7 +610,6 @@
             lillyLetters = uniqueChars;
             lillyFound = []; lillyScore = 0; maxLillyPoints = 0;
 
-            // Suche ALLE validen Wörter und berechne max Punkte
             validLillyWords = cleanWordList.filter(w => {
                 if(w.length < 4) return false;
                 if(!w.includes(lillyCenter)) return false;
@@ -545,11 +617,63 @@
                 return true;
             });
 
-            // Punkte berechnen
             validLillyWords.forEach(w => maxLillyPoints += calcWordScore(w));
 
             renderLillyBoard();
             updateLillyScore();
+        }
+
+        /* --- HINT LOGIC (THE GRID) --- */
+        function showHints() {
+            let matrix = {};
+            let lengths = new Set();
+            let letters = new Set();
+            let twoLetterCounts = {};
+
+            validLillyWords.forEach(w => {
+                const len = w.length;
+                const char = w[0];
+                const twoChar = w.substring(0, 2);
+
+                lengths.add(len);
+                letters.add(char);
+
+                if(!matrix[char]) matrix[char] = {};
+                if(!matrix[char][len]) matrix[char][len] = 0;
+                matrix[char][len]++;
+
+                if(!twoLetterCounts[twoChar]) twoLetterCounts[twoChar] = 0;
+                twoLetterCounts[twoChar]++;
+            });
+
+            const sortedLengths = Array.from(lengths).sort((a,b)=>a-b);
+            const sortedLetters = Array.from(letters).sort();
+
+            let html = '<table class="hint-table"><thead><tr><th></th>';
+            sortedLengths.forEach(l => html += `<th>${l}</th>`);
+            html += '<th class="sum-col">Σ</th></tr></thead><tbody>';
+
+            sortedLetters.forEach(char => {
+                html += `<tr><td class="row-header">${char}</td>`;
+                let rowSum = 0;
+                sortedLengths.forEach(len => {
+                    const count = matrix[char][len] || "-";
+                    if(count !== "-") rowSum += count;
+                    html += `<td>${count}</td>`;
+                });
+                html += `<td class="sum-col">${rowSum}</td></tr>`;
+            });
+            html += '</tbody></table>';
+
+            document.getElementById('grid-container').innerHTML = html;
+
+            let tlHtml = "";
+            Object.keys(twoLetterCounts).sort().forEach(tl => {
+                tlHtml += `<div class="two-letter-item">${tl}-${twoLetterCounts[tl]}</div>`;
+            });
+            document.getElementById('two-letter-container').innerHTML = tlHtml;
+
+            document.getElementById('hint-modal').style.display = 'flex';
         }
 
         function renderLillyBoard() {
@@ -616,6 +740,13 @@
                 span.innerText = word + (isPangram ? " 🌟" : "");
                 document.getElementById('lilly-words').prepend(span); 
                 textEl.innerText = "";
+                
+                // WIN CHECK
+                if(lillyFound.length === validLillyWords.length) {
+                    showToast("👑 ALLES GEFUNDEN! 👑");
+                    setTimeout(() => finishLillyGame(true), 1500);
+                }
+
             } else {
                 showToast("Nicht in Liste.");
                 textEl.classList.add('shake-effect');
@@ -627,10 +758,19 @@
             document.getElementById('lilly-score').innerText = lillyScore;
         }
 
-        function finishLillyGame() {
+        function finishLillyGame(isWin = false) {
             const modal = document.getElementById('results-modal');
             const listFound = document.getElementById('list-found');
             const listMissed = document.getElementById('list-missed');
+            
+            const header = document.getElementById('res-header-text');
+            if(isWin === true) {
+                header.innerText = "SUPER LENI HAT GEWONNEN!";
+                header.style.color = "#538d4e";
+            } else {
+                header.innerText = "SPIEL BEENDET";
+                header.style.color = "#ffd700";
+            }
             
             const finalPercent = Math.round((lillyScore / maxLillyPoints) * 100);
             document.getElementById('res-final-score').innerText = finalPercent;
