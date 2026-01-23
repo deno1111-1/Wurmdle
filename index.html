@@ -155,15 +155,14 @@
         }
         .found-word { display: inline-block; padding: 3px 8px; background: #333; margin: 3px; border-radius: 4px; color: white;}
 
-        /* --- HINT MODAL (FIXED FOR MOBILE) --- */
+        /* --- HINT MODAL (RESPONSIVE) --- */
         #hint-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 600; display: none;
             flex-direction: column; align-items: center; padding: 20px; 
-            box-sizing: border-box; /* WICHTIG */
+            box-sizing: border-box;
         }
-        
-        /* Tabelle */
+        /* Mobile Scroll Optimierung */
         .hint-table-container { 
             overflow: auto; 
             width: 100%; 
@@ -175,7 +174,7 @@
         .hint-table { 
             border-collapse: collapse; 
             color: white; 
-            font-size: 0.8rem;
+            font-size: 0.8rem; 
             width: 100%; 
         }
         .hint-table th, .hint-table td { 
@@ -184,21 +183,24 @@
             text-align: center; 
         }
         .hint-table th { background: #333; color: #ffd700; position: sticky; top: 0; z-index: 5;}
+        /* Sticky erste Spalte */
         .hint-table .row-header { 
             font-weight: bold; 
             background: #222; 
-            position: sticky; left: 0; z-index: 6; 
+            position: sticky; 
+            left: 0; 
+            z-index: 6; 
             border-right: 2px solid #555;
         }
         .hint-table .sum-col { font-weight: bold; color: #aaa; }
         
-        /* 2-BUCHSTABEN LISTE - RESPONSIVE FIX */
+        /* 2-BUCHSTABEN LISTE - WRAP FIX */
         .two-letter-list { 
             display: flex; 
-            flex-wrap: wrap; /* Erlaubt Umbruch */
-            gap: 5px; /* Kleinerer Abstand */
+            flex-wrap: wrap; 
+            gap: 5px; 
             justify-content: center; 
-            width: 100%; /* Volle Breite nutzen */
+            width: 100%; 
             margin-bottom: 20px; 
             color: #ddd; 
             font-family: monospace; 
@@ -208,10 +210,10 @@
         }
         .two-letter-item { 
             background: #222; 
-            padding: 5px 8px; /* Etwas kompakter */
+            padding: 5px 8px; 
             border-radius: 5px; 
             border: 1px solid #444; 
-            flex: 0 0 auto; /* Verhindert das Quetschen */
+            flex: 0 0 auto; 
         }
         .two-letter-done { opacity: 0.3; text-decoration: line-through; }
 
@@ -834,7 +836,8 @@
         }
 
         function updateLillyScore() {
-            document.getElementById('lilly-score').innerText = lillyScore;
+            // HIER IST DIE ÄNDERUNG:
+            document.getElementById('lilly-score').innerText = `${lillyScore} / ${maxLillyPoints}`;
         }
 
         function finishLillyGame(isWin = false) {
