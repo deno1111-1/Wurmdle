@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lenis cooles Wurstbrot</title>
+    <title>Lenis coole Spielesammlung</title>
     <style>
         /* --- GLOBAL --- */
         :root { --col-count: 5; --game-count: 4; }
@@ -43,7 +43,7 @@
         .mode-title { font-size: 1.5rem; font-weight: bold; color: white; }
         .mode-desc { color: #888; font-size: 0.9rem; margin-top: 5px; }
 
-        /* --- LANG SELECT MODAL (NEU) --- */
+        /* --- LANG SELECT MODAL --- */
         #lang-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 300; display: none;
@@ -155,23 +155,52 @@
         }
         .found-word { display: inline-block; padding: 3px 8px; background: #333; margin: 3px; border-radius: 4px; color: white;}
 
-        /* --- HINT MODAL --- */
+        /* --- HINT MODAL (OPTIMIERT) --- */
         #hint-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 600; display: none;
-            flex-direction: column; align-items: center; padding: 20px; overflow-y: auto;
+            flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box;
         }
-        .hint-table-container { overflow-x: auto; width: 100%; display: flex; justify-content: center; margin-bottom: 20px; }
-        .hint-table { border-collapse: collapse; color: white; font-size: 0.9rem; }
-        .hint-table th, .hint-table td { border: 1px solid #555; padding: 8px; text-align: center; }
-        .hint-table th { background: #333; color: #ffd700; }
-        .hint-table .row-header { font-weight: bold; background: #222; }
+        /* Mobile Scroll Optimierung */
+        .hint-table-container { 
+            overflow: auto; 
+            width: 100%; 
+            max-width: 100%;
+            margin-bottom: 20px; 
+            background: #222;
+            border-radius: 8px;
+            max-height: 50vh;
+        }
+        .hint-table { 
+            border-collapse: collapse; 
+            color: white; 
+            font-size: 0.8rem; /* Kleinere Schrift für Mobile */
+            min-width: 100%;
+        }
+        .hint-table th, .hint-table td { 
+            border: 1px solid #555; 
+            padding: 4px 6px; /* Weniger Padding */
+            text-align: center; 
+        }
+        .hint-table th { background: #333; color: #ffd700; position: sticky; top: 0; z-index: 5;}
+        /* Sticky erste Spalte */
+        .hint-table .row-header { 
+            font-weight: bold; 
+            background: #222; 
+            position: sticky; 
+            left: 0; 
+            z-index: 6; 
+            border-right: 2px solid #555;
+        }
         .hint-table .sum-col { font-weight: bold; color: #aaa; }
+        
         .two-letter-list { 
-            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 600px; 
-            margin-bottom: 20px; color: #ddd; font-family: monospace; font-size: 1.1rem;
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 600px; 
+            margin-bottom: 20px; color: #ddd; font-family: monospace; font-size: 0.9rem;
+            max-height: 30vh; overflow-y: auto;
         }
-        .two-letter-item { background: #222; padding: 5px 10px; border-radius: 5px; border: 1px solid #444; }
+        .two-letter-item { background: #222; padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
+        .two-letter-done { opacity: 0.3; text-decoration: line-through; }
 
         /* --- STATS MODAL --- */
         #results-modal {
@@ -314,12 +343,16 @@
     </div>
 
     <div id="hint-modal">
-        <div class="res-header">HINWEISE (GRID)</div>
+        <div class="res-header" style="margin-top:0;">FEHLENDE WÖRTER</div>
+        <div style="font-size:0.8rem; color:#888; margin-bottom:10px;">(Grid zeigt nur, was noch fehlt!)</div>
+        
         <div class="hint-table-container">
             <div id="grid-container"></div>
         </div>
-        <div style="color:#aaa; margin-bottom:10px;">ZWEI BUCHSTABEN LISTE</div>
+        
+        <div style="color:#aaa; margin-bottom:10px;">FEHLENDE ANFÄNGE</div>
         <div id="two-letter-container" class="two-letter-list"></div>
+        
         <button class="close-res-btn" onclick="document.getElementById('hint-modal').style.display='none'">SCHLIESSEN</button>
     </div>
 
@@ -421,7 +454,7 @@
             document.getElementById('setup-area').style.display = 'flex';
         }
 
-        /* NEU: LILLY LANGUAGE SELECTION */
+        /* LILLY LANGUAGE SELECTION */
         function openLillyLangSelect() {
              document.getElementById('lang-modal').style.display = 'flex';
         }
@@ -623,32 +656,51 @@
             updateLillyScore();
         }
 
-        /* --- HINT LOGIC (THE GRID) --- */
+        /* --- DYNAMIC HINT LOGIC (COUNTDOWN) --- */
         function showHints() {
-            let matrix = {};
+            // Berechne ALLE möglichen (für die Struktur) und RESTLICHE (für die Zahlen)
+            let matrixTotal = {}; // Um zu wissen, welche Spalten/Zeilen existieren
+            let matrixRemaining = {}; // Was noch da ist
             let lengths = new Set();
             let letters = new Set();
-            let twoLetterCounts = {};
+            let twoLetterRemaining = {};
 
+            // 1. Struktur aufbauen (Alle validen Wörter)
             validLillyWords.forEach(w => {
+                const len = w.length;
+                const char = w[0];
+                lengths.add(len);
+                letters.add(char);
+                
+                if(!matrixTotal[char]) matrixTotal[char] = {};
+                if(!matrixTotal[char][len]) matrixTotal[char][len] = 0;
+                matrixTotal[char][len]++;
+                
+                // Initiale Remaining Counts auf 0 setzen, falls wir später nichts finden
+                if(!matrixRemaining[char]) matrixRemaining[char] = {};
+                if(!matrixRemaining[char][len]) matrixRemaining[char][len] = 0;
+            });
+
+            // 2. Restliche Wörter zählen
+            const remainingWords = validLillyWords.filter(w => !lillyFound.includes(w));
+            
+            remainingWords.forEach(w => {
                 const len = w.length;
                 const char = w[0];
                 const twoChar = w.substring(0, 2);
 
-                lengths.add(len);
-                letters.add(char);
-
-                if(!matrix[char]) matrix[char] = {};
-                if(!matrix[char][len]) matrix[char][len] = 0;
-                matrix[char][len]++;
-
-                if(!twoLetterCounts[twoChar]) twoLetterCounts[twoChar] = 0;
-                twoLetterCounts[twoChar]++;
+                if(matrixRemaining[char] && matrixRemaining[char][len] !== undefined) {
+                    matrixRemaining[char][len]++;
+                }
+                
+                if(!twoLetterRemaining[twoChar]) twoLetterRemaining[twoChar] = 0;
+                twoLetterRemaining[twoChar]++;
             });
 
             const sortedLengths = Array.from(lengths).sort((a,b)=>a-b);
             const sortedLetters = Array.from(letters).sort();
 
+            // HTML Grid bauen
             let html = '<table class="hint-table"><thead><tr><th></th>';
             sortedLengths.forEach(l => html += `<th>${l}</th>`);
             html += '<th class="sum-col">Σ</th></tr></thead><tbody>';
@@ -657,9 +709,17 @@
                 html += `<tr><td class="row-header">${char}</td>`;
                 let rowSum = 0;
                 sortedLengths.forEach(len => {
-                    const count = matrix[char][len] || "-";
-                    if(count !== "-") rowSum += count;
-                    html += `<td>${count}</td>`;
+                    // Prüfen ob es überhaupt Wörter dieser Länge gab
+                    if (matrixTotal[char][len]) {
+                        const count = matrixRemaining[char][len];
+                        rowSum += count;
+                        // Wenn 0 übrig, zeige "-" anstatt 0
+                        const display = (count === 0) ? "-" : count;
+                        // Style ändern wenn fertig? Optional.
+                        html += `<td>${display}</td>`;
+                    } else {
+                        html += `<td></td>`; // Leere Zelle
+                    }
                 });
                 html += `<td class="sum-col">${rowSum}</td></tr>`;
             });
@@ -667,9 +727,15 @@
 
             document.getElementById('grid-container').innerHTML = html;
 
+            // 2-Letter List bauen
             let tlHtml = "";
-            Object.keys(twoLetterCounts).sort().forEach(tl => {
-                tlHtml += `<div class="two-letter-item">${tl}-${twoLetterCounts[tl]}</div>`;
+            const allTwoChars = new Set();
+            validLillyWords.forEach(w => allTwoChars.add(w.substring(0,2)));
+            
+            Array.from(allTwoChars).sort().forEach(tl => {
+                const count = twoLetterRemaining[tl] || 0;
+                const cls = (count === 0) ? "two-letter-item two-letter-done" : "two-letter-item";
+                tlHtml += `<div class="${cls}">${tl}-${count}</div>`;
             });
             document.getElementById('two-letter-container').innerHTML = tlHtml;
 
