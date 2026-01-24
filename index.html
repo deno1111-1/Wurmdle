@@ -99,6 +99,9 @@
         .box-letter { width: 30px; height: 30px; border-radius: 50%; background: white; position: absolute; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; transition: transform 0.1s; user-select: none; }
         .box-letter:active { transform: scale(0.9); }
         .box-letter.selected { background: #333; color: white; }
+        /* NEU: Grüne Farbe für benutzte Buchstaben */
+        .box-letter.used { background: #538d4e; color: white; transition: background 0.3s; }
+
         .bl-0 { top: 25px; left: 70px; } .bl-1 { top: 25px; left: 135px; } .bl-2 { top: 25px; left: 200px; }
         .bl-3 { top: 70px; left: 245px; } .bl-4 { top: 135px; left: 245px; } .bl-5 { top: 200px; left: 245px; }
         .bl-6 { top: 245px; left: 200px; } .bl-7 { top: 245px; left: 135px; } .bl-8 { top: 245px; left: 70px; }
@@ -431,7 +434,20 @@
         function drawLine(f,t){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); const r1=document.getElementById(`s-btn-${f}`).getBoundingClientRect(); const r2=document.getElementById(`s-btn-${t}`).getBoundingClientRect(); const cr=document.getElementById('box-container').getBoundingClientRect(); l.setAttribute('x1',r1.left-cr.left+15); l.setAttribute('y1',r1.top-cr.top+15); l.setAttribute('x2',r2.left-cr.left+15); l.setAttribute('y2',r2.top-cr.top+15); l.setAttribute('stroke','#333'); l.setAttribute('stroke-width','2'); document.getElementById('line-layer').appendChild(l); }
         function schneckiDelete(){ schnCurrent=""; schnLastIdx=-1; document.getElementById('line-layer').innerHTML=''; document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected')); if(schnHistory.length>0) showToast("Neu ansetzen!"); updateSchneckiUI(); }
         function schneckiSubmit(){ if(schnCurrent.length<3){showToast("Zu kurz!");return;} if(!cleanWordList.includes(schnCurrent)){showToast("Kein Wort!");return;} schnHistory.push(schnCurrent); schnCurrent.split('').forEach(c=>schnUsed.add(c)); schnCurrent=""; schnLastIdx=-1; document.getElementById('line-layer').innerHTML=''; document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected')); updateSchneckiUI(); if(schnUsed.size===12)showToast("👑 SUPER LENI HAT GEWONNEN! 👑"); }
-        function updateSchneckiUI(){ document.getElementById('schnecki-input').innerText=schnCurrent; document.getElementById('schnecki-progress').innerText=`${schnUsed.size} von 12 Buchstaben`; document.getElementById('schnecki-history-list').innerText=schnHistory.join(" > ") || "Starte!"; }
+        function updateSchneckiUI(){
+    document.getElementById('schnecki-input').innerText = schnCurrent;
+    document.getElementById('schnecki-progress').innerText = `${schnUsed.size} von 12 Buchstaben`;
+    document.getElementById('schnecki-history-list').innerText = schnHistory.join(" > ") || "Starte!";
+
+    // NEU: Färbe die verwendeten Buchstaben grün
+    schnLetters.forEach((char, i) => {
+        const btn = document.getElementById(`s-btn-${i}`);
+        if(btn) {
+            if(schnUsed.has(char)) btn.classList.add('used');
+            else btn.classList.remove('used');
+        }
+    });
+}
 
         /* --- GAME 4: KLOSSIS LECKERLIJAGD (DOTS & BOXES) --- */
         function startKlossiGame(){
