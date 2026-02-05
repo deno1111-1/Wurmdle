@@ -625,7 +625,7 @@
             for(let i=0;i<kDots-1;i++){for(let j=0;j<kDots-1;j++){if(kBoxes[i][j]===0){if(kH_lines[i][j] && kH_lines[i+1][j] && kV_lines[i][j] && kV_lines[i][j+1]){kBoxes[i][j]=who; madePoint=true; if(who===1)kScoreP++; else kScoreB++;}}}}
             updateKlossiUI(); renderKlossi();
             let open=0; for(let i=0;i<kDots-1;i++)for(let j=0;j<kDots-1;j++)if(kBoxes[i][j]===0)open++;
-            if(open===0){if(kScoreP>kScoreB) showToast("SUPER LENI HAT GEWONNEN!"); else if(kScoreB>kScoreP) showToast("KLOẞI HAT GEWONNEN!"); else showToast("UNENTSCHIEDEN!"); return;}
+            if(open===0){if(kScoreP>kScoreB) showToast("SUPER LENI HAT GEWONNEN!"); else if(kScoreB>kScoreP) showToast("KLOẞI HAT GEWONNEN! Jetzt hat er ein Leckerli verdient!"); else showToast("UNENTSCHIEDEN!"); return;}
             if(madePoint){if(who===2) setTimeout(botMove, 700);} else {kTurn = (who===1)?2:1; updateKlossiUI(); if(kTurn===2) setTimeout(botMove, 700);}
         }
         function botMove(){
