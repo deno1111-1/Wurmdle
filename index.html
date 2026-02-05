@@ -176,14 +176,12 @@
             align-items: center;
             overflow: hidden;
         }
+                /* --- FIX: KEYBOARD HEATMAP (Quadrate statt Striche) --- */
         .key-heatmap { 
             position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            display: grid;
-            grid-auto-flow: column;
+            top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex;        /* Flexbox erlaubt Umbruch */
+            flex-wrap: wrap;      /* Wichtig: Umbruch aktivieren */
             z-index: 1; 
             pointer-events: none; 
         }
@@ -191,7 +189,10 @@
             background: #818384; 
             border: 0.5px solid #333; 
             box-sizing: border-box; 
+            /* Breite wird jetzt per JS berechnet für perfekte Quadrate */
+            flex-grow: 1;
         }
+
         .key-char { 
             position: absolute;
             top: 50%;
@@ -422,23 +423,89 @@
             const idx=Math.floor(Math.random()*wordLength);
             showToast(`Tipp: "${g.word[idx]}" an Pos ${idx+1}`);
         }
+                /* --- FIX: TASTATUR ERSTELLUNG (Quadratische Anordnung) --- */
         function createKeyboard(){
-            const kb=document.getElementById('keyboard-container');kb.innerHTML='';
+            const kb=document.getElementById('keyboard-container'); kb.innerHTML='';
             const lay=(currentLang==='de')?keysDE:keysEN;
+            
+            // Berechne, wie viele Spalten wir für ein schönes Grid brauchen
+            // Wurzel aus Anzahl Spielen (z.B. 4 Spiele -> 2 Spalten, 9 Spiele -> 3 Spalten)
+            const cols = Math.ceil(Math.sqrt(totalGames));
+            const basis = 100 / cols; // Prozentbreite pro Pixel
+
             lay.forEach((row,i)=>{
-                const d=document.createElement('div');d.className='keyboard-row';
+                const d=document.createElement('div'); d.className='keyboard-row';
                 if(i===lay.length-1) appKey(d,'ENTER','key-large',()=>handleWurmdleKey('ENTER'));
+                
                 for(let c of row){
-                    const k=document.createElement('div');k.className='key';k.id=`key-${c}`;k.onclick=()=>handleWurmdleKey(c);
-                    let h=`<div class="key-heatmap" style="grid-template-columns: repeat(${totalGames}, 1fr);">`;
-                    for(let j=0;j<totalGames;j++)h+=`<div class="key-pixel" id="pixel-${c}-${j}"></div>`;
+                    const k=document.createElement('div'); k.className='key'; k.id=`key-${c}`; k.onclick=()=>handleWurmdleKey(c);
+                    
+                    // Heatmap Container
+                    let h=`<div class="key-heatmap">`;
+                    for(let j=0; j<totalGames; j++){
+                        // Wir geben dem Pixel eine feste Basis-Breite, damit es umbricht
+                        h+=`<div class="key-pixel" id="pixel-${c}-${j}" style="flex-basis: ${basis}%;"></div>`;
+                    }
                     h+=`</div><div class="key-char">${c}</div>`;
-                    k.innerHTML=h;d.appendChild(k);
+                    
+                    k.innerHTML=h; d.appendChild(k);
                 }
                 if(i===lay.length-1) appKey(d,'⌫','key-large',()=>handleWurmdleKey('BACK'));
                 kb.appendChild(d);
             });
         }
+
+        /* --- FIX: FARBEN LOGIK (Robust wie im Prototyp) --- */
+        function updateKeyboardColors() {
+            games.forEach(game => {
+                const gId = game.id;
+                
+                // Wir sammeln den BESTEN Status für jeden Buchstaben in DIESEM Spiel
+                let charStatusInThisGame = {}; 
+
+                game.guesses.forEach(guess => {
+                    const wordArr = game.word.split('');
+                    const guessArr = guess.split('');
+                    
+                    // Status Array für diesen einen Versuch (0=nix, 1=grau, 2=gelb, 3=grün)
+                    let statusArr = new Array(wordLength).fill(1); // Standard ist Grau (da Wort getippt wurde)
+
+                    // Erst Grün finden
+                    for(let i=0; i<wordLength; i++) {
+                        if(guessArr[i] === wordArr[i]) {
+                             statusArr[i] = 3; wordArr[i]=null; guessArr[i]=null;
+                        }
+                    }
+                    // Dann Gelb finden
+                    for(let i=0; i<wordLength; i++) {
+                        if(guessArr[i] && wordArr.includes(guessArr[i])) {
+                             statusArr[i] = 2; 
+                        }
+                    }
+
+                    // Besten Status speichern
+                    guess.split('').forEach((char, i) => {
+                        let current = charStatusInThisGame[char] || 0;
+                        if (statusArr[i] > current) {
+                            charStatusInThisGame[char] = statusArr[i];
+                        }
+                    });
+                });
+
+                // Pixel einfärben
+                for (const [char, status] of Object.entries(charStatusInThisGame)) {
+                    const pixel = document.getElementById(`pixel-${char}-${gId}`);
+                    if (pixel) {
+                        pixel.style.backgroundColor = 
+                            (status === 3) ? '#538d4e' : // Grün
+                            (status === 2) ? '#b59f3b' : // Gelb
+                            (status === 1) ? '#3a3a3c' : // Grau
+                            '#818384';
+                    }
+                }
+            });
+        }
+
         function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
         function handleWurmdleKey(k){
             if(!isGameActive)return;
@@ -488,32 +555,7 @@
             const st=document.getElementById('hud-status-text');
             if(r<(totalGames-s)){st.innerText="NICHT SCHAFFBAR";st.className="status-bad";}else{st.innerText="SIEG MÖGLICH";st.className="status-good";}
         }
-        function updateKeyboardColors() {
-            games.forEach(game => {
-                const gId = game.id;
-                let charStatus = {};
-                game.guesses.forEach(guess => {
-                    const wordArr = game.word.split('');
-                    const guessArr = guess.split('');
-                    let stat = new Array(wordLength).fill(1);
-                    for(let i=0; i<wordLength; i++) {
-                        if(guessArr[i] === wordArr[i]) { stat[i] = 3; wordArr[i]=null; guessArr[i]=null; }
-                    }
-                    for(let i=0; i<wordLength; i++) {
-                        if(guessArr[i] && wordArr.includes(guessArr[i])) { stat[i] = 2; }
-                    }
-                    guess.split('').forEach((char, i) => {
-                        if (stat[i] > (charStatus[char] || 0)) charStatus[char] = stat[i];
-                    });
-                });
-                for (const [char, status] of Object.entries(charStatus)) {
-                    const pixel = document.getElementById(`pixel-${char}-${gId}`);
-                    if (pixel) {
-                        pixel.style.backgroundColor = (status === 3) ? '#538d4e' : (status === 2) ? '#b59f3b' : (status === 1) ? '#3a3a3c' : '#818384';
-                    }
-                }
-            });
-        }
+        
 
         /* --- LILLY SPELLING --- */
         async function startLillyGame(lang){
