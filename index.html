@@ -926,7 +926,7 @@
             if (tStrandsData.length === 0) {
                 try {
                     document.getElementById('tangela-hint').innerText = "Lade Level...";
-                    const r = await fetch('krokels.json');
+                    const r = await fetch('krokels.json.txt');
                     if (!r.ok) throw new Error("JSON nicht gefunden");
                     tStrandsData = await r.json();
                 } catch (e) {
@@ -1386,7 +1386,7 @@ function continueTangelaDrag(e) {
             
             // Try loading JSON
             try {
-                const r = await fetch('schneckerich.json');
+                const r = await fetch('schneckerich.json.txt');
                 if(!r.ok) throw new Error("Keine Datei");
                 const data = await r.json();
                 sGroups = data[Math.floor(Math.random()*data.length)].groups;
