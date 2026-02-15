@@ -1,0 +1,236 @@
+[
+  {
+    "id": 1,
+    "theme": "Wasserspaß",
+    "spangram": "SCHWIMMBAD",
+    "grid": "RUTSCHEBECHLSCHWIMMBADENKEBECKENSPRINGENXXXXXX",
+    "solution": {
+      "RUTSCHE": [0, 1, 2, 3, 4, 5, 6],
+      "BECKEN": [7, 13, 19, 25, 31, 37],
+      "SPRINGEN": [32, 33, 34, 35, 36, 42, 43, 44],
+      "SCHWIMMBAD": [8, 14, 20, 26, 27, 28, 29, 21, 15, 9]
+    }
+  },
+  {
+    "id": 2,
+    "theme": "Frühstückstisch",
+    "spangram": "MORGENESSEN",
+    "grid": "KAFFEEMUSELIEMORGENESSENBROTMERELADEEIXXXXXXX",
+    "solution": {
+      "KAFFEE": [0, 1, 2, 3, 4, 5],
+      "MUESLI": [6, 7, 8, 14, 13, 12],
+      "BROT": [24, 25, 26, 27],
+      "EI": [34, 35],
+      "MORGENESSEN": [15, 16, 17, 18, 19, 20, 21, 22, 23, 29, 28]
+    }
+  },
+  {
+    "id": 3,
+    "theme": "Im Weltall",
+    "spangram": "STERNBILDER",
+    "grid": "PLANETENOMETSTERNEBILDERRAKETEMONDXXXXXXXXXXX",
+    "solution": {
+      "PLANET": [0, 1, 2, 3, 4, 5],
+      "RAKETE": [30, 31, 32, 33, 34, 35],
+      "MOND": [36, 37, 38, 39],
+      "STERNBILDER": [12, 13, 14, 15, 16, 22, 21, 20, 19, 18, 17]
+    }
+  },
+  {
+    "id": 4,
+    "theme": "Im Wald",
+    "spangram": "NATURSCHUTZ",
+    "grid": "BAUMREHUCHSREHLNATURSCHUTZMOOSPILZXXXXXXXXXXX",
+    "solution": {
+      "BAUM": [0, 1, 2, 3],
+      "FUCHS": [4, 10, 16, 15, 9],
+      "MOOS": [30, 31, 32, 33],
+      "PILZ": [34, 35, 41, 40],
+      "NATURSCHUTZ": [12, 13, 14, 20, 21, 22, 23, 17, 11, 5, 6]
+    }
+  },
+  {
+    "id": 5,
+    "theme": "Süßigkeiten",
+    "spangram": "ZUCKERWATTE",
+    "grid": "KEKSSCHOKOZUCKERWATTELOLLEISEYXXXXXXXXXXXXXXX",
+    "solution": {
+      "KEKS": [0, 1, 2, 3],
+      "SCHOKO": [4, 5, 11, 10, 9, 8],
+      "LOLLE": [24, 25, 26, 27, 21],
+      "EIS": [28, 29, 35],
+      "ZUCKERWATTE": [12, 13, 14, 15, 16, 17, 23, 22, 21, 20, 19]
+    }
+  },
+  {
+    "id": 6,
+    "theme": "Bauernhof",
+    "spangram": "TIERHALTUNG",
+    "grid": "KUHCHAFHERDPFERDTIERHALTUNGHUHNXXXXXXXXXXXXXX",
+    "solution": {
+      "KUH": [0, 1, 2],
+      "SCHAF": [3, 9, 15, 14, 8],
+      "PFERD": [10, 11, 17, 23, 22],
+      "HUHN": [30, 31, 32, 33],
+      "TIERHALTUNG": [12, 13, 19, 20, 21, 27, 26, 25, 24, 18, 7]
+    }
+  },
+  {
+    "id": 7,
+    "theme": "Küche",
+    "spangram": "KOCHGESCHIRR",
+    "grid": "TOPFESSERANNKOCHGESCHIRRGABELXXXXXXXXXXXXXXX",
+    "solution": {
+      "TOPF": [0, 1, 2, 3],
+      "MESSER": [4, 5, 11, 10, 9, 8],
+      "PFANNE": [7, 13, 19, 25, 31, 37],
+      "GABEL": [30, 24, 18, 12, 6],
+      "KOCHGESCHIRR": [14, 15, 16, 17, 23, 22, 21, 20, 26, 27, 28, 29]
+    }
+  },
+  {
+    "id": 8,
+    "theme": "Winterzeit",
+    "spangram": "SCHNEEMANNNN",
+    "grid": "EISCHNEEFLOCKEKALTSCHNEEMANNNNXXXXXXXXXXXXXX",
+    "solution": {
+      "EIS": [0, 1, 2],
+      "SCHNEEFLOCKE": [3, 4, 5, 11, 10, 9, 8, 14, 15, 21, 20, 19],
+      "KALT": [18, 17, 16, 22],
+      "SCHNEEMANNNN": [24, 25, 26, 27, 28, 29, 35, 34, 33, 32, 31, 30]
+    }
+  },
+  {
+    "id": 9,
+    "theme": "In der Schule",
+    "spangram": "LERNERFOLGEE",
+    "grid": "BUCHSTIFTPAUSELERNERFOLGEEHEFTXXXXXXXXXXXXXX",
+    "solution": {
+      "BUCH": [0, 1, 2, 3],
+      "STIFT": [4, 5, 11, 10, 9],
+      "PAUSE": [6, 7, 8, 14, 13],
+      "HEFT": [30, 31, 32, 33],
+      "LERNERFOLGEE": [12, 18, 19, 20, 21, 22, 23, 29, 28, 27, 26, 25]
+    }
+  },
+  {
+    "id": 10,
+    "theme": "Sommer",
+    "spangram": "SONNENSCHEIN",
+    "grid": "SONNESONNENSCHEINMEERHITZESTRANDXXXXXXXXXXXX",
+    "solution": {
+      "SONNE": [0, 1, 2, 3, 4],
+      "MEER": [24, 25, 26, 27],
+      "HITZE": [28, 29, 35, 34, 33],
+      "STRAND": [36, 37, 38, 39, 40, 41],
+      "SONNENSCHEIN": [5, 11, 10, 9, 8, 7, 6, 12, 13, 14, 15, 21]
+    }
+  },
+
+  {
+    "id": "lvl1",
+    "theme": "Piraten",
+    "spangram": "SCHATZSUCHE",
+    "words": ["GOLD", "INSEL", "MEER", "BOOT"],
+    "grid": "SCHATZMEERGOLDXSUCHEXINSELXXBOOTXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl2",
+    "theme": "Im Wald",
+    "spangram": "NATURPUR",
+    "words": ["MOOS", "BAUM", "PILZ", "FUCHS", "REH"],
+    "grid": "NATURBAUMPURXXMOOSXXPILZXXFUCHSXXREHXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl3",
+    "theme": "Frühstück",
+    "spangram": "LECKER",
+    "words": ["BROT", "EI", "MILCH", "OBST", "TEE"],
+    "grid": "BROTLECKEREIXXMILCHXOBSTXXTEEXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl4",
+    "theme": "Weltraum",
+    "spangram": "GALAXIE",
+    "words": ["MOND", "STERN", "MARS", "RAKETE"],
+    "grid": "MONDSTERNMARSGALAXIERAKETEXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl5",
+    "theme": "Körper",
+    "spangram": "ANATOMIE",
+    "words": ["KOPF", "HERZ", "BEIN", "HAND", "ARM"],
+    "grid": "KOPFANATOMIEHERZBEINHANDARMXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl6",
+    "theme": "Schule",
+    "spangram": "LERNEN",
+    "words": ["BUCH", "HEFT", "STIFT", "PAUSE"],
+    "grid": "BUCHLERNENHEFTSTIFTPAUSEXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl7",
+    "theme": "Wetter",
+    "spangram": "KLIMA",
+    "words": ["REGEN", "SONNE", "WIND", "STURM"],
+    "grid": "REGENKLIMASONNEWINDSTURMXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl8",
+    "theme": "Tiere",
+    "spangram": "ZOOBESUCH",
+    "words": ["LOEWE", "TIGER", "AFFEN", "ZEBRA"],
+    "grid": "LOEWEZOOBESUCHTIGERAFFENZEBRAXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl9",
+    "theme": "Farben",
+    "spangram": "REGENBOGEN",
+    "words": ["GELB", "BLAU", "GRUEN", "ROT", "LILA"],
+    "grid": "GELBREGENBOGENBLAUGRUENROTLILAXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl10",
+    "theme": "Sport",
+    "spangram": "TRAINING",
+    "words": ["BALL", "TOR", "LAUF", "SIEG"],
+    "grid": "BALLTRAININGTORLAUFSIEGXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl11",
+    "theme": "Musik",
+    "spangram": "MELODIE",
+    "words": ["NOTE", "BASS", "LIED", "TAKT"],
+    "grid": "NOTEMELODIEBASSLIEDTAKTXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl12",
+    "theme": "Sommer",
+    "spangram": "URLAUB",
+    "words": ["HITZE", "EIS", "BADEN", "SAND"],
+    "grid": "HITZEURLAUBEISBADENSANDXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl13",
+    "theme": "Winter",
+    "spangram": "SCHNEE",
+    "words": ["KALT", "EIS", "SKI", "FROST"],
+    "grid": "KALTSCHNEEEISSKIFROSTXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl14",
+    "theme": "Berufe",
+    "spangram": "ARBEIT",
+    "words": ["ARZT", "KOCH", "MALER", "BAUER"],
+    "grid": "ARZTARBEITKOCHMALERBAUERXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  {
+    "id": "lvl15",
+    "theme": "Garten",
+    "spangram": "PFLANZEN",
+    "words": ["BLUME", "ERDE", "GRAS", "BEET"],
+    "grid": "BLUMEPFLANZENERDEGRASBEETXXXXXXXXXXXXXXXXXXXXXXX"
+  }
+]
+
