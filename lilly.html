@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Lillys Spelling Game</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+            touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #538d4e; text-shadow: 1px 1px 0 #000; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* --- ALLGEMEINE CONTROLS --- */
+        .game-area {
+            flex-grow: 1; width: 100%; display: none; flex-direction: column;
+            align-items: center; padding: 10px; box-sizing: border-box; overflow-y: auto;
+        }
+        .action-btn {
+            border: 1px solid #555; background: #333; color: white;
+            padding: 12px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;
+        }
+        .finish-btn { background: #ff5555; border: none; width: 100%; margin-top: 10px; max-width: 300px;}
+        .game-controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
+
+        #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; }
+
+        /* --- GAME 2: LILLY SPELLING --- */
+        #lilly-input { font-size: 2rem; font-weight: bold; color: white; min-height: 50px; border-bottom: 2px solid #555; margin-bottom: 20px; text-transform: uppercase; width: 80%; text-align: center; }
+        #honeycomb { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; width: 280px; height: 260px; position: relative; }
+        .hex-btn { width: 80px; height: 70px; background: #e0e0e0; color: #121213; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: bold; cursor: pointer; position: absolute; transition: transform 0.1s; }
+        .hex-btn:active { transform: scale(0.9); }
+        .hex-center { background: #ffd700; color: black; z-index: 2; }
+        .pos-0 { top: 35%; left: 35%; } .pos-1 { top: 5%; left: 35%; } .pos-2 { top: 20%; left: 63%; } .pos-3 { top: 50%; left: 63%; } .pos-4 { top: 65%; left: 35%; } .pos-5 { top: 50%; left: 7%; } .pos-6 { top: 20%; left: 7%; }
+        #lilly-words { margin-top: 20px; width: 90%; max-height: 100px; overflow-y: auto; border: 1px solid #333; padding: 10px; border-radius: 10px; font-size: 0.9rem; color: #aaa; text-align: center; }
+        .found-word { display: inline-block; padding: 3px 8px; background: #333; margin: 3px; border-radius: 4px; color: white;}
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        /* --- MODALS & HUD --- */
+        #lang-modal, #hint-modal, #results-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 600; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .lang-card { background: #333; padding: 20px 40px; border-radius: 15px; border: 2px solid #aaa; font-size: 1.5rem; font-weight: bold; cursor: pointer; width: 200px; text-align: center; margin-bottom: 20px; }
+        .hint-table-container { overflow: auto; width: 100%; margin-bottom: 20px; background: #222; border-radius: 8px; max-height: 45vh; }
+        .hint-table { border-collapse: collapse; color: white; font-size: 0.8rem; width: 100%; }
+        .hint-table th, .hint-table td { border: 1px solid #555; padding: 4px; text-align: center; }
+        .hint-table th { background: #333; color: #ffd700; position: sticky; top: 0; z-index: 5;}
+        .hint-table .row-header { font-weight: bold; background: #222; position: sticky; left: 0; z-index: 6; border-right: 2px solid #555;}
+        .two-letter-list { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: 100%; margin-bottom: 20px; color: #ddd; font-family: monospace; font-size: 0.9rem; max-height: 30vh; overflow-y: auto; }
+        .two-letter-item { background: #222; padding: 5px 8px; border-radius: 5px; border: 1px solid #444; flex: 0 0 auto; }
+        .two-letter-done { opacity: 0.3; text-decoration: line-through; }
+        .res-header { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; text-align: center; }
+        .res-score-circle { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #538d4e; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold; margin-bottom: 20px; color: white; background: #222; }
+        .res-cols { display: flex; width: 100%; max-width: 600px; gap: 10px; flex-grow: 1; }
+        .res-col { flex: 1; display: flex; flex-direction: column; border: 1px solid #444; border-radius: 10px; padding: 10px; height: 300px; overflow-y: auto;}
+        .close-res-btn { margin-top: 20px; padding: 15px 40px; background: #538d4e; color: white; border: none; border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer; text-decoration: none;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐱 Lillys Spelling Game</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="lang-modal" style="display: flex;">
+        <h2 id="loading-txt" style="color:white; margin-bottom:30px;">Wähle deine Sprache:</h2>
+        <div class="lang-card" onclick="selectLang('de')">🇩🇪 DEUTSCH</div>
+        <div class="lang-card" onclick="selectLang('en')">🇺🇸 ENGLISH</div>
+        <a href="index.html" class="close-res-btn" style="background:#555; margin-top:30px; display: inline-block;">Abbrechen</a>
+    </div>
+
+    <div id="lilly-area" class="game-area">
+        <div style="color:#ffd700; margin-bottom:10px;">Punkte: <span id="lilly-score">0</span></div>
+        <div id="lilly-input"><span id="lilly-text"></span><span class="cursor"></span></div>
+        <div id="honeycomb"></div>
+        <div class="game-controls">
+            <button class="action-btn" onclick="lillyDelete()">⌫</button>
+            <button class="action-btn" onclick="shuffleLilly()">Mischen 🔀</button>
+            <button class="action-btn" style="background:#538d4e;" onclick="lillySubmit()">ENTER</button>
+            <button class="action-btn hint-btn" onclick="showHints()">TIPPS 💡</button>
+        </div>
+        <button class="action-btn finish-btn" onclick="finishLillyGame()">BEENDEN & AUSWERTUNG</button>
+        <div id="lilly-words"></div>
+    </div>
+
+    <div id="hint-modal">
+        <div class="res-header" style="margin-top:0;">FEHLENDE WÖRTER</div>
+        <div style="font-size:0.8rem; color:#888; margin-bottom:10px;">(Grid zeigt nur, was noch fehlt!)</div>
+        <div class="hint-table-container"><div id="grid-container"></div></div>
+        <div style="color:#aaa; margin-bottom:10px;">FEHLENDE ANFÄNGE</div>
+        <div id="two-letter-container" class="two-letter-list"></div>
+        <button class="close-res-btn" onclick="document.getElementById('hint-modal').style.display='none'">SCHLIESSEN</button>
+    </div>
+
+    <div id="results-modal">
+        <div class="res-header" id="res-header-text">SPIEL BEENDET</div>
+        <div class="res-score-circle" id="res-final-score">0</div>
+        <div style="color:#aaa; margin-bottom:20px;">PUNKTE (MAX <span id="res-max-pts">0</span>)</div>
+        <div class="res-cols">
+            <div class="res-col" style="border-color:#538d4e;"><h3 style="color:#538d4e;">GEFUNDEN (<span id="count-found">0</span>)</h3><div class="res-list" id="list-found"></div></div>
+            <div class="res-col" style="border-color:#ff5555;"><h3 style="color:#ff5555;">VERPASST (<span id="count-missed">0</span>)</h3><div class="res-list" id="list-missed"></div></div>
+        </div>
+        <a href="lilly.html" class="close-res-btn" style="display:inline-block; margin-bottom:10px;">NEUES SPIEL</a>
+        <a href="index.html" class="close-res-btn" style="background:#555; display:inline-block;">ZURÜCK ZUM MENÜ</a>
+    </div>
+
+    <script>
+        let currentLang='de', cleanWordList=[], activeMode='';
+        let lillyLetters=[], lillyCenter="", lillyFound=[], lillyScore=0, validLillyWords=[], maxLillyPoints=0;
+
+        window.onload=()=>{
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function handleGlobalKey(e){
+            if(activeMode !== 'lilly') return;
+            const k=e.key.toUpperCase();
+            if(k==='ENTER'){lillySubmit();e.preventDefault();}
+            else if(k==='BACKSPACE'){lillyDelete();e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)lillyType(k);
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            try{
+                const r=await fetch(lang==='de'?'de.txt':'en.txt');
+                if(!r.ok)throw new Error("Offline");
+                const t=await r.text();
+                cleanWordList=[];
+                const l=t.split('\n');
+                for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))cleanWordList.push(w);}
+            }catch(e){
+                alert("Fehler beim Laden des Wörterbuchs: "+e.message);
+            }
+        }
+
+        async function selectLang(l){
+            document.getElementById('loading-txt').innerText = "Lade Wörterbuch...";
+            document.querySelectorAll('.lang-card').forEach(c => c.style.display = 'none');
+            await loadWords(l);
+            if(cleanWordList.length > 0){
+                document.getElementById('lang-modal').style.display='none';
+                startLillyGame();
+            }
+        }
+
+        function startLillyGame(){
+            activeMode='lilly'; 
+            document.getElementById('lilly-area').style.display = 'flex';
+            
+            let pangrams=cleanWordList.filter(w=>new Set(w.split('')).size===7); 
+            if(pangrams.length===0){ alert("Fehler: Kein passendes Wort gefunden!"); return; }
+            
+            const src=pangrams[Math.floor(Math.random()*pangrams.length)]; 
+            const u=Array.from(new Set(src.split('')));
+            for(let i=u.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[u[i],u[j]]=[u[j],u[i]];}
+            
+            lillyCenter=u[0]; lillyLetters=u; lillyFound=[]; lillyScore=0; maxLillyPoints=0;
+            
+            validLillyWords=cleanWordList.filter(w=>{
+                if(w.length<4||!w.includes(lillyCenter))return false; 
+                for(let c of w)if(!lillyLetters.includes(c))return false; 
+                return true;
+            });
+            
+            validLillyWords.forEach(w=>maxLillyPoints+=calcWordScore(w)); 
+            renderLillyBoard(); updateLillyScore();
+        }
+
+        function renderLillyBoard(){
+            const c=document.getElementById('honeycomb');c.innerHTML='';
+            lillyLetters.forEach((char,i)=>{
+                const b=document.createElement('div');
+                b.className=`hex-btn pos-${i}`;
+                if(i===0)b.classList.add('hex-center');
+                b.innerText=char; 
+                b.onclick=()=>lillyType(char); 
+                c.appendChild(b);
+            });
+        }
+
+        function lillyType(c){document.getElementById('lilly-input').innerText+=c;}
+        function lillyDelete(){let t=document.getElementById('lilly-input').innerText;document.getElementById('lilly-input').innerText=t.slice(0,-1);}
+        function shuffleLilly(){let o=lillyLetters.slice(1); for(let i=o.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[o[i],o[j]]=[o[j],o[i]];} lillyLetters=[lillyLetters[0],...o]; renderLillyBoard();}
+        function calcWordScore(w){if(w.length===4)return 1;let p=w.length;if(new Set(w.split('')).size===7)p+=7;return p;}
+
+        function lillySubmit(){
+            const t=document.getElementById('lilly-input');const w=t.innerText;
+            if(w.length<4){showToast("Zu kurz!");return;} 
+            if(!w.includes(lillyCenter)){showToast("Muss Gelb enthalten!");return;} 
+            if(lillyFound.includes(w)){showToast("Schon gefunden!");t.innerText="";return;}
+            if(validLillyWords.includes(w)){
+                const p=calcWordScore(w); lillyFound.push(w); lillyScore+=p; updateLillyScore();
+                const isP=new Set(w.split('')).size===7;
+                if(isP) showToast(`🦄 PANGRAMM! +${p} 🦄`); else showToast(`Super! +${p}`);
+                const s=document.createElement('span');s.className='found-word';s.innerText=w + (isP?" 🌟":"");
+                document.getElementById('lilly-words').prepend(s); t.innerText="";
+                if(lillyFound.length===validLillyWords.length){showToast("👑 ALLES GEFUNDEN! 👑");setTimeout(()=>finishLillyGame(true),1500);}
+            }else{
+                showToast("Nicht in Liste.");
+                t.classList.add('shake-effect');
+                setTimeout(()=>t.classList.remove('shake-effect'),500);
+            }
+        }
+
+        function updateLillyScore(){document.getElementById('lilly-score').innerText=`${lillyScore} / ${maxLillyPoints}`;}
+
+        function finishLillyGame(win=false){
+            activeMode = ''; // Block keyboard input
+            const m=document.getElementById('results-modal');
+            document.getElementById('res-header-text').innerText=win?"SUPER LENI HAT GEWONNEN!":"SPIEL BEENDET";
+            document.getElementById('res-header-text').style.color=win?"#538d4e":"#ffd700";
+            document.getElementById('res-final-score').innerText=Math.round((lillyScore/maxLillyPoints)*100);
+            document.getElementById('res-max-pts').innerText=maxLillyPoints;
+            document.getElementById('count-found').innerText=lillyFound.length;
+            document.getElementById('count-missed').innerText=validLillyWords.length-lillyFound.length;
+            
+            const lf=document.getElementById('list-found');lf.innerHTML=""; 
+            lillyFound.sort().forEach(w=>lf.innerHTML+=`<div class="res-item" style="color:#538d4e;">${w}</div>`);
+            
+            const lm=document.getElementById('list-missed');lm.innerHTML=""; 
+            validLillyWords.filter(w=>!lillyFound.includes(w)).sort().forEach(w=>lm.innerHTML+=`<div class="res-item" style="color:#aaa;">${w}</div>`);
+            
+            m.style.display='flex';
+        }
+
+        function showHints(){
+            let mT={},mR={},ls=new Set(),cs=new Set(),tLR={};
+            validLillyWords.forEach(w=>{const l=w.length,c=w[0];ls.add(l);cs.add(c);if(!mT[c])mT[c]={};mT[c][l]=(mT[c][l]||0)+1;if(!mR[c])mR[c]={};if(!mR[c][l])mR[c][l]=0;});
+            validLillyWords.filter(w=>!lillyFound.includes(w)).forEach(w=>{const l=w.length,c=w[0],tc=w.substring(0,2);if(mR[c])mR[c][l]++;tLR[tc]=(tLR[tc]||0)+1;});
+            const sL=Array.from(ls).sort((a,b)=>a-b);const sC=Array.from(cs).sort();
+            let h='<table class="hint-table"><thead><tr><th></th>';sL.forEach(l=>h+=`<th>${l}</th>`);h+='<th class="sum-col">Σ</th></tr></thead><tbody>';
+            sC.forEach(c=>{h+=`<tr><td class="row-header">${c}</td>`;let rS=0;sL.forEach(l=>{if(mT[c][l]){const n=mR[c][l];rS+=n;h+=`<td>${n===0?"-":n}</td>`;}else h+='<td></td>';});h+=`<td class="sum-col">${rS}</td></tr>`;}); h+='</tbody></table>';document.getElementById('grid-container').innerHTML=h;
+            let tH="";const all2=new Set();validLillyWords.forEach(w=>all2.add(w.substring(0,2)));
+            Array.from(all2).sort().forEach(t=>{const n=tLR[t]||0;const cl=n===0?"two-letter-item two-letter-done":"two-letter-item";tH+=`<div class="${cl}">${t}-${n}</div>`;});
+            document.getElementById('two-letter-container').innerHTML=tH; document.getElementById('hint-modal').style.display='flex';
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>

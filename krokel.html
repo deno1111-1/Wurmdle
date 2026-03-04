@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Krokels Wörtertangela</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+            touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #f9df6d; text-shadow: 1px 1px 0 #000; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; }
+
+        /* --- GAME 5: KROKELS WÖRTERTANGELA (STRANDS) --- */
+        #krokel-area { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-start; padding-top: 10px; padding-bottom: 20px; 
+            overflow: hidden; box-sizing: border-box; flex-grow: 1;
+        }
+
+        .krokel-header { font-size: 1.4rem; font-weight: bold; margin: 5px 0; color: #f9df6d; text-align: center; flex-shrink: 0; }
+        .krokel-hint-text { font-style: italic; font-size: 0.9rem; color: #aaa; margin-bottom: 5px; text-align: center; flex-shrink: 0; }
+        
+        #tangela-current-word {
+            font-size: 1.5rem; font-weight: bold; height: 35px; line-height: 35px; 
+            margin: 0 0 10px 0; color: #f9df6d; text-transform: uppercase; 
+            letter-spacing: 2px; text-align: center; flex-shrink: 0; white-space: nowrap; 
+        }
+        
+        #tangela-board { 
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; 
+            padding: 12px; background: #252526; border-radius: 16px; 
+            width: 95%; max-width: 380px; margin: 0 auto; box-sizing: border-box;  
+            user-select: none; touch-action: none; position: relative; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .tangela-tile {
+            width: 100%; aspect-ratio: 1 / 1; border-radius: 50%; background: #3a3a3c;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1.3rem; color: white; cursor: pointer; 
+            border: 2px solid transparent; transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .tangela-tile.active { background: #ddd; color: #121213; transform: scale(1.1); z-index: 10; border-color: white;}
+        .tangela-tile.found { background: #0077ff; color: white; animation: popIn 0.3s; }
+        .tangela-tile.hint { background-color: #ff69b4 !important; color: white !important; border-color: #ff69b4; animation: pulse-hint 1.5s infinite; }
+        .tangela-tile.spangram { background: #f9df6d; color: black; animation: popIn 0.3s; }
+
+        .game-controls { display: flex; gap: 10px; margin-top: 15px; justify-content: center;}
+        .action-btn { border: 1px solid #555; background: #333; color: white; padding: 12px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;}
+
+        @keyframes popIn { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+        @keyframes pulse-hint {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 105, 180, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 105, 180, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 105, 180, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐢 Krokels Wörtertangela</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="krokel-area">
+        <div class="krokel-header">Krokels Wörtertangela 🐢🌀</div>
+        <div id="tangela-hint" class="krokel-hint-text">Thema wird geladen...</div>
+        
+        <div id="tangela-current-word"></div>
+        
+        <div id="tangela-board"></div>
+
+        <div class="game-controls">
+            <button class="action-btn hint-btn" onclick="giveTangelaHint()" style="padding: 8px 20px; font-size: 0.9rem; background: #ff69b4;">TIPP 💡</button>
+            <button class="action-btn" onclick="startKrokelGame()" style="padding: 8px 20px; font-size: 0.9rem;">NEUES LEVEL</button>
+        </div>
+    </div>
+
+    <script>
+        let tCurrentPuzzle = null;
+        let tSelectedIndices = [];
+        let tFoundWords = [];
+        let tIsDragging = false;
+        let tStrandsData = []; 
+        let tSolutionMap = {}; 
+
+        // NYT Strands Grid Size
+        const GRID_COLS = 6;
+        const GRID_ROWS = 8;
+        const TOTAL_CELLS = GRID_COLS * GRID_ROWS; // 48
+
+        window.onload = () => { startKrokelGame(); };
+
+        async function startKrokelGame() {
+            if (tStrandsData.length === 0) {
+                try {
+                    document.getElementById('tangela-hint').innerText = "Lade Level...";
+                    const r = await fetch('krokels.json.txt');
+                    if (!r.ok) throw new Error("JSON nicht gefunden");
+                    tStrandsData = await r.json();
+                } catch (e) {
+                    console.log("Nutze handgemachte 48er Demo-Level mit Spangramm-Regel");
+                    tStrandsData = [
+                        { theme: "Der wichtigste Start in den Tag", spangram: "FRUEHSTUECK", words: ["KAFFEE", "BROETCHEN", "MARMELADE", "BUTTER", "OBST", "TEE"] },
+                        { theme: "Unter Bäumen versteckt", spangram: "WALDTIERE", words: ["EICHHOERNCHEN", "WILDSCHWEIN", "HIRSCH", "FUCHS", "EULE"] },
+                        { theme: "Eine Reise durchs All", spangram: "SONNENSYSTEM", words: ["JUPITER", "SATURN", "URANUS", "NEPTUN", "VENUS", "MERKUR"] }
+                    ];
+                }
+            }
+
+            const rawPuzzle = tStrandsData[Math.floor(Math.random() * tStrandsData.length)];
+            const generatedPuzzle = generateLivePuzzle(rawPuzzle);
+
+            if(generatedPuzzle) {
+                tCurrentPuzzle = generatedPuzzle;
+                tSolutionMap = tCurrentPuzzle.solutionMap; 
+                tSelectedIndices = [];
+                tFoundWords = [];
+                document.getElementById('tangela-hint').innerText = "Thema: " + tCurrentPuzzle.theme;
+                renderTangelaBoard();
+            } else {
+                document.getElementById('tangela-board').innerHTML = "<div style='padding:20px; color:red'>Generator-Fehler :( <br>Versuch's nochmal!</div>";
+            }
+        }
+
+        function generateLivePuzzle(baseData) {
+            // SPANGRAMM MUSS ZUERST PLATZIERT WERDEN!
+            let otherWords = [...baseData.words].sort((a,b) => b.length - a.length);
+            let allWords = [baseData.spangram, ...otherWords];
+
+            // Generator läuft jetzt mit der Spangram-Regel (braucht manchmal mehr Anläufe, deshalb 5000)
+            for(let attempt=0; attempt<5000; attempt++) {
+                let grid = new Array(TOTAL_CELLS).fill(null);
+                let placedWords = {};
+
+                if (tryPlaceWords(0, grid, allWords, placedWords, baseData.spangram)) {
+                    fillRemaining(grid);
+                    return { ...baseData, grid: grid.join(""), solutionMap: placedWords };
+                }
+            }
+
+            // Notfall-ZickZack, falls der Generator es nicht schafft.
+            // Spangramm startet oben links und wickelt sich ab, wodurch es garantiert die Ränder berührt!
+            let fallbackGrid = new Array(TOTAL_CELLS).fill(null);
+            let fallbackMap = {};
+            let currentIdx = 0;
+            let shuffledWords = [baseData.spangram, ...[...baseData.words].sort(() => Math.random() - 0.5)];
+
+            for (let w of shuffledWords) {
+                let path = [];
+                for (let i=0; i<w.length; i++) {
+                    if (currentIdx >= TOTAL_CELLS) break;
+                    let r = Math.floor(currentIdx / GRID_COLS);
+                    let c = currentIdx % GRID_COLS;
+                    if (r % 2 !== 0) c = GRID_COLS - 1 - c; 
+                    let actualPos = r * GRID_COLS + c;
+                    fallbackGrid[actualPos] = w[i];
+                    path.push(actualPos);
+                    currentIdx++;
+                }
+                fallbackMap[w] = path;
+            }
+            fillRemaining(fallbackGrid);
+            return { ...baseData, grid: fallbackGrid.join(""), solutionMap: fallbackMap };
+
+            function fillRemaining(arr) {
+                const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                for(let i=0; i<arr.length; i++) {
+                    if(arr[i] === null) arr[i] = alpha[Math.floor(Math.random() * alpha.length)];
+                }
+            }
+        }
+
+        function tryPlaceWords(idx, grid, words, resultMap, spangramWord) {
+            if (idx >= words.length) return true; 
+            const word = words[idx];
+            const isSpangram = (word === spangramWord);
+
+            let freeSpots = [];
+            for(let i=0; i<grid.length; i++) if(grid[i] === null) freeSpots.push(i);
+            freeSpots.sort(() => Math.random() - 0.5);
+
+            for (let start of freeSpots) {
+                // OPTIMIERUNG: Spangramm muss zwingend an einem Rand starten!
+                if (isSpangram) {
+                    let r = Math.floor(start / GRID_COLS);
+                    let c = start % GRID_COLS;
+                    if (r !== 0 && r !== 7 && c !== 0 && c !== 5) continue; 
+                }
+
+                let path = findRandomPath(start, word, grid, [], isSpangram);
+                if (path) {
+                    path.forEach((pos, i) => grid[pos] = word[i]);
+                    resultMap[word] = path;
+                    if (tryPlaceWords(idx + 1, grid, words, resultMap, spangramWord)) return true;
+                    path.forEach(pos => grid[pos] = null);
+                    delete resultMap[word];
+                }
+            }
+            return false;
+        }
+
+        function findRandomPath(currentPos, word, grid, path, isSpangram) {
+            path.push(currentPos);
+            
+            if (path.length === word.length) {
+                // REGEL-CHECK FÜR DAS SPANGRAMM!
+                if (isSpangram) {
+                    let minC = 99, maxC = -1, minR = 99, maxR = -1;
+                    for (let p of path) {
+                        let c = p % GRID_COLS;
+                        let r = Math.floor(p / GRID_COLS);
+                        if (c < minC) minC = c;
+                        if (c > maxC) maxC = c;
+                        if (r < minR) minR = r;
+                        if (r > maxR) maxR = r;
+                    }
+                    // Prüfen, ob Kanten berührt werden (Links->Rechts ODER Oben->Unten)
+                    if ((minC === 0 && maxC === GRID_COLS - 1) || (minR === 0 && maxR === GRID_ROWS - 1)) {
+                        return path; // Gültig!
+                    } else {
+                        return null; // Ungültig, verwerfen und neu versuchen!
+                    }
+                }
+                return path; // Normale Wörter werden direkt akzeptiert
+            }
+
+            const neighbors = getNeighbors(currentPos);
+            neighbors.sort(() => Math.random() - 0.5);
+
+            for (let next of neighbors) {
+                if (grid[next] === null && !path.includes(next)) {
+                    const result = findRandomPath(next, word, grid, [...path], isSpangram);
+                    if (result) return result;
+                }
+            }
+            return null;
+        }
+
+        function getNeighbors(idx) {
+            const x = idx % GRID_COLS, y = Math.floor(idx / GRID_COLS), n = [];
+            for(let dy=-1; dy<=1; dy++) {
+                for(let dx=-1; dx<=1; dx++) {
+                    if(dx===0 && dy===0) continue;
+                    const nx = x+dx, ny = y+dy;
+                    if(nx>=0 && nx<GRID_COLS && ny>=0 && ny<GRID_ROWS) n.push(ny*GRID_COLS + nx);
+                }
+            }
+            return n;
+        }
+
+        function renderTangelaBoard() {
+            const board = document.getElementById('tangela-board');
+            board.innerHTML = '';
+            
+            const gridData = (tCurrentPuzzle && tCurrentPuzzle.grid) ? tCurrentPuzzle.grid : "FEHLER";
+            const letters = gridData.split('');
+
+            letters.forEach((char, idx) => {
+                const tile = document.createElement('div');
+                tile.className = 'tangela-tile';
+                tile.innerText = char;
+                tile.id = `t-tile-${idx}`; 
+                tile.dataset.index = idx;
+                board.appendChild(tile);
+            });
+
+            board.onpointerdown = startTangelaDrag;
+            board.onpointermove = handlePointerMove;
+            window.onpointerup = stopTangelaDrag;
+            board.oncontextmenu = (e) => e.preventDefault(); 
+        }
+
+        function startTangelaDrag(e) {
+            clearHints();
+            let target = document.elementFromPoint(e.clientX, e.clientY);
+            if (!target || !target.classList.contains('tangela-tile')) return;
+            
+            const idx = parseInt(target.dataset.index);
+            if (isIndexUsed(idx)) return;
+
+            tIsDragging = true;
+            tSelectedIndices = [idx];
+            updateTangelaVisuals();
+        }
+
+        function handlePointerMove(e) {
+            if (!tIsDragging) return;
+            
+            let target = document.elementFromPoint(e.clientX, e.clientY);
+            if (target && target.classList.contains('tangela-tile')) {
+                const idx = parseInt(target.dataset.index);
+                const lastIdx = tSelectedIndices[tSelectedIndices.length - 1];
+                
+                if (idx !== lastIdx && !tSelectedIndices.includes(idx) && !isIndexUsed(idx)) {
+                    if (isNeighborCheck(lastIdx, idx)) {
+                        tSelectedIndices.push(idx);
+                        updateTangelaVisuals();
+                        if(navigator.vibrate) navigator.vibrate(5);
+                    }
+                }
+                else if (tSelectedIndices.length > 1 && idx === tSelectedIndices[tSelectedIndices.length - 2]) {
+                    tSelectedIndices.pop();
+                    updateTangelaVisuals();
+                }
+            }
+        }
+
+        function stopTangelaDrag() {
+            if (!tIsDragging) return;
+            tIsDragging = false;
+            submitTangelaWord(); 
+        }
+
+        function submitTangelaWord() {
+            const wordDisplay = document.getElementById('tangela-current-word');
+            const word = wordDisplay.innerText;
+            const tiles = document.querySelectorAll('.tangela-tile');
+            let isValid = false;
+
+            if (tCurrentPuzzle && word === tCurrentPuzzle.spangram) {
+                showToast("✨ SPANGRAM! ✨");
+                tSelectedIndices.forEach(idx => { tiles[idx].classList.remove('active'); tiles[idx].classList.add('spangram'); });
+                tFoundWords.push(word);
+                isValid = true;
+            } 
+            else if (tCurrentPuzzle && tCurrentPuzzle.words.includes(word)) {
+                if (!tFoundWords.includes(word)) {
+                    showToast("Richtig!");
+                    tSelectedIndices.forEach(idx => { tiles[idx].classList.remove('active'); tiles[idx].classList.add('found'); });
+                    tFoundWords.push(word);
+                    isValid = true;
+                }
+            } 
+
+            if (!isValid) { tSelectedIndices.forEach(idx => { tiles[idx].classList.remove('active'); }); }
+
+            tSelectedIndices = [];
+            wordDisplay.innerText = "";
+            if(isValid) checkTangelaWin();
+        }
+        
+        function isNeighborCheck(idx1, idx2) {
+            const x1 = idx1 % GRID_COLS, y1 = Math.floor(idx1 / GRID_COLS);
+            const x2 = idx2 % GRID_COLS, y2 = Math.floor(idx2 / GRID_COLS);
+            return Math.abs(x1 - x2) <= 1 && Math.abs(y1 - y2) <= 1;
+        }
+        
+        function isIndexUsed(idx) {
+            return document.querySelectorAll('.tangela-tile')[idx].classList.contains('found') ||
+                   document.querySelectorAll('.tangela-tile')[idx].classList.contains('spangram');
+        }
+        
+        function updateTangelaVisuals() {
+            const tiles = document.querySelectorAll('.tangela-tile');
+            let currentWord = "";
+            tiles.forEach(t => t.classList.remove('active'));
+            tSelectedIndices.forEach(idx => {
+                tiles[idx].classList.add('active');
+                currentWord += tiles[idx].innerText;
+            });
+            document.getElementById('tangela-current-word').innerText = currentWord;
+        }
+
+        function checkTangelaWin() {
+            if (tFoundWords.length >= tCurrentPuzzle.words.length + 1) {
+                showToast("🎉 Krokels Tangela gelöst! 🎉");
+            }
+        }
+
+        function giveTangelaHint() {
+            if (!tCurrentPuzzle || !tSolutionMap) { showToast("Kann keinen Tipp geben!"); return; }
+            let candidates = [...tCurrentPuzzle.words];
+            if (!tFoundWords.includes(tCurrentPuzzle.spangram)) candidates.push(tCurrentPuzzle.spangram);
+            candidates = candidates.filter(w => !tFoundWords.includes(w));
+
+            if (candidates.length === 0) { showToast("Alles gefunden!"); return; }
+
+            const targetWord = candidates[Math.floor(Math.random() * candidates.length)];
+            const path = tSolutionMap[targetWord];
+            
+            if (path) {
+                clearHints(); 
+                const tiles = document.querySelectorAll('.tangela-tile');
+                path.forEach(idx => { tiles[idx].classList.add('hint'); });
+                showToast("Tipp: " + targetWord);
+            }
+        }
+        
+        function clearHints() { document.querySelectorAll('.tangela-tile.hint').forEach(el => el.classList.remove('hint')); }
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
+    </script>
+</body>
+</html>

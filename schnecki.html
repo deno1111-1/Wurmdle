@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Schneckis Wörter Box</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #f48fb1; color: #333;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+            touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #f48fb1; text-shadow: 1px 1px 0 #000; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* --- ALLGEMEINE CONTROLS --- */
+        .game-area {
+            flex-grow: 1; width: 100%; display: none; flex-direction: column;
+            align-items: center; padding: 10px; box-sizing: border-box; overflow-y: auto;
+        }
+        .action-btn {
+            border: 1px solid #555; background: #333; color: white;
+            padding: 12px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1rem;
+        }
+        .game-controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
+
+        #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; }
+
+        /* --- MODALS --- */
+        #lang-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .lang-card { background: #333; color: white; padding: 20px 40px; border-radius: 15px; border: 2px solid #aaa; font-size: 1.5rem; font-weight: bold; cursor: pointer; width: 200px; text-align: center; margin-bottom: 20px; }
+        .close-res-btn { margin-top: 20px; padding: 15px 40px; background: #555; color: white; border: none; border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer; text-decoration: none;}
+
+        /* --- GAME 3: SCHNECKIS BOX --- */
+        .schnecki-header { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; color: #333; margin-top: 20px;}
+        .schnecki-sub { font-size: 0.9rem; color: #555; margin-bottom: 20px; font-weight: bold; }
+        #box-container { width: 300px; height: 300px; position: relative; margin-bottom: 20px; }
+        #line-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .the-box { position: absolute; top: 40px; left: 40px; width: 220px; height: 220px; border: 4px solid #333; z-index: 0; }
+        .box-letter { width: 30px; height: 30px; border-radius: 50%; background: white; position: absolute; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; transition: transform 0.1s; user-select: none; }
+        .box-letter:active { transform: scale(0.9); }
+        .box-letter.selected { background: #333; color: white; }
+        .box-letter.used { background: #538d4e; color: white; transition: background 0.3s; }
+        .bl-0 { top: 25px; left: 70px; } .bl-1 { top: 25px; left: 135px; } .bl-2 { top: 25px; left: 200px; }
+        .bl-3 { top: 70px; left: 245px; } .bl-4 { top: 135px; left: 245px; } .bl-5 { top: 200px; left: 245px; }
+        .bl-6 { top: 245px; left: 200px; } .bl-7 { top: 245px; left: 135px; } .bl-8 { top: 245px; left: 70px; }
+        .bl-9 { top: 200px; left: 25px; } .bl-10 { top: 135px; left: 25px; } .bl-11 { top: 70px; left: 25px; }
+        .current-word-display { font-size: 1.5rem; font-weight: bold; min-height: 40px; text-transform: uppercase; }
+        .schnecki-history { margin-top: 15px; font-size: 1rem; color: #444; font-weight: bold; text-align: center; max-width: 90%; word-wrap: break-word;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐌 Schneckis Wörter Box</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="lang-modal">
+        <h2 id="loading-txt" style="color:white; margin-bottom:30px;">Wähle deine Sprache:</h2>
+        <div class="lang-card" onclick="selectLang('de')">🇩🇪 DEUTSCH</div>
+        <div class="lang-card" onclick="selectLang('en')">🇺🇸 ENGLISH</div>
+        <a href="index.html" class="close-res-btn" style="display: inline-block;">Abbrechen</a>
+    </div>
+
+    <div id="schnecki-area" class="game-area">
+        <div class="schnecki-header">Schneckis Wörter Box</div>
+        <div class="schnecki-sub" id="schnecki-progress">0 von 12 Buchstaben</div>
+        
+        <div id="box-container">
+            <div class="the-box"></div>
+            <svg id="line-layer"></svg>
+        </div>
+        
+        <div class="current-word-display" id="schnecki-input"></div>
+        
+        <div class="game-controls">
+            <button class="action-btn" onclick="schneckiDelete()">⌫</button>
+            <button class="action-btn" style="background:#538d4e; padding:12px 40px;" onclick="schneckiSubmit()">ENTER</button>
+        </div>
+        
+        <div class="schnecki-history" id="schnecki-history-list"></div>
+    </div>
+
+    <script>
+        let currentLang='de', cleanWordList=[], activeMode='';
+        let schnLetters=[], schnUsed=new Set(), schnCurrent="", schnHistory=[], schnLastIdx=-1;
+
+        window.onload=()=>{
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function handleGlobalKey(e){
+            if(activeMode !== 'schnecki') return;
+            const k=e.key.toUpperCase();
+            if(k==='ENTER'){schneckiSubmit();e.preventDefault();}
+            else if(k==='BACKSPACE'){schneckiDelete();e.preventDefault();}
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            try{
+                const r=await fetch(lang==='de'?'de.txt':'en.txt');
+                if(!r.ok)throw new Error("Offline");
+                const t=await r.text();
+                cleanWordList=[];
+                const l=t.split('\n');
+                for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))cleanWordList.push(w);}
+            }catch(e){
+                alert("Fehler beim Laden des Wörterbuchs: "+e.message);
+            }
+        }
+
+        async function selectLang(l){
+            document.getElementById('loading-txt').innerText = "Lade Wörterbuch...";
+            document.querySelectorAll('.lang-card').forEach(c => c.style.display = 'none');
+            await loadWords(l);
+            if(cleanWordList.length > 0){
+                document.getElementById('lang-modal').style.display='none';
+                startSchneckiGame(l);
+            }
+        }
+
+        function startSchneckiGame(lang){ 
+            activeMode='schnecki'; 
+            document.getElementById('schnecki-area').style.display = 'flex';
+            
+            let chars=(lang==='de')?"ENISRATOHLDUGCBM":"ETAOINSHRDLUCMFW"; 
+            let base=chars.substring(0,12).split(''); 
+            for(let i=base.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[base[i],base[j]]=[base[j],base[i]];} 
+            
+            schnLetters=base; schnUsed=new Set(); schnCurrent=""; schnHistory=[]; schnLastIdx=-1; 
+            renderSchneckiBoard(); updateSchneckiUI(); 
+        }
+
+        function renderSchneckiBoard(){
+            const c=document.getElementById('box-container'); 
+            document.querySelectorAll('.box-letter').forEach(el=>el.remove()); 
+            document.getElementById('line-layer').innerHTML=''; 
+            
+            schnLetters.forEach((char,i)=>{
+                const d=document.createElement('div');
+                d.className=`box-letter bl-${i}`; 
+                d.innerText=char;
+                d.id=`s-btn-${i}`;
+                d.onclick=()=>schneckiClick(i);
+                c.appendChild(d);
+            });
+        }
+
+        function schneckiClick(idx){
+            if(schnLastIdx!==-1){
+                if(Math.floor(idx/3)===Math.floor(schnLastIdx/3)){showToast("Andere Seite wählen!");return;}
+            }
+            if(schnCurrent==="" && schnHistory.length>0){
+                const lastW=schnHistory[schnHistory.length-1]; 
+                if(schnLetters[idx]!==lastW.charAt(lastW.length-1)){showToast("Falscher Anfang!");return;}
+            }
+            if(schnLastIdx!==-1) drawLine(schnLastIdx,idx); 
+            
+            schnLastIdx=idx; schnCurrent+=schnLetters[idx];
+            document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected'));
+            document.getElementById(`s-btn-${idx}`).classList.add('selected'); 
+            updateSchneckiUI();
+        }
+
+        function drawLine(f,t){ 
+            const l=document.createElementNS('http://www.w3.org/2000/svg','line'); 
+            const r1=document.getElementById(`s-btn-${f}`).getBoundingClientRect(); 
+            const r2=document.getElementById(`s-btn-${t}`).getBoundingClientRect(); 
+            const cr=document.getElementById('box-container').getBoundingClientRect(); 
+            l.setAttribute('x1',r1.left-cr.left+15); 
+            l.setAttribute('y1',r1.top-cr.top+15); 
+            l.setAttribute('x2',r2.left-cr.left+15); 
+            l.setAttribute('y2',r2.top-cr.top+15); 
+            l.setAttribute('stroke','#333'); 
+            l.setAttribute('stroke-width','2'); 
+            document.getElementById('line-layer').appendChild(l); 
+        }
+
+        function schneckiDelete(){ 
+            schnCurrent=""; schnLastIdx=-1; 
+            document.getElementById('line-layer').innerHTML=''; 
+            document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected')); 
+            if(schnHistory.length>0) showToast("Neu ansetzen!"); 
+            updateSchneckiUI(); 
+        }
+
+        function schneckiSubmit(){
+            if(schnCurrent.length<3){showToast("Zu kurz!");return;} 
+            if(!cleanWordList.includes(schnCurrent)){showToast("Kein Wort!");return;}
+            
+            schnHistory.push(schnCurrent); 
+            schnCurrent.split('').forEach(c=>schnUsed.add(c)); 
+            schnCurrent=""; schnLastIdx=-1; 
+            
+            document.getElementById('line-layer').innerHTML=''; 
+            document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected'));
+            updateSchneckiUI(); 
+            
+            if(schnUsed.size===12) showToast("👑 SUPER LENI HAT GEWONNEN! 👑");
+        }
+
+        function updateSchneckiUI(){
+            document.getElementById('schnecki-input').innerText=schnCurrent;
+            document.getElementById('schnecki-progress').innerText=`${schnUsed.size} von 12 Buchstaben`;
+            document.getElementById('schnecki-history-list').innerText=schnHistory.join(" > ") || "Starte dein erstes Wort!";
+            
+            schnLetters.forEach((char,i)=>{
+                const b=document.getElementById(`s-btn-${i}`);
+                if(b) { if(schnUsed.has(char)) b.classList.add('used'); else b.classList.remove('used'); }
+            });
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>

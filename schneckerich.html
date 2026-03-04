@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Schneckerichs Sortierspaß</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #f9f9f9; color: #333;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+            touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #b0c4ef; text-shadow: 1px 1px 0 #000; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; border: 2px solid #555;}
+
+        /* --- GAME 6: SCHNECKERICHS SORTIERSPASS (CONNECTIONS) --- */
+        #schneckerich-area { width: 100%; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; box-sizing: border-box; flex-grow: 1; overflow-y: auto; }
+        .schn-header { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .schn-lives { margin-bottom: 15px; color: #555; font-weight: bold; }
+        .lives-dots { display: inline-block; }
+        .life-dot { display: inline-block; width: 12px; height: 12px; background: #555; border-radius: 50%; margin: 0 2px; }
+        .life-lost { background: #ccc; }
+        
+        #schneckerich-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; 
+            width: 100%; max-width: 600px; margin-bottom: 20px; 
+        }
+        .schn-tile { 
+            background: #efefef; border-radius: 8px; padding: 15px 5px; 
+            text-align: center; font-weight: bold; font-size: 0.9rem; color: #333; 
+            cursor: pointer; user-select: none; text-transform: uppercase; 
+            transition: all 0.2s; min-height: 60px; display: flex; align-items: center; justify-content: center;
+            border: 2px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .schn-tile.selected { background: #555; color: white; transform: scale(0.95); }
+        
+        .schn-solved-row { 
+            grid-column: span 4; border-radius: 8px; padding: 15px; 
+            text-align: center; color: black; font-weight: bold; 
+            animation: fadeIn 0.5s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .schn-solved-title { font-size: 1.1rem; margin-bottom: 5px; text-transform: uppercase; }
+        .schn-solved-words { font-size: 0.9rem; font-weight: normal; }
+        
+        .cat-0 { background-color: #f9df6d; } .cat-1 { background-color: #a0c35a; } 
+        .cat-2 { background-color: #b0c4ef; } .cat-3 { background-color: #ba81c5; } 
+
+        .schn-controls { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;}
+        .schn-btn { 
+            border: 1px solid #555; background: white; color: #333; 
+            padding: 12px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1rem;
+        }
+        .schn-submit { background: #333; color: white; }
+        .schn-disabled { opacity: 0.5; pointer-events: none; }
+
+        @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+        /* --- MODAL (Results) --- */
+        #results-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 600; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .res-header { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; text-align: center; font-weight: bold;}
+        .res-score-circle { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #538d4e; display: flex; justify-content: center; align-items: center; font-size: 3.5rem; font-weight: bold; margin-bottom: 20px; color: white; background: #222; }
+        .res-cols { display: flex; width: 100%; max-width: 600px; gap: 10px; flex-grow: 1; margin-bottom: 20px;}
+        .res-col { flex: 1; display: flex; flex-direction: column; border: 1px solid #444; border-radius: 10px; padding: 10px; height: 300px; overflow-y: auto;}
+        .close-res-btn { margin-top: 10px; padding: 15px 40px; background: #538d4e; color: white; border: none; border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer; text-decoration: none; text-align: center;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐌 Schneckerichs Sortierspaß</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="schneckerich-area">
+        <div class="schn-header">Schneckerichs Sortierspaß 🧩</div>
+        <div class="schn-lives">Fehler erlaubt: <div class="lives-dots" id="schn-lives-dots"></div></div>
+        
+        <div id="schneckerich-grid"></div>
+        
+        <div class="schn-controls">
+            <button class="schn-btn" onclick="schnShuffle()">Mischen 🔀</button>
+            <button class="schn-btn" onclick="schnDeselectAll()">Alles weg</button>
+            <button class="schn-btn schn-submit schn-disabled" id="schn-submit-btn" onclick="schnSubmit()">Absenden</button>
+        </div>
+    </div>
+
+    <div id="results-modal">
+        <div class="res-header" id="res-header-text">SPIEL BEENDET</div>
+        <div class="res-score-circle" id="res-final-score">0</div>
+        <div style="color:#aaa; margin-bottom:20px;">GEFUNDEN: <span id="count-found">0</span> / <span id="res-max-pts">4</span></div>
+        <div class="res-cols">
+            <div class="res-col" style="border-color:#538d4e; background: #1a1a1a;"><h3 style="color:#538d4e; margin-top:0;">GEFUNDEN</h3><div class="res-list" id="list-found"></div></div>
+            <div class="res-col" style="border-color:#ff5555; background: #1a1a1a;"><h3 style="color:#ff5555; margin-top:0;">VERPASST</h3><div class="res-list" id="list-missed"></div></div>
+        </div>
+        <button class="close-res-btn" onclick="location.reload()">NOCHMAL SPIELEN</button>
+        <a href="index.html" class="close-res-btn" style="background:#555;">ZURÜCK ZUM MENÜ</a>
+    </div>
+
+    <script>
+        let sGroups=[], sGridItems=[], sSelection=[], sMistakes=0, sSolvedCats=0;
+        
+        const SCHN_FALLBACK = [
+            { "id": "demo1", "groups": [
+                { "color": "cat-0", "title": "OBST", "words": ["APFEL", "BIRNE", "BANANE", "KIWI"] },
+                { "color": "cat-1", "title": "FARBEN", "words": ["ROT", "BLAU", "GRÜN", "GELB"] },
+                { "color": "cat-2", "title": "WETTER", "words": ["REGEN", "SONNE", "WIND", "SCHNEE"] },
+                { "color": "cat-3", "title": "INSELN", "words": ["SYLT", "RÜGEN", "MALLORCA", "KRETA"] }
+            ]},
+            { "id": "demo2", "groups": [
+                { "color": "cat-0", "title": "TIERE", "words": ["KATZE", "HUND", "MAUS", "PFERD"] },
+                { "color": "cat-1", "title": "MÖBEL", "words": ["TISCH", "STUHL", "BETT", "SCHRANK"] },
+                { "color": "cat-2", "title": "PLANETEN", "words": ["MARS", "VENUS", "ERDE", "JUPITER"] },
+                { "color": "cat-3", "title": "BERUFE", "words": ["ARZT", "LEHRER", "MALER", "BÄCKER"] }
+            ]}
+        ];
+
+        window.onload = () => { startSchneckerichGame(); };
+
+        async function startSchneckerichGame() {
+            try {
+                const r = await fetch('schneckerich.json.txt');
+                if(!r.ok) throw new Error("Keine Datei");
+                const data = await r.json();
+                sGroups = data[Math.floor(Math.random()*data.length)].groups;
+            } catch(e) {
+                console.log("Fallback to demo");
+                sGroups = SCHN_FALLBACK[Math.floor(Math.random()*SCHN_FALLBACK.length)].groups;
+            }
+            
+            sSelection = []; sMistakes = 0; sSolvedCats = 0;
+            sGridItems = [];
+            
+            sGroups.forEach((g, gIdx) => {
+                g.words.forEach(w => {
+                    sGridItems.push({ word: w, groupIdx: gIdx, solved: false });
+                });
+            });
+            
+            schnShuffle(); 
+        }
+
+        function schnShuffle() {
+            for(let i = sGridItems.length - 1; i > 0; i--){
+                const j = Math.floor(Math.random() * (i + 1));
+                [sGridItems[i], sGridItems[j]] = [sGridItems[j], sGridItems[i]];
+            }
+            updateSchnUI();
+        }
+
+        function schnTileClick(word) {
+            const idx = sSelection.indexOf(word);
+            if(idx > -1) {
+                sSelection.splice(idx, 1);
+            } else {
+                if(sSelection.length < 4) sSelection.push(word);
+            }
+            updateSchnUI();
+        }
+
+        function schnDeselectAll() {
+            sSelection = [];
+            updateSchnUI();
+        }
+
+        function schnSubmit() {
+            if(sSelection.length !== 4) return;
+            
+            const groups = sSelection.map(w => sGridItems.find(i => i.word === w).groupIdx);
+            const firstG = groups[0];
+            const allSame = groups.every(g => g === firstG);
+            
+            if(allSame) {
+                showToast("Richtig!");
+                sGridItems.forEach(i => { if(i.groupIdx === firstG) i.solved = true; });
+                sSolvedCats++;
+                sSelection = [];
+                if(sSolvedCats === 4) setTimeout(() => finishSchnGame(true), 1000);
+            } else {
+                const counts = {};
+                groups.forEach(g => { counts[g] = (counts[g] || 0) + 1; });
+                const isOneAway = Object.values(counts).includes(3);
+                
+                if(isOneAway) showToast("Eins daneben!");
+                else showToast("Falsch!");
+                
+                sMistakes++;
+                if(sMistakes >= 4) setTimeout(() => finishSchnGame(false), 1000);
+            }
+            updateSchnUI();
+        }
+
+        function finishSchnGame(won) {
+            const m = document.getElementById('results-modal');
+            const h = document.getElementById('res-header-text');
+            const circle = document.getElementById('res-final-score');
+            const lFound = document.getElementById('list-found');
+            const lMissed = document.getElementById('list-missed');
+
+            if (won) {
+                h.innerText = "Juppie Leni ist Wortmeisterin!";
+                h.style.color = "#538d4e";
+                circle.innerText = "🏆";
+            } else {
+                h.innerText = "Schade, verloren!";
+                h.style.color = "#ff5555";
+                circle.innerText = "❌";
+            }
+
+            lFound.innerHTML = "";
+            lMissed.innerHTML = "";
+            let foundCount = 0;
+            let missedCount = 0;
+
+            sGroups.forEach((group, idx) => {
+                const isSolved = sGridItems.some(i => i.groupIdx === idx && i.solved);
+                const html = `<div style="margin-bottom:10px; padding: 10px; border-radius: 8px; background: white; color: black; border-left: 5px solid ${getCatColorHex(idx)};">
+                                <div style="font-weight:bold; font-size: 0.9rem;">${group.title}</div>
+                                <div style="font-size:0.8rem; color:#555;">${group.words.join(', ')}</div>
+                              </div>`;
+
+                if (isSolved) {
+                    lFound.innerHTML += html;
+                    foundCount++;
+                } else {
+                    lMissed.innerHTML += html;
+                    missedCount++;
+                }
+            });
+
+            document.getElementById('count-found').innerText = foundCount;
+            m.style.display = 'flex';
+        }
+
+        function getCatColorHex(idx) {
+            const colors = ['#f9df6d', '#a0c35a', '#b0c4ef', '#ba81c5'];
+            return colors[idx] || '#ccc';
+        }
+
+        function updateSchnUI() {
+            const grid = document.getElementById('schneckerich-grid');
+            grid.innerHTML = '';
+            
+            const dots = document.getElementById('schn-lives-dots');
+            dots.innerHTML = '';
+            for(let i=0; i<4; i++) {
+                const d = document.createElement('span');
+                d.className = 'life-dot' + (i < sMistakes ? ' life-lost' : '');
+                dots.appendChild(d);
+            }
+            
+            for(let gIdx=0; gIdx<4; gIdx++) {
+                const isSolved = sGridItems.some(i => i.groupIdx === gIdx && i.solved);
+                if(isSolved) {
+                    const banner = document.createElement('div');
+                    banner.className = `schn-solved-row ${sGroups[gIdx].color}`;
+                    banner.innerHTML = `<div class="schn-solved-title">${sGroups[gIdx].title}</div><div class="schn-solved-words">${sGroups[gIdx].words.join(', ')}</div>`;
+                    grid.appendChild(banner);
+                }
+            }
+            
+            sGridItems.forEach(item => {
+                if(!item.solved) {
+                    const t = document.createElement('div');
+                    t.className = 'schn-tile' + (sSelection.includes(item.word) ? ' selected' : '');
+                    t.innerText = item.word;
+                    t.onclick = () => schnTileClick(item.word);
+                    grid.appendChild(t);
+                }
+            });
+            
+            const subBtn = document.getElementById('schn-submit-btn');
+            if(sSelection.length === 4) subBtn.classList.remove('schn-disabled');
+            else subBtn.classList.add('schn-disabled');
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>
