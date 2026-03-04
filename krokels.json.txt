@@ -1,236 +1,1542 @@
 [
-  {
-    "id": 1,
-    "theme": "Wasserspaß",
-    "spangram": "SCHWIMMBAD",
-    "grid": "RUTSCHEBECHLSCHWIMMBADENKEBECKENSPRINGENXXXXXX",
-    "solution": {
-      "RUTSCHE": [0, 1, 2, 3, 4, 5, 6],
-      "BECKEN": [7, 13, 19, 25, 31, 37],
-      "SPRINGEN": [32, 33, 34, 35, 36, 42, 43, 44],
-      "SCHWIMMBAD": [8, 14, 20, 26, 27, 28, 29, 21, 15, 9]
+    {
+        "spangram": "PUNCTUATION",
+        "words": [
+            "APOSTROPHE",
+            "COLON",
+            "COMMA",
+            "HYPHEN",
+            "PERIOD",
+            "SLASH"
+        ]
+    },
+    {
+        "spangram": "CINDERELLA",
+        "words": [
+            "DANCE",
+            "MIDNIGHT",
+            "PRINCE",
+            "PUMPKIN",
+            "SLIPPER",
+            "SPELL"
+        ]
+    },
+    {
+        "spangram": "GUACAMOLE",
+        "words": [
+            "AVOCADO",
+            "CILANTRO",
+            "GARLIC",
+            "JALAPENO",
+            "LIME",
+            "TOMATO"
+        ]
+    },
+    {
+        "spangram": "EUPHEMISMS",
+        "words": [
+            "DARN",
+            "FUDGE",
+            "GADZOOKS",
+            "GOLLY",
+            "HECK",
+            "JEEPERS",
+            "SHOOT"
+        ]
+    },
+    {
+        "spangram": "MEASUREMENTS",
+        "words": [
+            "FATHOM",
+            "FOOT",
+            "FURLONG",
+            "INCH",
+            "LEAGUE",
+            "METER",
+            "YARD"
+        ]
+    },
+    {
+        "spangram": "SUPERNATURAL",
+        "words": [
+            "GHOST",
+            "PHANTOM",
+            "SHADE",
+            "SPECTER",
+            "SPIRIT",
+            "WRAITH"
+        ]
+    },
+    {
+        "spangram": "PARENTHOOD",
+        "words": [
+            "ADULT",
+            "BABY",
+            "FOAL",
+            "FROG",
+            "HORSE",
+            "LAMB",
+            "SHEEP",
+            "TADPOLE"
+        ]
+    },
+    {
+        "spangram": "ASTROLOGY",
+        "words": [
+            "ARCHER",
+            "BULL",
+            "GOAT",
+            "SCALES",
+            "SCORPION",
+            "TWINS",
+            "VIRGIN"
+        ]
+    },
+    {
+        "spangram": "MYTHOLOGICAL",
+        "words": [
+            "CENTAUR",
+            "CYCLOPS",
+            "DRAGON",
+            "FAIRY",
+            "MERMAID",
+            "OGRE"
+        ]
+    },
+    {
+        "spangram": "GRAPHICART",
+        "words": [
+            "CARTOON",
+            "COMIC",
+            "DESIGN",
+            "DOODLE",
+            "PORTRAIT",
+            "SKETCH"
+        ]
+    },
+    {
+        "spangram": "GENRES",
+        "words": [
+            "BIOGRAPHY",
+            "FANTASY",
+            "FICTION",
+            "HUMOR",
+            "MYSTERY",
+            "ROMANCE"
+        ]
+    },
+    {
+        "spangram": "LOANWORDS",
+        "words": [
+            "APERITIF",
+            "BERET",
+            "BUREAU",
+            "CHAUFFEUR",
+            "CHIC",
+            "LIAISON"
+        ]
+    },
+    {
+        "spangram": "SPOTTY",
+        "words": [
+            "CHEETAH",
+            "DALMATIAN",
+            "GIRAFFE",
+            "HYENA",
+            "LADYBUG",
+            "LEOPARD"
+        ]
+    },
+    {
+        "spangram": "PEDESTRIAN",
+        "words": [
+            "AMBLE",
+            "MARCH",
+            "SAUNTER",
+            "STROLL",
+            "STRUT",
+            "TREK",
+            "TRUDGE"
+        ]
+    },
+    {
+        "spangram": "MILESTONES",
+        "words": [
+            "CRAWL",
+            "DRIVE",
+            "GRADUATE",
+            "MARRY",
+            "RETIRE",
+            "SPEAK",
+            "VOTE"
+        ]
+    },
+    {
+        "spangram": "FANTASY",
+        "words": [
+            "ASSASSIN",
+            "BARD",
+            "HUNTER",
+            "KNIGHT",
+            "MAGE",
+            "ROGUE",
+            "SORCERER"
+        ]
+    },
+    {
+        "spangram": "INGREDIENTS",
+        "words": [
+            "BUTTER",
+            "FLOUR",
+            "PECAN",
+            "SALT",
+            "SUGAR",
+            "SYRUP",
+            "VANILLA"
+        ]
+    },
+    {
+        "spangram": "BRAINTEASERS",
+        "words": [
+            "CONUNDRUM",
+            "ENIGMA",
+            "MYSTERY",
+            "QUANDARY",
+            "RIDDLE"
+        ]
+    },
+    {
+        "spangram": "MUSICIANS",
+        "words": [
+            "BRANDY",
+            "COMMON",
+            "JEWEL",
+            "MEATLOAF",
+            "PINK",
+            "PRINCE",
+            "SEAL"
+        ]
+    },
+    {
+        "spangram": "CONDIMENT",
+        "words": [
+            "AIOLI",
+            "KETCHUP",
+            "MAYO",
+            "MUSTARD",
+            "SRIRACHA",
+            "TZATZIKI"
+        ]
+    },
+    {
+        "spangram": "MONOPOLY",
+        "words": [
+            "IRON",
+            "PENGUIN",
+            "RACECAR",
+            "SHIP",
+            "THIMBLE",
+            "WHEELBARROW"
+        ]
+    },
+    {
+        "spangram": "STRIPED",
+        "words": [
+            "BUMBLEBEE",
+            "CHIPMUNK",
+            "CLOWNFISH",
+            "SKUNK",
+            "TIGER",
+            "ZEBRA"
+        ]
+    },
+    {
+        "spangram": "GREENS",
+        "words": [
+            "ARTICHOKE",
+            "EMERALD",
+            "FOREST",
+            "JUNGLE",
+            "OLIVE",
+            "PISTACHIO"
+        ]
+    },
+    {
+        "spangram": "SCARYMOVIE",
+        "words": [
+            "HALLOWEEN",
+            "HOSTEL",
+            "POLTERGEIST",
+            "PSYCHO",
+            "SCREAM"
+        ]
+    },
+    {
+        "spangram": "YARDWORK",
+        "words": [
+            "EDGER",
+            "GLOVES",
+            "RAKE",
+            "SHEARS",
+            "SHOVEL",
+            "TRIMMER",
+            "TROWEL"
+        ]
+    },
+    {
+        "spangram": "SNAILMAIL",
+        "words": [
+            "BILL",
+            "INVITE",
+            "LETTER",
+            "MAGAZINE",
+            "PACKAGE",
+            "POSTCARD"
+        ]
+    },
+    {
+        "spangram": "HEAVYMETAL",
+        "words": [
+            "ANTIMONY",
+            "ARSENIC",
+            "BISMUTH",
+            "COPPER",
+            "GOLD",
+            "SILVER"
+        ]
+    },
+    {
+        "spangram": "NUMBERS",
+        "words": [
+            "BACON",
+            "BINARY",
+            "DANCE",
+            "LUCKY",
+            "SERIAL",
+            "TELEPHONE",
+            "WHOLE"
+        ]
+    },
+    {
+        "spangram": "MINIGOLF",
+        "words": [
+            "BOULDER",
+            "CASTLE",
+            "RAMP",
+            "TUNNEL",
+            "WATERFALL",
+            "WINDMILL"
+        ]
+    },
+    {
+        "spangram": "SPACEFLIGHT",
+        "words": [
+            "ENCOUNTER",
+            "LAUNCH",
+            "ORBIT",
+            "REENTRY",
+            "SPLASHDOWN"
+        ]
+    },
+    {
+        "spangram": "PROMNIGHT",
+        "words": [
+            "BOUTONNIERE",
+            "CORSAGE",
+            "COURT",
+            "DANCE",
+            "DRESS",
+            "TUXEDO"
+        ]
+    },
+    {
+        "spangram": "OSCARWINNERS",
+        "words": [
+            "CRASH",
+            "GLADIATOR",
+            "PARASITE",
+            "ROCKY",
+            "SPOTLIGHT"
+        ]
+    },
+    {
+        "spangram": "DOGPILE",
+        "words": [
+            "BEAGLE",
+            "BOXER",
+            "COLLIE",
+            "HOUND",
+            "HUSKY",
+            "POODLE",
+            "SHEPHERD"
+        ]
+    },
+    {
+        "spangram": "CHARCUTERIE",
+        "words": [
+            "BRIE",
+            "CRACKER",
+            "FRUIT",
+            "NUTS",
+            "OLIVE",
+            "SALAMI",
+            "SPREAD"
+        ]
+    },
+    {
+        "spangram": "BALLPARK",
+        "words": [
+            "BASE",
+            "BULLPEN",
+            "DUGOUT",
+            "INFIELD",
+            "MOUND",
+            "PLATE",
+            "STANDS"
+        ]
+    },
+    {
+        "spangram": "FLAVORS",
+        "words": [
+            "BITTER",
+            "PIQUANT",
+            "SALTY",
+            "SOUR",
+            "SPICY",
+            "SWEET",
+            "TART",
+            "UMAMI"
+        ]
+    },
+    {
+        "spangram": "MATHEMATICS",
+        "words": [
+            "CALCULATE",
+            "DERIVE",
+            "DIVIDE",
+            "MULTIPLY",
+            "SUBTRACT"
+        ]
+    },
+    {
+        "spangram": "MENUITEMS",
+        "words": [
+            "EDIT",
+            "FAVORITES",
+            "FILE",
+            "HELP",
+            "HISTORY",
+            "TOOLS",
+            "WINDOW"
+        ]
+    },
+    {
+        "spangram": "HERBGARDEN",
+        "words": [
+            "BASIL",
+            "CORIANDER",
+            "PARSLEY",
+            "ROSEMARY",
+            "SAGE",
+            "THYME"
+        ]
+    },
+    {
+        "spangram": "COCKTAILS",
+        "words": [
+            "DAIQUIRI",
+            "GIMLET",
+            "MARGARITA",
+            "MOJITO",
+            "SOUR",
+            "SPRITZ"
+        ]
+    },
+    {
+        "spangram": "HIGHHEELS",
+        "words": [
+            "BLOCK",
+            "CHUNKY",
+            "CONE",
+            "CUBAN",
+            "KITTEN",
+            "STILETTO",
+            "WEDGE"
+        ]
+    },
+    {
+        "spangram": "RUBYSLIPPERS",
+        "words": [
+            "POPPIES",
+            "RAINBOW",
+            "SCARECROW",
+            "TWISTER",
+            "WIZARD"
+        ]
+    },
+    {
+        "spangram": "MANICURE",
+        "words": [
+            "BASE",
+            "BUFF",
+            "CLEANSE",
+            "COLOR",
+            "FILE",
+            "MOISTURIZE",
+            "TOPPER"
+        ]
+    },
+    {
+        "spangram": "DOUGHNUTS",
+        "words": [
+            "CAKE",
+            "CIDER",
+            "FROSTED",
+            "GLAZED",
+            "HOLE",
+            "JELLY",
+            "POWDERED"
+        ]
+    },
+    {
+        "spangram": "SEATING",
+        "words": [
+            "ARMCHAIR",
+            "CHAISE",
+            "COUCH",
+            "DIVAN",
+            "RECLINER",
+            "SOFA",
+            "STOOL"
+        ]
+    },
+    {
+        "spangram": "TEATIME",
+        "words": [
+            "CHAI",
+            "CHAMOMILE",
+            "GUNPOWDER",
+            "JASMINE",
+            "MATCHA",
+            "OOLONG"
+        ]
+    },
+    {
+        "spangram": "BOARDGAMES",
+        "words": [
+            "BATTLESHIP",
+            "CLUE",
+            "MONOPOLY",
+            "RISK",
+            "SORRY",
+            "TROUBLE"
+        ]
+    },
+    {
+        "spangram": "MUSTACHE",
+        "words": [
+            "HANDLEBAR",
+            "HORSESHOE",
+            "PENCIL",
+            "TOOTHBRUSH",
+            "WALRUS"
+        ]
+    },
+    {
+        "spangram": "JEWELTONES",
+        "words": [
+            "AMETHYST",
+            "EMERALD",
+            "GARNET",
+            "RUBY",
+            "SAPPHIRE",
+            "TOPAZ"
+        ]
+    },
+    {
+        "spangram": "COOKING",
+        "words": [
+            "BLANCH",
+            "BRAISE",
+            "DEGLAZE",
+            "FLAMBE",
+            "POACH",
+            "SIMMER",
+            "STEAM"
+        ]
+    },
+    {
+        "spangram": "BICYCLE",
+        "words": [
+            "BRAKE",
+            "CHAIN",
+            "FENDER",
+            "FRAME",
+            "KICKSTAND",
+            "PEDAL",
+            "SADDLE"
+        ]
+    },
+    {
+        "spangram": "MORNINGROUTINE",
+        "words": [
+            "BREAKFAST",
+            "DRESS",
+            "SHOWER",
+            "SNOOZE",
+            "WAKE",
+            "WORK"
+        ]
+    },
+    {
+        "spangram": "BABYANIMAL",
+        "words": [
+            "CALF",
+            "CHICK",
+            "DUCKLING",
+            "FOAL",
+            "GOSLING",
+            "LAMB",
+            "PIGLET"
+        ]
+    },
+    {
+        "spangram": "PLAYGROUND",
+        "words": [
+            "BENCHES",
+            "CLIMBER",
+            "SANDBOX",
+            "SEESAW",
+            "SLIDE",
+            "SWINGS"
+        ]
+    },
+    {
+        "spangram": "KEYBOARD",
+        "words": [
+            "CONTROL",
+            "DELETE",
+            "ENTER",
+            "ESCAPE",
+            "RETURN",
+            "SHIFT",
+            "SPACE"
+        ]
+    },
+    {
+        "spangram": "BESTACTING",
+        "words": [
+            "BERRY",
+            "BRIDGES",
+            "FIELD",
+            "HUNT",
+            "PHOENIX",
+            "STONE",
+            "SWANK"
+        ]
+    },
+    {
+        "spangram": "PLACESETTING",
+        "words": [
+            "FORK",
+            "GLASS",
+            "KNIFE",
+            "NAPKIN",
+            "PLATE",
+            "SAUCER",
+            "SPOON"
+        ]
+    },
+    {
+        "spangram": "BLADES",
+        "words": [
+            "CLAYMORE",
+            "CUTLASS",
+            "KATANA",
+            "MACHETE",
+            "RAPIER",
+            "SCIMITAR"
+        ]
+    },
+    {
+        "spangram": "WATERCRAFT",
+        "words": [
+            "CANOE",
+            "DINGHY",
+            "DORY",
+            "GONDOLA",
+            "KAYAK",
+            "PADDLEBOARD"
+        ]
+    },
+    {
+        "spangram": "CHAMPION",
+        "words": [
+            "EXCELLENT",
+            "ICONIC",
+            "PERFECT",
+            "SUPERLATIVE",
+            "SUPREME"
+        ]
+    },
+    {
+        "spangram": "MOVIETHEATER",
+        "words": [
+            "CANDY",
+            "FEATURE",
+            "POPCORN",
+            "PROJECTOR",
+            "TRAILERS"
+        ]
+    },
+    {
+        "spangram": "PUBLICLIBRARY",
+        "words": [
+            "BORROW",
+            "BROWSE",
+            "LEARN",
+            "MEET",
+            "READ",
+            "RENEW",
+            "STUDY"
+        ]
+    },
+    {
+        "spangram": "SHAKEN",
+        "words": [
+            "BOOTY",
+            "HAIRSPRAY",
+            "HANDS",
+            "MARACA",
+            "MARTINI",
+            "RATTLE",
+            "SALT"
+        ]
+    },
+    {
+        "spangram": "RHYMETIME",
+        "words": [
+            "AVOCADO",
+            "CHATEAU",
+            "DOUGH",
+            "MISTLETOE",
+            "RAINBOW",
+            "WHOA"
+        ]
+    },
+    {
+        "spangram": "POOLPARTY",
+        "words": [
+            "DRINKS",
+            "FLOATS",
+            "MUSIC",
+            "NOODLES",
+            "SUNSCREEN",
+            "TOWELS"
+        ]
+    },
+    {
+        "spangram": "OUTDOORSY",
+        "words": [
+            "BIRDWATCH",
+            "CAMP",
+            "FISH",
+            "FORAGE",
+            "HIKE",
+            "STARGAZE",
+            "SWIM"
+        ]
+    },
+    {
+        "spangram": "STICKS",
+        "words": [
+            "CINNAMON",
+            "CONTROL",
+            "HOCKEY",
+            "LICORICE",
+            "MEMORY",
+            "SWIZZLE"
+        ]
+    },
+    {
+        "spangram": "BONUSSPACES",
+        "words": [
+            "BALCONY",
+            "DECK",
+            "PATIO",
+            "SUNROOM",
+            "TERRACE",
+            "VERANDA"
+        ]
+    },
+    {
+        "spangram": "DANCEMOVES",
+        "words": [
+            "FLOSS",
+            "HUSTLE",
+            "MOONWALK",
+            "PIROUETTE",
+            "TWERK",
+            "VOGUE"
+        ]
+    },
+    {
+        "spangram": "OPTIONS",
+        "words": [
+            "BREAK",
+            "DOUBLE",
+            "FAMINE",
+            "FEAST",
+            "MAKE",
+            "NOTHING",
+            "SINK",
+            "SWIM"
+        ]
+    },
+    {
+        "spangram": "CRACKERS",
+        "words": [
+            "ANIMAL",
+            "GOLDFISH",
+            "OYSTER",
+            "RICE",
+            "SALTINE",
+            "SODA",
+            "WATER"
+        ]
+    },
+    {
+        "spangram": "FOREST",
+        "words": [
+            "BEECH",
+            "CHESTNUT",
+            "GINKGO",
+            "MAPLE",
+            "PINE",
+            "SYCAMORE",
+            "WILLOW"
+        ]
+    },
+    {
+        "spangram": "GRANDSLAM",
+        "words": [
+            "FOREHAND",
+            "LOVE",
+            "RACKET",
+            "SERVE",
+            "SLICE",
+            "SMASH",
+            "VOLLEY"
+        ]
+    },
+    {
+        "spangram": "RATATOUILLE",
+        "words": [
+            "EGGPLANT",
+            "ONIONS",
+            "PEPPERS",
+            "TOMATOES",
+            "ZUCCHINI"
+        ]
+    },
+    {
+        "spangram": "VIDEOGAMES",
+        "words": [
+            "FALLOUT",
+            "HALO",
+            "MINECRAFT",
+            "OVERWATCH",
+            "UNCHARTED"
+        ]
+    },
+    {
+        "spangram": "JUGBAND",
+        "words": [
+            "BONES",
+            "BROOM",
+            "COWBELL",
+            "SPOONS",
+            "STOVEPIPE",
+            "WASHBOARD"
+        ]
+    },
+    {
+        "spangram": "CALIFORNIAROLL",
+        "words": [
+            "AVOCADO",
+            "CRAB",
+            "CUCUMBER",
+            "MAYO",
+            "RICE",
+            "SEAWEED"
+        ]
+    },
+    {
+        "spangram": "TITLES",
+        "words": [
+            "BARON",
+            "DUCHESS",
+            "EARL",
+            "ESQUIRE",
+            "KNIGHT",
+            "QUEEN",
+            "VISCOUNT"
+        ]
+    },
+    {
+        "spangram": "BELLTONES",
+        "words": [
+            "CHIME",
+            "CLANG",
+            "JINGLE",
+            "KNELL",
+            "PEAL",
+            "RING",
+            "TINKLE",
+            "TOLL"
+        ]
+    },
+    {
+        "spangram": "NATIONALPARKS",
+        "words": [
+            "ARCHES",
+            "BADLANDS",
+            "GLACIER",
+            "REDWOOD",
+            "SAGUARO"
+        ]
+    },
+    {
+        "spangram": "ROOTVEGETABLES",
+        "words": [
+            "BEET",
+            "JICAMA",
+            "POTATO",
+            "RUTABAGA",
+            "TARO",
+            "TURNIP"
+        ]
+    },
+    {
+        "spangram": "THREEBEARS",
+        "words": [
+            "BABY",
+            "BEDS",
+            "CHAIRS",
+            "HARD",
+            "MAMA",
+            "PAPA",
+            "PORRIDGE",
+            "SOFT"
+        ]
+    },
+    {
+        "spangram": "FABRIC",
+        "words": [
+            "CHIFFON",
+            "DENIM",
+            "JERSEY",
+            "MUSLIN",
+            "SATIN",
+            "SPANDEX",
+            "VELVET"
+        ]
+    },
+    {
+        "spangram": "POETRY",
+        "words": [
+            "DICTION",
+            "METER",
+            "RHYME",
+            "SCANSION",
+            "STANZA",
+            "SYNTAX",
+            "VERSE"
+        ]
+    },
+    {
+        "spangram": "INTERNALORGANS",
+        "words": [
+            "BRAIN",
+            "HEART",
+            "KIDNEYS",
+            "LIVER",
+            "LUNGS",
+            "STOMACH"
+        ]
+    },
+    {
+        "spangram": "RODENTS",
+        "words": [
+            "CHINCHILLA",
+            "HAMSTER",
+            "MUSKRAT",
+            "PORCUPINE",
+            "SQUIRREL"
+        ]
+    },
+    {
+        "spangram": "SCIENCEFICTION",
+        "words": [
+            "ALIEN",
+            "CYBORG",
+            "DROID",
+            "MARTIAN",
+            "MUTANT",
+            "ROBOT"
+        ]
+    },
+    {
+        "spangram": "BEEFCUTS",
+        "words": [
+            "BRISKET",
+            "CHUCK",
+            "FLANK",
+            "RIBEYE",
+            "ROUND",
+            "SHANK",
+            "SIRLOIN"
+        ]
+    },
+    {
+        "spangram": "BOXING",
+        "words": [
+            "BANTAM",
+            "CRUISER",
+            "FEATHER",
+            "HEAVY",
+            "LIGHT",
+            "MIDDLE",
+            "WELTER"
+        ]
+    },
+    {
+        "spangram": "SHORTCUTS",
+        "words": [
+            "BUZZ",
+            "FADE",
+            "FAUXHAWK",
+            "FLATTOP",
+            "PAGEBOY",
+            "PIXIE",
+            "SHAG"
+        ]
+    },
+    {
+        "spangram": "GLOVEBOX",
+        "words": [
+            "ATLAS",
+            "FLARE",
+            "MANUAL",
+            "QUARTER",
+            "REGISTRATION",
+            "TITLE"
+        ]
+    },
+    {
+        "spangram": "THATSCOOL",
+        "words": [
+            "BOSS",
+            "CHOICE",
+            "DANDY",
+            "GROOVY",
+            "HYPE",
+            "RIGHTEOUS",
+            "SWELL"
+        ]
+    },
+    {
+        "spangram": "SECURITY",
+        "words": [
+            "BACKUP",
+            "ENCRYPTION",
+            "FIREWALL",
+            "LOCK",
+            "PASSWORD",
+            "SAFE"
+        ]
+    },
+    {
+        "spangram": "HOMEROOM",
+        "words": [
+            "FOYER",
+            "HALL",
+            "KITCHEN",
+            "LIBRARY",
+            "OFFICE",
+            "PANTRY",
+            "STUDY"
+        ]
+    },
+    {
+        "spangram": "CHEMISTRYLAB",
+        "words": [
+            "BEAKER",
+            "FLASK",
+            "GOGGLES",
+            "PIPETTE",
+            "THERMOMETER"
+        ]
+    },
+    {
+        "spangram": "CHARACTERS",
+        "words": [
+            "BUGS",
+            "DAFFY",
+            "FOGHORN",
+            "FOXY",
+            "GRANNY",
+            "PETUNIA",
+            "PORKY"
+        ]
+    },
+    {
+        "spangram": "FALLFASHION",
+        "words": [
+            "CARDIGAN",
+            "FLANNEL",
+            "FLEECE",
+            "SCARF",
+            "SWEATER",
+            "VEST"
+        ]
+    },
+    {
+        "spangram": "MOVINGDAY",
+        "words": [
+            "BOXES",
+            "BUNGEE",
+            "CRATE",
+            "DOLLY",
+            "FOAM",
+            "STRAP",
+            "TAPE",
+            "TRUCK"
+        ]
+    },
+    {
+        "spangram": "CREATUREFEATURE",
+        "words": [
+            "FEATHER",
+            "HAIR",
+            "HORN",
+            "SCALE",
+            "SHELL",
+            "TAIL",
+            "WING"
+        ]
+    },
+    {
+        "spangram": "THERAVEN",
+        "words": [
+            "DREARY",
+            "MIDNIGHT",
+            "NEVERMORE",
+            "PONDERED",
+            "WEAK",
+            "WEARY"
+        ]
+    },
+    {
+        "spangram": "FANTASYLEAGUE",
+        "words": [
+            "DRAFT",
+            "MATCHUPS",
+            "ROSTER",
+            "STANDINGS",
+            "WAIVERS"
+        ]
+    },
+    {
+        "spangram": "DUMPLINGS",
+        "words": [
+            "EMPANADA",
+            "GYOZA",
+            "PIEROGI",
+            "RAVIOLI",
+            "SAMOSA",
+            "WONTON"
+        ]
+    },
+    {
+        "spangram": "GROUPNAME",
+        "words": [
+            "COLONY",
+            "FLOCK",
+            "HERD",
+            "KNOT",
+            "PACK",
+            "PRIDE",
+            "SCHOOL",
+            "SWARM"
+        ]
+    },
+    {
+        "spangram": "THEBLUES",
+        "words": [
+            "AZURE",
+            "COBALT",
+            "INDIGO",
+            "NAVY",
+            "PERIWINKLE",
+            "TURQUOISE"
+        ]
+    },
+    {
+        "spangram": "TRAFFICSIGNS",
+        "words": [
+            "BUMP",
+            "CONSTRUCTION",
+            "DETOUR",
+            "MERGE",
+            "STOP",
+            "YIELD"
+        ]
+    },
+    {
+        "spangram": "PETSOUNDS",
+        "words": [
+            "BARK",
+            "CHIRP",
+            "GROWL",
+            "GRUNT",
+            "MEOW",
+            "PURR",
+            "SQUAWK",
+            "SQUEAK"
+        ]
+    },
+    {
+        "spangram": "VOCALMUSIC",
+        "words": [
+            "ARIA",
+            "BALLAD",
+            "JINGLE",
+            "LULLABY",
+            "SHANTY",
+            "SPIRITUAL"
+        ]
+    },
+    {
+        "spangram": "ORCHARDS",
+        "words": [
+            "APPLES",
+            "CIDER",
+            "DOUGHNUTS",
+            "HAYRIDES",
+            "MAZE",
+            "PUMPKINS"
+        ]
+    },
+    {
+        "spangram": "TOGETHERNESS",
+        "words": [
+            "BESTIE",
+            "COMPANION",
+            "FRIEND",
+            "PARTNER",
+            "SIDEKICK"
+        ]
+    },
+    {
+        "spangram": "CANDYSTORE",
+        "words": [
+            "CHOCOLATE",
+            "GUMDROP",
+            "LICORICE",
+            "LOLLIPOP",
+            "TOFFEE"
+        ]
+    },
+    {
+        "spangram": "SOCIALMEDIA",
+        "words": [
+            "COMMENT",
+            "FOLLOW",
+            "LIKE",
+            "POST",
+            "REPORT",
+            "SHARE",
+            "TWEET"
+        ]
+    },
+    {
+        "spangram": "HANDGESTURES",
+        "words": [
+            "CLAP",
+            "FIST",
+            "PEACE",
+            "PINCH",
+            "POINT",
+            "PRAY",
+            "SHAKE",
+            "WAVE"
+        ]
+    },
+    {
+        "spangram": "NINETIESBANDS",
+        "words": [
+            "BLUR",
+            "NIRVANA",
+            "OASIS",
+            "PAVEMENT",
+            "SUBLIME",
+            "TOOL"
+        ]
+    },
+    {
+        "spangram": "WELLSUITED",
+        "words": [
+            "BIRTHDAY",
+            "BUSINESS",
+            "CIVIL",
+            "JUMP",
+            "LEISURE",
+            "STRONG"
+        ]
+    },
+    {
+        "spangram": "NATOALPHABET",
+        "words": [
+            "BRAVO",
+            "DELTA",
+            "ECHO",
+            "FOXTROT",
+            "GOLF",
+            "TANGO",
+            "VICTOR"
+        ]
+    },
+    {
+        "spangram": "UTENSILS",
+        "words": [
+            "CHOPSTICKS",
+            "FORK",
+            "KNIFE",
+            "SKEWER",
+            "SPOON",
+            "SPORK",
+            "TONGS"
+        ]
+    },
+    {
+        "spangram": "CITYNAME",
+        "words": [
+            "BEND",
+            "BOULDER",
+            "BUFFALO",
+            "MOBILE",
+            "PHOENIX",
+            "RIVERSIDE"
+        ]
+    },
+    {
+        "spangram": "FELLOWSHIP",
+        "words": [
+            "BUNCH",
+            "CIRCLE",
+            "CLIQUE",
+            "CLUB",
+            "CROWD",
+            "GROUP",
+            "SOCIETY"
+        ]
+    },
+    {
+        "spangram": "HOTPOTATO",
+        "words": [
+            "BAKED",
+            "FONDANT",
+            "FRIED",
+            "MASHED",
+            "ROASTED",
+            "SCALLOPED"
+        ]
+    },
+    {
+        "spangram": "WOODWORKING",
+        "words": [
+            "CHISEL",
+            "DRILL",
+            "JIGSAW",
+            "LATHE",
+            "PLANE",
+            "SANDER",
+            "VISE"
+        ]
+    },
+    {
+        "spangram": "COOKIECUTTER",
+        "words": [
+            "ANGEL",
+            "BELL",
+            "BUNNY",
+            "DIAMOND",
+            "FLOWER",
+            "HEART",
+            "STAR"
+        ]
+    },
+    {
+        "spangram": "ALBUMTITLE",
+        "words": [
+            "EVERMORE",
+            "FEARLESS",
+            "FOLKLORE",
+            "LOVER",
+            "MIDNIGHTS"
+        ]
+    },
+    {
+        "spangram": "GOGETTER",
+        "words": [
+            "DEVOTION",
+            "DRIVE",
+            "FIRE",
+            "INTENSITY",
+            "PASSION",
+            "PURPOSE"
+        ]
+    },
+    {
+        "spangram": "LUNARPHASE",
+        "words": [
+            "CRESCENT",
+            "FULL",
+            "GIBBOUS",
+            "QUARTER",
+            "WANING",
+            "WAXING"
+        ]
+    },
+    {
+        "spangram": "FICTIONGENRE",
+        "words": [
+            "CRIME",
+            "FANTASY",
+            "HISTORICAL",
+            "ROMANCE",
+            "WESTERN"
+        ]
+    },
+    {
+        "spangram": "SPINNERS",
+        "words": [
+            "BALLERINA",
+            "DRYER",
+            "EARTH",
+            "FOOTBALL",
+            "PINWHEEL",
+            "TIRES"
+        ]
+    },
+    {
+        "spangram": "ROCKING",
+        "words": [
+            "ALTERNATIVE",
+            "GLAM",
+            "GRUNGE",
+            "METAL",
+            "PROGRESSIVE",
+            "PUNK"
+        ]
+    },
+    {
+        "spangram": "CEREAL",
+        "words": [
+            "CHARM",
+            "CHEERIO",
+            "CRUNCH",
+            "FLAKE",
+            "LOOP",
+            "PEBBLE",
+            "PUFF",
+            "SMACK"
+        ]
+    },
+    {
+        "spangram": "SACREDSPACES",
+        "words": [
+            "ABBEY",
+            "MONASTERY",
+            "MOSQUE",
+            "TABERNACLE",
+            "TEMPLE"
+        ]
+    },
+    {
+        "spangram": "WINTERWONDERLAND",
+        "words": [
+            "BELLS",
+            "GLISTENING",
+            "SLEIGH",
+            "SNOW",
+            "WALKING"
+        ]
+    },
+    {
+        "spangram": "HOLIDAYFLAVOR",
+        "words": [
+            "COCOA",
+            "CRANBERRY",
+            "GINGERBREAD",
+            "PEPPERMINT"
+        ]
+    },
+    {
+        "spangram": "NATURENAMES",
+        "words": [
+            "BROOK",
+            "CLEMENTINE",
+            "HOLLY",
+            "LAUREL",
+            "RIVER",
+            "WILLOW"
+        ]
+    },
+    {
+        "spangram": "STOCKING",
+        "words": [
+            "CANDY",
+            "COAL",
+            "ORANGE",
+            "PENS",
+            "PLUSHIE",
+            "SCARF",
+            "SOCKS",
+            "TOYS"
+        ]
+    },
+    {
+        "spangram": "REUNION",
+        "words": [
+            "AUNT",
+            "COUSIN",
+            "GRANDCHILD",
+            "INLAW",
+            "NEPHEW",
+            "NIECE",
+            "UNCLE"
+        ]
+    },
+    {
+        "spangram": "EIGHTIES",
+        "words": [
+            "JUMPSUIT",
+            "MULLET",
+            "NEON",
+            "PERM",
+            "SPANDEX",
+            "WINDBREAKER"
+        ]
+    },
+    {
+        "spangram": "AROMATHERAPY",
+        "words": [
+            "CEDARWOOD",
+            "EUCALYPTUS",
+            "LAVENDER",
+            "PATCHOULI"
+        ]
     }
-  },
-  {
-    "id": 2,
-    "theme": "Frühstückstisch",
-    "spangram": "MORGENESSEN",
-    "grid": "KAFFEEMUSELIEMORGENESSENBROTMERELADEEIXXXXXXX",
-    "solution": {
-      "KAFFEE": [0, 1, 2, 3, 4, 5],
-      "MUESLI": [6, 7, 8, 14, 13, 12],
-      "BROT": [24, 25, 26, 27],
-      "EI": [34, 35],
-      "MORGENESSEN": [15, 16, 17, 18, 19, 20, 21, 22, 23, 29, 28]
-    }
-  },
-  {
-    "id": 3,
-    "theme": "Im Weltall",
-    "spangram": "STERNBILDER",
-    "grid": "PLANETENOMETSTERNEBILDERRAKETEMONDXXXXXXXXXXX",
-    "solution": {
-      "PLANET": [0, 1, 2, 3, 4, 5],
-      "RAKETE": [30, 31, 32, 33, 34, 35],
-      "MOND": [36, 37, 38, 39],
-      "STERNBILDER": [12, 13, 14, 15, 16, 22, 21, 20, 19, 18, 17]
-    }
-  },
-  {
-    "id": 4,
-    "theme": "Im Wald",
-    "spangram": "NATURSCHUTZ",
-    "grid": "BAUMREHUCHSREHLNATURSCHUTZMOOSPILZXXXXXXXXXXX",
-    "solution": {
-      "BAUM": [0, 1, 2, 3],
-      "FUCHS": [4, 10, 16, 15, 9],
-      "MOOS": [30, 31, 32, 33],
-      "PILZ": [34, 35, 41, 40],
-      "NATURSCHUTZ": [12, 13, 14, 20, 21, 22, 23, 17, 11, 5, 6]
-    }
-  },
-  {
-    "id": 5,
-    "theme": "Süßigkeiten",
-    "spangram": "ZUCKERWATTE",
-    "grid": "KEKSSCHOKOZUCKERWATTELOLLEISEYXXXXXXXXXXXXXXX",
-    "solution": {
-      "KEKS": [0, 1, 2, 3],
-      "SCHOKO": [4, 5, 11, 10, 9, 8],
-      "LOLLE": [24, 25, 26, 27, 21],
-      "EIS": [28, 29, 35],
-      "ZUCKERWATTE": [12, 13, 14, 15, 16, 17, 23, 22, 21, 20, 19]
-    }
-  },
-  {
-    "id": 6,
-    "theme": "Bauernhof",
-    "spangram": "TIERHALTUNG",
-    "grid": "KUHCHAFHERDPFERDTIERHALTUNGHUHNXXXXXXXXXXXXXX",
-    "solution": {
-      "KUH": [0, 1, 2],
-      "SCHAF": [3, 9, 15, 14, 8],
-      "PFERD": [10, 11, 17, 23, 22],
-      "HUHN": [30, 31, 32, 33],
-      "TIERHALTUNG": [12, 13, 19, 20, 21, 27, 26, 25, 24, 18, 7]
-    }
-  },
-  {
-    "id": 7,
-    "theme": "Küche",
-    "spangram": "KOCHGESCHIRR",
-    "grid": "TOPFESSERANNKOCHGESCHIRRGABELXXXXXXXXXXXXXXX",
-    "solution": {
-      "TOPF": [0, 1, 2, 3],
-      "MESSER": [4, 5, 11, 10, 9, 8],
-      "PFANNE": [7, 13, 19, 25, 31, 37],
-      "GABEL": [30, 24, 18, 12, 6],
-      "KOCHGESCHIRR": [14, 15, 16, 17, 23, 22, 21, 20, 26, 27, 28, 29]
-    }
-  },
-  {
-    "id": 8,
-    "theme": "Winterzeit",
-    "spangram": "SCHNEEMANNNN",
-    "grid": "EISCHNEEFLOCKEKALTSCHNEEMANNNNXXXXXXXXXXXXXX",
-    "solution": {
-      "EIS": [0, 1, 2],
-      "SCHNEEFLOCKE": [3, 4, 5, 11, 10, 9, 8, 14, 15, 21, 20, 19],
-      "KALT": [18, 17, 16, 22],
-      "SCHNEEMANNNN": [24, 25, 26, 27, 28, 29, 35, 34, 33, 32, 31, 30]
-    }
-  },
-  {
-    "id": 9,
-    "theme": "In der Schule",
-    "spangram": "LERNERFOLGEE",
-    "grid": "BUCHSTIFTPAUSELERNERFOLGEEHEFTXXXXXXXXXXXXXX",
-    "solution": {
-      "BUCH": [0, 1, 2, 3],
-      "STIFT": [4, 5, 11, 10, 9],
-      "PAUSE": [6, 7, 8, 14, 13],
-      "HEFT": [30, 31, 32, 33],
-      "LERNERFOLGEE": [12, 18, 19, 20, 21, 22, 23, 29, 28, 27, 26, 25]
-    }
-  },
-  {
-    "id": 10,
-    "theme": "Sommer",
-    "spangram": "SONNENSCHEIN",
-    "grid": "SONNESONNENSCHEINMEERHITZESTRANDXXXXXXXXXXXX",
-    "solution": {
-      "SONNE": [0, 1, 2, 3, 4],
-      "MEER": [24, 25, 26, 27],
-      "HITZE": [28, 29, 35, 34, 33],
-      "STRAND": [36, 37, 38, 39, 40, 41],
-      "SONNENSCHEIN": [5, 11, 10, 9, 8, 7, 6, 12, 13, 14, 15, 21]
-    }
-  },
-
-  {
-    "id": "lvl1",
-    "theme": "Piraten",
-    "spangram": "SCHATZSUCHE",
-    "words": ["GOLD", "INSEL", "MEER", "BOOT"],
-    "grid": "SCHATZMEERGOLDXSUCHEXINSELXXBOOTXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl2",
-    "theme": "Im Wald",
-    "spangram": "NATURPUR",
-    "words": ["MOOS", "BAUM", "PILZ", "FUCHS", "REH"],
-    "grid": "NATURBAUMPURXXMOOSXXPILZXXFUCHSXXREHXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl3",
-    "theme": "Frühstück",
-    "spangram": "LECKER",
-    "words": ["BROT", "EI", "MILCH", "OBST", "TEE"],
-    "grid": "BROTLECKEREIXXMILCHXOBSTXXTEEXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl4",
-    "theme": "Weltraum",
-    "spangram": "GALAXIE",
-    "words": ["MOND", "STERN", "MARS", "RAKETE"],
-    "grid": "MONDSTERNMARSGALAXIERAKETEXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl5",
-    "theme": "Körper",
-    "spangram": "ANATOMIE",
-    "words": ["KOPF", "HERZ", "BEIN", "HAND", "ARM"],
-    "grid": "KOPFANATOMIEHERZBEINHANDARMXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl6",
-    "theme": "Schule",
-    "spangram": "LERNEN",
-    "words": ["BUCH", "HEFT", "STIFT", "PAUSE"],
-    "grid": "BUCHLERNENHEFTSTIFTPAUSEXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl7",
-    "theme": "Wetter",
-    "spangram": "KLIMA",
-    "words": ["REGEN", "SONNE", "WIND", "STURM"],
-    "grid": "REGENKLIMASONNEWINDSTURMXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl8",
-    "theme": "Tiere",
-    "spangram": "ZOOBESUCH",
-    "words": ["LOEWE", "TIGER", "AFFEN", "ZEBRA"],
-    "grid": "LOEWEZOOBESUCHTIGERAFFENZEBRAXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl9",
-    "theme": "Farben",
-    "spangram": "REGENBOGEN",
-    "words": ["GELB", "BLAU", "GRUEN", "ROT", "LILA"],
-    "grid": "GELBREGENBOGENBLAUGRUENROTLILAXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl10",
-    "theme": "Sport",
-    "spangram": "TRAINING",
-    "words": ["BALL", "TOR", "LAUF", "SIEG"],
-    "grid": "BALLTRAININGTORLAUFSIEGXXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl11",
-    "theme": "Musik",
-    "spangram": "MELODIE",
-    "words": ["NOTE", "BASS", "LIED", "TAKT"],
-    "grid": "NOTEMELODIEBASSLIEDTAKTXXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl12",
-    "theme": "Sommer",
-    "spangram": "URLAUB",
-    "words": ["HITZE", "EIS", "BADEN", "SAND"],
-    "grid": "HITZEURLAUBEISBADENSANDXXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl13",
-    "theme": "Winter",
-    "spangram": "SCHNEE",
-    "words": ["KALT", "EIS", "SKI", "FROST"],
-    "grid": "KALTSCHNEEEISSKIFROSTXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl14",
-    "theme": "Berufe",
-    "spangram": "ARBEIT",
-    "words": ["ARZT", "KOCH", "MALER", "BAUER"],
-    "grid": "ARZTARBEITKOCHMALERBAUERXXXXXXXXXXXXXXXXXXXXXXXX"
-  },
-  {
-    "id": "lvl15",
-    "theme": "Garten",
-    "spangram": "PFLANZEN",
-    "words": ["BLUME", "ERDE", "GRAS", "BEET"],
-    "grid": "BLUMEPFLANZENERDEGRASBEETXXXXXXXXXXXXXXXXXXXXXXX"
-  }
 ]
-
