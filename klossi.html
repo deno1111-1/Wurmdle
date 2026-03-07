@@ -38,7 +38,7 @@
 
         #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; }
 
-        /* --- GAME 4: KLOSSIS LECKERLIJAGD (DOTS) --- */
+        /* --- KLOSSIS LECKERLIJAGD --- */
         .klossi-score-board { display: flex; gap: 20px; margin-bottom: 10px; margin-top: 10px; width: 100%; justify-content: center; }
         .score-box { background: #333; padding: 10px 20px; border-radius: 10px; text-align: center; border: 2px solid transparent; min-width: 80px;}
         .score-box.active { border-color: white; background: #444; transform: scale(1.05); transition: all 0.2s; }
@@ -70,7 +70,7 @@
     </div>
 
     <script>
-        let kDots=6, kH_lines=[], kV_lines=[], kBoxes=[], kTurn=1, kScoreP=0, kScoreB=0, kCanvas=null, kCtx=null, kScale=1;
+        let kDots=8, kH_lines=[], kV_lines=[], kBoxes=[], kTurn=1, kScoreP=0, kScoreB=0, kCanvas=null, kCtx=null, kScale=1;
         const K_SIZE=50;
         let isGameActive = true;
 
@@ -80,17 +80,11 @@
 
         function startKlossiGame(){
             isGameActive = true;
-            kDots=6; 
-            kH_lines=new Array(kDots).fill(0).map(()=>new Array(kDots-1).fill(0));
-            kV_lines=new Array(kDots-1).fill(0).map(()=>new Array(kDots).fill(0));
-            kBoxes=new Array(kDots-1).fill(0).map(()=>new Array(kDots-1).fill(0));
-            
-            // Randomly pre-fill some boxes as blockers
-            for(let r=0;r<kDots-1;r++)for(let c=0;c<kDots-1;c++)if(Math.random()<0.2)kBoxes[r][c]=-1; 
+            generateRandomBoard(); 
             
             kTurn=1; kScoreP=0; kScoreB=0;
             const cont=document.getElementById('dots-canvas-container');
-            const size=Math.min(window.innerWidth-40, 400);
+            const size=Math.min(window.innerWidth-20, 400);
             kScale=size/((kDots-1)*K_SIZE + 20); 
             
             cont.innerHTML=`<canvas id="kCanvas" width="${size}" height="${size}" style="background:#222; cursor:pointer; touch-action:none;"></canvas>`;
@@ -102,6 +96,98 @@
             kCanvas.addEventListener('pointerdown', klossiClick); 
             updateKlossiUI(); 
             renderKlossi();
+        }
+
+        function generateRandomBoard() {
+            const BOXES = 7; 
+            kDots = BOXES + 1;
+            
+            // -2 bedeutet: Außerhalb des Spielfelds (unsichtbar)
+            kBoxes = Array.from({length: BOXES}, () => Array(BOXES).fill(-2));
+            
+            let type = Math.floor(Math.random() * 4); 
+            
+            if (type === 0) {
+                let active = 0; let target = 20 + Math.floor(Math.random() * 8); 
+                kBoxes[3][3] = 0; active++;
+                while(active < target) {
+                    let cands = [];
+                    for(let r=0; r<BOXES; r++) {
+                        for(let c=0; c<BOXES; c++) {
+                            if(kBoxes[r][c] === -2 && ((r>0 && kBoxes[r-1][c]===0) || (r<BOXES-1 && kBoxes[r+1][c]===0) || (c>0 && kBoxes[r][c-1]===0) || (c<BOXES-1 && kBoxes[r][c+1]===0))) {
+                                cands.push({r,c});
+                            }
+                        }
+                    }
+                    if(cands.length===0) break;
+                    let pick = cands[Math.floor(Math.random()*cands.length)];
+                    let points = [{r: pick.r, c: pick.c}, {r: 6-pick.r, c: pick.c}, {r: pick.r, c: 6-pick.c}, {r: 6-pick.r, c: 6-pick.c}];
+                    for(let p of points) { if(kBoxes[p.r][p.c] === -2) { kBoxes[p.r][p.c] = 0; active++; } }
+                }
+            } else if (type === 1) {
+                let active = 0; let target = 24 + Math.floor(Math.random() * 8);
+                kBoxes[3][3] = 0; active++;
+                while(active < target) {
+                    let cands = [];
+                    for(let r=0; r<BOXES; r++) {
+                        for(let c=0; c<BOXES; c++) {
+                            if(kBoxes[r][c] === -2 && ((r>0 && kBoxes[r-1][c]===0) || (r<BOXES-1 && kBoxes[r+1][c]===0) || (c>0 && kBoxes[r][c-1]===0) || (c<BOXES-1 && kBoxes[r][c+1]===0))) {
+                                cands.push({r,c});
+                            }
+                        }
+                    }
+                    if(cands.length===0) break;
+                    let pick = cands[Math.floor(Math.random()*cands.length)];
+                    kBoxes[pick.r][pick.c] = 0; active++;
+                }
+            } else if (type === 2) {
+                let active = 0; let target = 22 + Math.floor(Math.random() * 6);
+                let r = Math.floor(Math.random() * 3) + 2; let c = Math.floor(Math.random() * 3) + 2;
+                while(active < target) {
+                    if(kBoxes[r][c] === -2) { kBoxes[r][c] = 0; active++; }
+                    let dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+                    let validDirs = dirs.map(d => ({r: r+d[0], c: c+d[1]})).filter(p => p.r>=0 && p.r<BOXES && p.c>=0 && p.c<BOXES);
+                    let emptyDirs = validDirs.filter(p => kBoxes[p.r][p.c] === -2);
+                    let next = emptyDirs.length > 0 ? emptyDirs[Math.floor(Math.random()*emptyDirs.length)] : validDirs[Math.floor(Math.random()*validDirs.length)];
+                    r = next.r; c = next.c;
+                }
+            } else {
+                let shape = Math.floor(Math.random() * 3);
+                for(let r=0; r<BOXES; r++) {
+                    for(let c=0; c<BOXES; c++) {
+                        let dist = Math.abs(r-3) + Math.abs(c-3);
+                        if (shape === 0) { if (dist >= 1 && dist <= 3) kBoxes[r][c] = 0; } 
+                        else if (shape === 1) { if (r===3 || c===3 || (r>=2 && r<=4 && c>=2 && c<=4)) kBoxes[r][c] = 0; } 
+                        else { if (dist <= 3) kBoxes[r][c] = 0; }
+                    }
+                }
+            }
+
+            // Wände (-1) zufällig in das generierte Spielfeld (0) streuen
+            for(let r=0; r<BOXES; r++) {
+                for(let c=0; c<BOXES; c++) {
+                    if(kBoxes[r][c] === 0 && Math.random() < 0.15) {
+                        kBoxes[r][c] = -1; 
+                    }
+                }
+            }
+
+            // Linien aktivieren
+            kH_lines = Array.from({length: kDots}, () => Array(BOXES).fill(-1));
+            kV_lines = Array.from({length: BOXES}, () => Array(kDots).fill(-1));
+
+            for(let r=0; r<kDots; r++) {
+                for(let c=0; c<BOXES; c++) {
+                    if ((r > 0 && kBoxes[r-1][c] !== -2) || (r < BOXES && kBoxes[r][c] !== -2)) kH_lines[r][c] = 0;
+                }
+            }
+            
+            for(let r=0; r<BOXES; r++) {
+                for(let c=0; c<kDots; c++) {
+                    // BUGFIX: Hier wurde c < kDots abgefragt, statt c < BOXES!
+                    if ((c > 0 && kBoxes[r][c-1] !== -2) || (c < BOXES && kBoxes[r][c] !== -2)) kV_lines[r][c] = 0;
+                }
+            }
         }
 
         function klossiClick(e){
@@ -133,7 +219,7 @@
             for(let i=0;i<kDots-1;i++){
                 for(let j=0;j<kDots-1;j++){
                     if(kBoxes[i][j]===0){
-                        if(kH_lines[i][j] && kH_lines[i+1][j] && kV_lines[i][j] && kV_lines[i][j+1]){
+                        if(kH_lines[i][j]>0 && kH_lines[i+1][j]>0 && kV_lines[i][j]>0 && kV_lines[i][j+1]>0){
                             kBoxes[i][j]=who; 
                             madePoint=true; 
                             if(who===1)kScoreP++; else kScoreB++;
@@ -188,11 +274,11 @@
             if(m.t==='h') kH_lines[m.r][m.c]=2; else kV_lines[m.r][m.c]=2;
             
             if(m.t==='h'){
-                if(m.r>0 && isBoxFull(m.r-1,m.c)) closes=true; 
-                if(m.r<kDots-1 && isBoxFull(m.r,m.c)) closes=true;
+                if(isBoxFull(m.r-1,m.c)) closes=true; 
+                if(isBoxFull(m.r,m.c)) closes=true;
             } else {
-                if(m.c>0 && isBoxFull(m.r,m.c-1)) closes=true; 
-                if(m.c<kDots-1 && isBoxFull(m.r,m.c)) closes=true;
+                if(isBoxFull(m.r,m.c-1)) closes=true; 
+                if(isBoxFull(m.r,m.c)) closes=true;
             }
             
             if(m.t==='h') kH_lines[m.r][m.c]=0; else kV_lines[m.r][m.c]=0; 
@@ -202,68 +288,88 @@
         function givesPoint(m){
             let bad=false;
             if(m.t==='h'){
-                if(m.r>0 && countLines(m.r-1,m.c)===2) bad=true; 
-                if(m.r<kDots-1 && countLines(m.r,m.c)===2) bad=true;
+                if(countLines(m.r-1,m.c)===3) bad=true; 
+                if(countLines(m.r,m.c)===3) bad=true;
             } else {
-                if(m.c>0 && countLines(m.r,m.c-1)===2) bad=true; 
-                if(m.c<kDots-1 && countLines(m.r,m.c)===2) bad=true;
+                if(countLines(m.r,m.c-1)===3) bad=true; 
+                if(countLines(m.r,m.c)===3) bad=true;
             }
             return bad;
         }
 
         function isBoxFull(r,c){ 
-            return kBoxes[r][c]!==-1 && kH_lines[r][c] && kH_lines[r+1][c] && kV_lines[r][c] && kV_lines[r][c+1]; 
+            if(r<0 || r>=kDots-1 || c<0 || c>=kDots-1) return false;
+            // Zählt nur für bespielbare Felder (0 oder bereits gewonnen)
+            return kBoxes[r][c] >= 0 && kH_lines[r][c] > 0 && kH_lines[r+1][c] > 0 && kV_lines[r][c] > 0 && kV_lines[r][c+1] > 0; 
         }
         
         function countLines(r,c){ 
-            if(kBoxes[r][c]===-1) return -1; 
+            if(r<0 || r>=kDots-1 || c<0 || c>=kDots-1) return -1;
+            // Mauern (-1) oder Nichts (-2) geben nie einen Punkt
+            if(kBoxes[r][c] < 0) return -1; 
             let cnt=0; 
-            if(kH_lines[r][c])cnt++; if(kH_lines[r+1][c])cnt++; 
-            if(kV_lines[r][c])cnt++; if(kV_lines[r][c+1])cnt++; 
+            if(kH_lines[r][c]>0)cnt++; if(kH_lines[r+1][c]>0)cnt++; 
+            if(kV_lines[r][c]>0)cnt++; if(kV_lines[r][c+1]>0)cnt++; 
             return cnt; 
         }
 
         function renderKlossi(){
             kCtx.clearRect(0,0,1000,1000); kCtx.lineWidth=4;
+            
             for(let r=0;r<kDots-1;r++){
                 for(let c=0;c<kDots-1;c++){
-                    if(kBoxes[r][c]===-1) { 
+                    if(kBoxes[r][c] === -1) { 
+                        // Die MAUERN: Dunkelgraue Hindernisse
                         kCtx.fillStyle='#333'; kCtx.fillRect(c*K_SIZE+5, r*K_SIZE+5, K_SIZE-10, K_SIZE-10); 
                     } else if(kBoxes[r][c]===1) { 
                         kCtx.fillStyle='#ff69b4'; kCtx.fillRect(c*K_SIZE, r*K_SIZE, K_SIZE, K_SIZE); 
                     } else if(kBoxes[r][c]===2) { 
                         kCtx.fillStyle='#ffd700'; kCtx.fillRect(c*K_SIZE, r*K_SIZE, K_SIZE, K_SIZE); 
                     }
+                    // kBoxes === -2 (Nichts) oder 0 (Spielfeld) wird einfach gar nicht gefüllt (Hintergrund bleibt schwarz)
                 }
             }
             
             for(let r=0;r<kDots;r++){
                 for(let c=0;c<kDots-1;c++){
-                    if(kH_lines[r][c]){
+                    if(kH_lines[r][c] === -1) continue; 
+                    if(kH_lines[r][c] > 0){
                         kCtx.beginPath(); kCtx.moveTo(c*K_SIZE, r*K_SIZE); kCtx.lineTo((c+1)*K_SIZE, r*K_SIZE); 
-                        kCtx.strokeStyle = (kH_lines[r][c]===1)?'#ff69b4':(kH_lines[r][c]===2)?'#ffd700':'#555'; 
+                        kCtx.strokeStyle = (kH_lines[r][c]===1)?'#ff69b4':'#ffd700'; 
                         kCtx.stroke();
                     } else {
-                        kCtx.fillStyle='#444'; kCtx.beginPath(); kCtx.arc(c*K_SIZE+K_SIZE/2, r*K_SIZE, 2, 0, 6.28); kCtx.fill();
+                        kCtx.fillStyle='rgba(255,255,255,0.15)'; 
+                        kCtx.beginPath(); kCtx.arc(c*K_SIZE+K_SIZE/2, r*K_SIZE, 2, 0, 6.28); kCtx.fill();
                     }
                 }
             }
             
             for(let r=0;r<kDots-1;r++){
                 for(let c=0;c<kDots;c++){
-                    if(kV_lines[r][c]){
+                    if(kV_lines[r][c] === -1) continue; 
+                    if(kV_lines[r][c] > 0){
                         kCtx.beginPath(); kCtx.moveTo(c*K_SIZE, r*K_SIZE); kCtx.lineTo(c*K_SIZE, (r+1)*K_SIZE); 
-                        kCtx.strokeStyle = (kV_lines[r][c]===1)?'#ff69b4':(kV_lines[r][c]===2)?'#ffd700':'#555'; 
+                        kCtx.strokeStyle = (kV_lines[r][c]===1)?'#ff69b4':'#ffd700'; 
                         kCtx.stroke();
                     } else {
-                        kCtx.fillStyle='#444'; kCtx.beginPath(); kCtx.arc(c*K_SIZE, r*K_SIZE+K_SIZE/2, 2, 0, 6.28); kCtx.fill();
+                        kCtx.fillStyle='rgba(255,255,255,0.15)'; 
+                        kCtx.beginPath(); kCtx.arc(c*K_SIZE, r*K_SIZE+K_SIZE/2, 2, 0, 6.28); kCtx.fill();
                     }
                 }
             }
             
+            // Punkte zeichnen
             for(let r=0;r<kDots;r++){
                 for(let c=0;c<kDots;c++){
-                    kCtx.fillStyle='#fff'; kCtx.beginPath(); kCtx.arc(c*K_SIZE, r*K_SIZE, 6, 0, 6.28); kCtx.fill();
+                    let hasLine = false;
+                    if(c < kDots-1 && kH_lines[r][c] !== -1) hasLine = true;
+                    if(c > 0 && kH_lines[r][c-1] !== -1) hasLine = true;
+                    if(r < kDots-1 && kV_lines[r][c] !== -1) hasLine = true;
+                    if(r > 0 && kV_lines[r-1][c] !== -1) hasLine = true;
+
+                    if(hasLine) {
+                        kCtx.fillStyle='#fff'; kCtx.beginPath(); kCtx.arc(c*K_SIZE, r*K_SIZE, 5, 0, 6.28); kCtx.fill();
+                    }
                 }
             }
         }
