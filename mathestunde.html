@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐔 Frau Huhns Mathestunde</title>
+    <style>
+        :root { --primary: #121213; --bg: #f4f4f5; --tile-num: #ffffff; --tile-op: #e2e2e3; --accent: #4a90e2; --success: #28a745; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; margin: 0; padding: 0 20px 40px 20px; touch-action: manipulation; user-select: none; min-height: 100vh; overflow-y: auto; }
+        
+        /* Main Menu Overlay */
+        #main-menu-overlay {
+            position: fixed; inset: 0; background: rgba(18, 18, 19, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+
+        .menu-content {
+            background: #fff; padding: 40px; border-radius: 15px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 90%; width: 350px;
+        }
+
+        .menu-content h1 { margin-top: 0; color: var(--primary); font-size: 2rem; margin-bottom: 20px; }
+        
+        .mode-btn {
+            display: block; width: 100%; padding: 15px; margin-bottom: 15px;
+            font-size: 1.2rem; background: var(--accent); color: white;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 0 #316eaa; transition: all 0.1s;
+        }
+        .mode-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #316eaa; }
+        .mode-btn.hard { background: #d9534f; box-shadow: 0 4px 0 #a03c39; }
+        .mode-btn.hard:active { box-shadow: 0 0 0 #a03c39; }
+
+        /* Top Navigation Bar */
+        #top-nav {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
+            padding: 15px 0; margin-bottom: 10px; border-bottom: 2px solid #ddd;
+        }
+
+        .nav-btn {
+            padding: 10px 16px; font-size: 1rem; background: var(--primary); color: white; 
+            border: none; border-radius: 8px; cursor: pointer; font-weight: bold; 
+            text-decoration: none; box-shadow: 0 4px 0 #000; transition: all 0.1s;
+        }
+        .nav-btn:active { transform: translateY(4px); box-shadow: 0 0px 0 #000; }
+        .nav-btn.secondary { background: #2196F3; }
+        .nav-btn.menu { background: #475569; }
+
+        .header { text-align: center; margin-bottom: 20px; margin-top: 10px; }
+        .label { color: #666; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 5px; }
+        #target-container { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 0; }
+
+        /* Board */
+        #board { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; min-height: 90px; align-items: center; background: #eaeaeb; padding: 15px; border-radius: 12px; width: 100%; max-width: 500px; box-sizing: border-box; }
+        
+        .slot { border: 2px dashed #bbb; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; background: transparent; }
+        .slot.num-slot { width: 60px; height: 80px; }
+        .slot.op-slot { width: 40px; height: 50px; border-radius: 50%; border-style: solid; background: #fff; border-color: #ddd; }
+        .slot.highlight { border-color: var(--accent); background: rgba(74, 144, 226, 0.1); transform: scale(1.05); }
+
+        .pool-container { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; max-width: 400px; }
+        .pool { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; min-height: 50px; }
+
+        .tile { 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; 
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: all 0.1s; border-radius: 8px; border: 2px solid #333;
+        }
+        .tile:active { transform: translateY(4px); box-shadow: 0 0px 0 rgba(0,0,0,0.2); }
+        .tile.selected { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); transform: scale(1.1); z-index: 10; }
+        
+        .num-tile { width: 60px; height: 80px; background: var(--tile-num); font-size: 1.5rem; color: #333; }
+        .op-tile { width: 45px; height: 45px; background: var(--tile-op); font-size: 1.5rem; border-radius: 50%; }
+
+        #result-display { margin-top: 10px; margin-bottom: 20px; font-size: 1.5rem; color: #555; text-align: center; height: 40px; line-height: 1.2;}
+        .success-text { color: var(--success); font-weight: bold; animation: pop 0.4s ease-out forwards; }
+        .error-text { color: #d9534f; font-size: 1.2rem; }
+
+        @keyframes pop { 0% { transform: scale(0.8); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="main-menu-overlay">
+        <div class="menu-content">
+            <h1>🐔 Frau Huhns Mathestunde</h1>
+            <p style="color: #666; margin-bottom: 20px;">Wähle die Anzahl der Zahlen-Slots:</p>
+            <button class="mode-btn" onclick="startGameMode(3)">3 Zahlen (Standard)</button>
+            <button class="mode-btn" style="background: #e67e22; box-shadow: 0 4px 0 #b9651b;" onclick="startGameMode(4)">4 Zahlen (Knifflig)</button>
+            <button class="mode-btn hard" onclick="startGameMode(5)">5 Zahlen (Experte)</button>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+            <a href="index.html" class="nav-btn menu" style="display: inline-block;">🏠 Zur Hauptmenü-Sammlung</a>
+        </div>
+    </div>
+
+    <div id="top-nav">
+        <button onclick="openMenu()" class="nav-btn menu">Menü</button>
+        <button onclick="startNewGame()" class="nav-btn">Neues Rätsel</button>
+        <button onclick="showSolution()" class="nav-btn secondary">Lösung zeigen</button>
+    </div>
+
+    <div class="header">
+        <div class="label">Zielzahl</div>
+        <div id="target-container">0</div>
+    </div>
+
+    <div id="board"></div>
+
+    <div id="result-display">= <span id="current-val">?</span></div>
+
+    <div class="pool-container">
+        <div class="label">Operatoren</div>
+        <div class="pool" id="operator-pool">
+            </div>
+
+        <div class="label" style="margin-top: 15px;">Zahlen</div>
+        <div class="pool" id="number-pool"></div>
+    </div>
+
+    <script>
+        const numberSet = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 50, 75, 100];
+        const operators = ['+', '-', '×', '÷'];
+        
+        let gameState = {
+            numCount: 3,     
+            totalSlots: 5,   
+            target: 0,
+            slots: [], 
+            selectedTile: null,
+            solution: [] 
+        };
+
+        const currentValEl = document.getElementById('current-val');
+        const numPoolEl = document.getElementById('number-pool');
+        const opPoolEl = document.getElementById('operator-pool');
+        const boardContainer = document.getElementById('board');
+        let boardEls = [];
+
+        function openMenu() {
+            document.getElementById('main-menu-overlay').style.display = 'flex';
+        }
+
+        function startGameMode(nums) {
+            gameState.numCount = nums;
+            gameState.totalSlots = nums + (nums - 1); 
+            document.getElementById('main-menu-overlay').style.display = 'none';
+            buildBoard();
+            startNewGame();
+        }
+
+        function buildBoard() {
+            boardContainer.innerHTML = '';
+            gameState.slots = new Array(gameState.totalSlots).fill(null);
+            
+            for (let i = 0; i < gameState.totalSlots; i++) {
+                let isNum = (i % 2 === 0);
+                let slot = document.createElement('div');
+                slot.className = `slot ${isNum ? 'num-slot' : 'op-slot'}`;
+                slot.dataset.index = i;
+                slot.dataset.type = isNum ? 'num' : 'op';
+                slot.onclick = () => handleSlotClick(slot);
+                boardContainer.appendChild(slot);
+            }
+            boardEls = document.querySelectorAll('.slot');
+        }
+
+        function generatePuzzle() {
+            let valid = false;
+            let availableNumbers = [];
+            let numCount = gameState.numCount;
+            let opCount = numCount - 1;
+
+            while (!valid) {
+                availableNumbers = [];
+                for (let i = 0; i < numCount + 3; i++) {
+                    availableNumbers.push(numberSet[Math.floor(Math.random() * numberSet.length)]);
+                }
+
+                let shuffledNum = [...availableNumbers].sort(() => 0.5 - Math.random());
+                
+                let shuffledOps = [...operators].sort(() => 0.5 - Math.random());
+                let chosenOps = shuffledOps.slice(0, opCount);
+                
+                let testSequence = [];
+                for(let i = 0; i < numCount; i++){
+                    testSequence.push(shuffledNum[i]);
+                    if (i < opCount) testSequence.push(chosenOps[i]);
+                }
+                
+                let res = evaluateSequence(testSequence);
+                
+                if (typeof res === 'number' && Number.isInteger(res) && res > 0) {
+                    gameState.target = res;
+                    gameState.solution = testSequence;
+                    valid = true;
+                }
+            }
+            return availableNumbers;
+        }
+
+        function evaluateSequence(seqArray) {
+            if (seqArray.length === 0) return null;
+            if (seqArray.length === 1) return seqArray[0];
+
+            let arr = [...seqArray];
+
+            for (let i = 1; i < arr.length; i += 2) {
+                if (arr[i] === '×' || arr[i] === '÷') {
+                    let a = arr[i-1];
+                    let op = arr[i];
+                    let b = arr[i+1];
+                    let res;
+                    
+                    if (op === '×') {
+                        res = a * b;
+                    } else {
+                        if (b === 0 || a % b !== 0) return null; 
+                        res = a / b;
+                    }
+                    arr.splice(i-1, 3, res);
+                    i -= 2; 
+                }
+            }
+
+            for (let i = 1; i < arr.length; i += 2) {
+                let a = arr[i-1];
+                let op = arr[i];
+                let b = arr[i+1];
+                let res;
+                
+                if (op === '+') res = a + b;
+                else res = a - b;
+                
+                arr.splice(i-1, 3, res);
+                i -= 2;
+            }
+
+            return arr[0];
+        }
+
+        function updateMath() {
+            let seq = [];
+            for (let i = 0; i < gameState.totalSlots; i++) {
+                if (gameState.slots[i] === null) break;
+                seq.push(gameState.slots[i]);
+            }
+            
+            if (seq.length % 2 === 0 && seq.length > 0) {
+                seq.pop();
+            }
+
+            let allFilled = !gameState.slots.includes(null);
+            let res = evaluateSequence(seq);
+
+            if (res === null) {
+                currentValEl.innerHTML = "Ungültig<br><small style='font-size:1rem'>(Bruch oder Minus)</small>";
+                currentValEl.className = 'error-text';
+            } else {
+                if (res === gameState.target && allFilled) {
+                    currentValEl.innerText = res + " - Perfekt gelöst!";
+                    currentValEl.className = 'success-text';
+                    vibrate(100); 
+                } else if (res === gameState.target && !allFilled) {
+                    currentValEl.innerHTML = res + "<br><small style='color:#d9534f; font-size:1rem'>Alle Slots füllen!</small>";
+                    currentValEl.className = 'error-text';
+                } else {
+                    currentValEl.innerText = res;
+                    currentValEl.className = '';
+                }
+            }
+        }
+
+        // --- INTERAKTION ---
+        function handleTileClick(tileEl) {
+            vibrate(15); 
+            
+            if (tileEl.parentElement.classList.contains('slot')) {
+                let slotEl = tileEl.parentElement;
+                let index = slotEl.dataset.index;
+                
+                if (tileEl.dataset.type === 'num') {
+                    numPoolEl.appendChild(tileEl);
+                } else {
+                    document.getElementById('operator-pool').appendChild(tileEl);
+                }
+                
+                gameState.slots[index] = null;
+                
+                tileEl.classList.remove('selected');
+                if (gameState.selectedTile === tileEl) {
+                    gameState.selectedTile = null;
+                    highlightSlots(null);
+                }
+                
+                updateMath(); 
+                return; 
+            }
+
+            if (gameState.selectedTile === tileEl) {
+                tileEl.classList.remove('selected');
+                gameState.selectedTile = null;
+                highlightSlots(null);
+                return;
+            }
+
+            if (gameState.selectedTile) gameState.selectedTile.classList.remove('selected');
+            
+            gameState.selectedTile = tileEl;
+            tileEl.classList.add('selected');
+            highlightSlots(tileEl.dataset.type);
+        }
+
+        function handleSlotClick(slotEl) {
+            if (!gameState.selectedTile) {
+                if (slotEl.hasChildNodes()) {
+                    let tile = slotEl.firstChild;
+                    if (tile.dataset.type === 'num') numPoolEl.appendChild(tile);
+                    else document.getElementById('operator-pool').appendChild(tile);
+                    
+                    gameState.slots[slotEl.dataset.index] = null;
+                    vibrate(15);
+                    updateMath();
+                }
+                return;
+            }
+
+            if (slotEl.dataset.type !== gameState.selectedTile.dataset.type) {
+                vibrate(50); 
+                return; 
+            }
+
+            vibrate(15);
+            
+            if (slotEl.hasChildNodes()) {
+                let oldTile = slotEl.firstChild;
+                if (oldTile.dataset.type === 'num') numPoolEl.appendChild(oldTile);
+                else document.getElementById('operator-pool').appendChild(oldTile);
+            }
+
+            slotEl.appendChild(gameState.selectedTile);
+            
+            let val = gameState.selectedTile.dataset.val;
+            gameState.slots[slotEl.dataset.index] = (gameState.selectedTile.dataset.type === 'num') ? parseInt(val) : val;
+
+            gameState.selectedTile.classList.remove('selected');
+            gameState.selectedTile = null;
+            highlightSlots(null);
+            
+            updateMath();
+        }
+
+        function highlightSlots(type) {
+            boardEls.forEach(slot => {
+                if (type === null) slot.classList.remove('highlight');
+                else if (slot.dataset.type === type) slot.classList.add('highlight');
+            });
+        }
+
+        function vibrate(ms) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        // --- SPIEL INITIALISIEREN ---
+        function startNewGame() {
+            gameState.slots = new Array(gameState.totalSlots).fill(null);
+            gameState.selectedTile = null;
+            
+            // Beide Pools für den frischen Start komplett leeren!
+            numPoolEl.innerHTML = '';
+            opPoolEl.innerHTML = '';
+            
+            boardEls.forEach(slot => {
+                slot.innerHTML = '';
+            });
+
+            const numbers = generatePuzzle();
+            document.getElementById('target-container').innerText = gameState.target;
+            
+            // Zahlen frisch reinladen
+            numbers.forEach((num) => {
+                let tile = document.createElement('div');
+                tile.className = 'tile num-tile';
+                tile.dataset.val = num;
+                tile.dataset.type = 'num';
+                tile.innerText = num;
+                tile.onclick = () => handleTileClick(tile);
+                numPoolEl.appendChild(tile);
+            });
+
+            // Operatoren frisch reinladen -> Damit "respawnen" sie jedes Mal perfekt
+            operators.forEach((op) => {
+                let tile = document.createElement('div');
+                tile.className = 'tile op-tile';
+                tile.dataset.val = op;
+                tile.dataset.type = 'op';
+                tile.innerText = op;
+                tile.onclick = () => handleTileClick(tile);
+                opPoolEl.appendChild(tile);
+            });
+
+            updateMath();
+        }
+
+        // --- LÖSUNG ZEIGEN ---
+        function showSolution() {
+            if (!gameState.solution || gameState.solution.length === 0) return;
+
+            boardEls.forEach((slot, index) => {
+                if (slot.hasChildNodes()) {
+                    let tile = slot.firstChild;
+                    if (tile.dataset.type === 'num') numPoolEl.appendChild(tile);
+                    else opPoolEl.appendChild(tile);
+                }
+                gameState.slots[index] = null;
+            });
+
+            for (let i = 0; i < gameState.totalSlots; i++) {
+                let targetVal = gameState.solution[i];
+                let isNum = (i % 2 === 0);
+                let pool = isNum ? numPoolEl : opPoolEl;
+                
+                let tileToMove = Array.from(pool.children).find(t => 
+                    (isNum ? parseInt(t.dataset.val) === targetVal : t.dataset.val === targetVal)
+                );
+                
+                if (tileToMove) {
+                    boardEls[i].appendChild(tileToMove);
+                    gameState.slots[i] = targetVal;
+                }
+            }
+
+            if (gameState.selectedTile) {
+                gameState.selectedTile.classList.remove('selected');
+                gameState.selectedTile = null;
+                highlightSlots(null);
+            }
+
+            updateMath();
+        }
+
+        // Initiiere das Board beim Laden (Menu ist als Overlay drüber)
+        buildBoard();
+    </script>
+</body>
+</html>

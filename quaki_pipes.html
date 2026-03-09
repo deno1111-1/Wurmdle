@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quakis Rohrrettung</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --cell-bg: #1e293b;
+            --pipe-off: #475569;
+            --pipe-on: #0ea5e9;
+            --source: #3b82f6;
+            --target: #22c55e;
+            --size: 55px;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0; overflow: hidden; height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        /* Start-Bildschirm */
+        #setup-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; gap: 20px;
+        }
+
+        .menu-card {
+            background: #1e293b; padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center;
+            position: relative;
+        }
+
+        h1 { color: #fde047; margin-bottom: 5px; margin-top: 10px; }
+        
+        input {
+            width: 60px; padding: 10px; border-radius: 5px; border: none;
+            background: #334155; color: white; text-align: center; font-size: 1.2rem;
+        }
+
+        /* Game UI */
+        #ui-top {
+            padding: 10px 15px; background: #1e293b; border-bottom: 2px solid #334155;
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+            min-height: 60px; gap: 10px;
+        }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; touch-action: none; cursor: grab; }
+        #zoom-layer { position: absolute; transform-origin: center; will-change: transform; transition: transform 0.1s ease-out; }
+
+        #grid { display: grid; gap: 3px; padding: 300px; }
+
+        .cell {
+            width: var(--size); height: var(--size); background: var(--cell-bg);
+            position: relative; cursor: pointer; border-radius: 6px;
+        }
+
+        .void { background: transparent !important; pointer-events: none; }
+
+        /* Pipe Styling */
+        .p-part { position: absolute; background: var(--pipe-off); transition: background 0.3s; }
+        .p-center { width: 34%; height: 34%; left: 33%; top: 33%; z-index: 2; border-radius: 2px; }
+        .arm { z-index: 1; }
+        .arm.top { width: 34%; height: 50%; left: 33%; top: 0; }
+        .arm.right { width: 50%; height: 34%; left: 50%; top: 33%; }
+        .arm.bottom { width: 34%; height: 50%; left: 33%; top: 50%; }
+        .arm.left { width: 50%; height: 34%; left: 0; top: 33%; }
+
+        /* Zustände */
+        .active .p-part { background: var(--pipe-on); box-shadow: 0 0 15px var(--pipe-on); }
+        .is-source { border: 3px solid var(--source); }
+        .is-target { border: 3px solid #555; }
+        .is-target.ready { border: 3px solid var(--target); box-shadow: 0 0 15px var(--target); }
+
+        .animal-icon {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; z-index: 10;
+        }
+
+        .btn {
+            background: var(--pipe-on); border: none; padding: 12px 20px;
+            border-radius: 8px; color: #0f172a; font-weight: bold; cursor: pointer;
+            text-decoration: none; display: inline-block; text-align: center;
+        }
+        #status-box { text-align: center; font-size: 1.1rem; line-height: 1.4; flex: 1; }
+        .surprise-text { color: #f472b6; font-weight: bold; font-size: 1rem; margin-bottom: 4px; }
+
+        /* In-Game Win Modal Styling */
+        #win-modal {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+
+        .win-content {
+            background: #1e293b; padding: 40px; border-radius: 20px; border: 3px solid var(--target);
+            box-shadow: 0 0 40px rgba(34, 197, 94, 0.4); text-align: center;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .win-content h2 { color: var(--target); font-size: 2.5rem; margin: 0 0 10px 0; }
+        .win-content p { font-size: 1.5rem; margin-bottom: 30px; }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Kleine Anpassung für Handys in der oberen Leiste */
+        @media (max-width: 600px) {
+            .btn-small { padding: 10px; font-size: 0.9rem; }
+            #status-box { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="setup-overlay">
+    <div class="menu-card">
+        <a href="index.html" class="btn" style="background:#475569; color:white; padding: 8px 15px; font-size: 0.9rem; margin-bottom: 15px;">🏠 Zum Hauptmenü</a>
+        
+        <h1>Quakis Rohrrettung 🐥</h1>
+        <p>Wähle die Spielfeldgröße:</p>
+        <div style="margin: 20px 0;">
+            <input type="number" id="inputW" value="12" min="5" max="40"> x 
+            <input type="number" id="inputH" value="12" min="5" max="40">
+        </div>
+        <button class="btn" onclick="startGame()">Spiel starten</button>
+    </div>
+</div>
+
+<div id="ui-top">
+    <a href="index.html" class="btn btn-small" style="background:#475569; color:white;">🏠 Menü</a>
+    
+    <div id="status-box">
+        <div id="mission-status">Lade Mission...</div>
+    </div>
+    
+    <button class="btn btn-small" style="background:#475569; color:white;" onclick="location.reload()">Neues Level</button>
+</div>
+
+<div id="viewport">
+    <div id="zoom-layer">
+        <div id="grid"></div>
+    </div>
+</div>
+
+<div id="win-modal">
+    <div class="win-content">
+        <h2>Geschafft!</h2>
+        <p id="win-message">jippie du hast Quaki gerettet</p>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn" style="background: var(--target); color: white;" onclick="location.reload()">Nächstes Level</button>
+            <a href="index.html" class="btn" style="background:#475569; color:white;">🏠 Hauptmenü</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    let GRID_W, GRID_H;
+    let cells = [];
+    let scale = 1, posX = 0, posY = 0;
+    
+    let quakiFound = false;
+    let lillySpawned = false;
+    let lillyFound = false;
+    let gameWon = false;
+
+    const TYPES = {
+        'I': [true, false, true, false],
+        'L': [true, true, false, false],
+        'T': [true, true, false, true],
+        'X': [true, true, true, true]
+    };
+
+    function startGame() {
+        GRID_W = parseInt(document.getElementById('inputW').value);
+        GRID_H = parseInt(document.getElementById('inputH').value);
+        document.getElementById('setup-overlay').style.display = 'none';
+        generateLevel();
+    }
+
+    function generateLevel() {
+        const gridEl = document.getElementById('grid');
+        const zoomLayer = document.getElementById('zoom-layer');
+        gridEl.style.gridTemplateColumns = `repeat(${GRID_W}, var(--size))`;
+        gridEl.innerHTML = '';
+        cells = [];
+        
+        quakiFound = false;
+        lillyFound = false;
+        gameWon = false;
+        // 5% Chance für Lilly
+        lillySpawned = Math.random() < 0.05;
+
+        // 1. Grid & Unförmigkeit
+        for (let y = 0; y < GRID_H; y++) {
+            cells[y] = [];
+            for (let x = 0; x < GRID_W; x++) {
+                const dx = x - GRID_W/2, dy = y - GRID_H/2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const isVoid = dist > (Math.max(GRID_W, GRID_H)/1.8) || (Math.random() < 0.05);
+                
+                const el = document.createElement('div');
+                el.className = isVoid ? 'cell void' : 'cell';
+                cells[y][x] = { x, y, isVoid, type: 'I', rotation: 0, el, pathExits: [false,false,false,false], onPath: false };
+                gridEl.appendChild(el);
+            }
+        }
+
+        // 2. Golden Path + Quaki & Lilly
+        const path = buildGoldenPath();
+        
+        const quakiIndex = Math.floor(path.length * 0.4); 
+        path[quakiIndex].hasQuaki = true;
+
+        if (lillySpawned) {
+            let lillyIndex = Math.floor(path.length * 0.7); 
+            if (lillyIndex === quakiIndex) lillyIndex = Math.min(path.length - 2, quakiIndex + 1);
+            path[lillyIndex].hasLilly = true;
+        }
+
+        // 3. Zellen füllen
+        cells.flat().forEach(c => {
+            if(c.isVoid) return;
+            if(c.onPath) {
+                const n = c.pathExits;
+                const count = n.filter(b=>b).length;
+                if(count <= 2) c.type = ((n[0]&&n[2])||(n[1]&&n[3])) ? 'I' : 'L';
+                else if(count === 3) c.type = 'T';
+                else c.type = 'X';
+            } else {
+                c.type = Object.keys(TYPES)[Math.floor(Math.random()*4)];
+            }
+            c.rotation = Math.floor(Math.random()*4);
+            c.el.onclick = () => rotate(c);
+            drawCell(c);
+        });
+
+        // Zentrieren
+        scale = Math.min(0.8, (window.innerWidth / (GRID_W * 60)));
+        posX = window.innerWidth/2; posY = window.innerHeight/2;
+        zoomLayer.style.transformOrigin = "center";
+        updateTransform();
+        updateFlow();
+    }
+
+    function buildGoldenPath() {
+        let start, end;
+        const valid = cells.flat().filter(c => !c.isVoid);
+        start = valid[0]; end = valid[valid.length-1];
+        start.isSource = true; start.el.classList.add('is-source');
+        end.isTarget = true; end.el.classList.add('is-target');
+
+        let visited = new Set(), stack = [];
+        function dfs(node) {
+            visited.add(`${node.x},${node.y}`);
+            stack.push(node);
+            if(node === end) return true;
+            let ns = [[-1,0,0,2],[0,1,1,3],[1,0,2,0],[0,-1,3,1]].sort(()=>Math.random()-0.5);
+            for(let d of ns) {
+                let ny = node.y+d[0], nx = node.x+d[1];
+                if(cells[ny]&&cells[nx]&&!cells[ny][nx].isVoid&&!visited.has(`${nx},${ny}`)) {
+                    node.pathExits[d[2]] = true; cells[ny][nx].pathExits[d[3]] = true;
+                    if(dfs(cells[ny][nx])) return true;
+                    node.pathExits[d[2]] = false; cells[ny][nx].pathExits[d[3]] = false;
+                }
+            }
+            stack.pop(); return false;
+        }
+        dfs(start);
+        stack.forEach(n => n.onPath = true);
+        return stack;
+    }
+
+    function drawCell(c) {
+        c.el.innerHTML = '<div class="p-part p-center"></div>';
+        TYPES[c.type].forEach((on, i) => {
+            if(on) {
+                const arm = document.createElement('div');
+                arm.className = `p-part arm ${['top','right','bottom','left'][i]}`;
+                c.el.appendChild(arm);
+            }
+        });
+        
+        let animalsHTML = '';
+        if(c.hasQuaki) animalsHTML += '🐥';
+        if(c.hasLilly) animalsHTML += '🐈';
+        
+        if (animalsHTML !== '') {
+            const icon = document.createElement('div');
+            icon.className = 'animal-icon'; 
+            icon.style.transform = `rotate(-${c.rotation*90}deg)`;
+            icon.innerHTML = animalsHTML;
+            c.el.appendChild(icon);
+            c.iconEl = icon;
+        }
+        
+        c.el.style.transform = `rotate(${c.rotation*90}deg)`;
+    }
+
+    function rotate(c) {
+        if(gameWon) return;
+        c.rotation = (c.rotation + 1) % 4;
+        c.el.style.transform = `rotate(${c.rotation*90}deg)`;
+        if(c.iconEl) {
+            c.iconEl.style.transform = `rotate(-${c.rotation*90}deg)`;
+        }
+        updateFlow();
+    }
+
+    function updateFlow() {
+        cells.flat().forEach(c => { c.active = false; c.el.classList.remove('active'); });
+        
+        let qFound = false;
+        let lFound = false;
+        
+        let start = cells.flat().find(c => c.isSource);
+        let q = [start]; start.active = true;
+        let head = 0;
+
+        while(head < q.length) {
+            let curr = q[head++];
+            curr.el.classList.add('active');
+            
+            if(curr.hasQuaki) qFound = true;
+            if(curr.hasLilly) lFound = true;
+
+            let ex = [...TYPES[curr.type]];
+            for(let i=0; i<curr.rotation; i++) ex.unshift(ex.pop());
+
+            [[-1,0,0,2],[0,1,1,3],[1,0,2,0],[0,-1,3,1]].forEach(d => {
+                let ny = curr.y+d[0], nx = curr.x+d[1];
+                if(ex[d[2]] && cells[ny] && cells[nx] && !cells[ny][nx].isVoid) {
+                    let next = cells[ny][nx];
+                    let nEx = [...TYPES[next.type]];
+                    for(let i=0; i<next.rotation; i++) nEx.unshift(nEx.pop());
+                    if(!next.active && nEx[d[3]]) {
+                        next.active = true; q.push(next);
+                    }
+                }
+            });
+        }
+
+        quakiFound = qFound;
+        lillyFound = lFound;
+
+        const statusBox = document.getElementById('mission-status');
+        const target = cells.flat().find(c => c.isTarget);
+        
+        let statusHTML = `Quaki: 🐥 ${quakiFound ? '✅' : '❌'}`;
+        
+        if (lillySpawned) {
+            statusHTML = `<div class="surprise-text">Huch? Lilly hat sich auch in ein Rohr verirrt!</div>` + statusHTML;
+            statusHTML += ` &nbsp;|&nbsp; Lilly: 🐈 ${lillyFound ? '✅' : '❌'}`;
+        }
+
+        let allSaved = quakiFound && (!lillySpawned || lillyFound);
+
+        if(allSaved) {
+            statusHTML += `<br><small style="color:#22c55e;">Alle gerettet! Jetzt schnell ins Ziel!</small>`;
+            target.el.classList.add('ready');
+        } else {
+            target.el.classList.remove('ready');
+        }
+        
+        statusBox.innerHTML = statusHTML;
+
+        if(allSaved && target.active && !gameWon) {
+            gameWon = true; 
+            setTimeout(() => {
+                const modal = document.getElementById('win-modal');
+                const winMsg = document.getElementById('win-message');
+                
+                if(lillySpawned) {
+                    winMsg.innerText = "jippie du hast Quaki und Lilly gerettet 🐥🐈";
+                } else {
+                    winMsg.innerText = "jippie du hast Quaki gerettet 🐥";
+                }
+                
+                modal.style.display = 'flex';
+            }, 400);
+        }
+    }
+
+    // Zoom & Pan Logik
+    const viewport = document.getElementById('viewport');
+    const zoomLayer = document.getElementById('zoom-layer');
+    let isDragging = false, lastDist = 0, startX, startY;
+
+    viewport.onwheel = (e) => {
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        scale = Math.max(0.2, Math.min(3, scale * delta));
+        updateTransform();
+    };
+
+    viewport.ontouchstart = (e) => {
+        if(e.touches.length === 2) {
+            lastDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        } else {
+            isDragging = true;
+            startX = e.touches[0].pageX - posX; startY = e.touches[0].pageY - posY;
+        }
+    };
+
+    viewport.ontouchmove = (e) => {
+        if(e.touches.length === 2) {
+            let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            scale = Math.max(0.2, Math.min(3, scale * (dist / lastDist)));
+            lastDist = dist;
+        } else if(isDragging) {
+            posX = e.touches[0].pageX - startX; posY = e.touches[0].pageY - startY;
+        }
+        updateTransform();
+    };
+
+    viewport.onmousedown = (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; };
+    window.onmousemove = (e) => { if(isDragging) { posX = e.clientX - startX; posY = e.clientY - startY; updateTransform(); } };
+    window.onmouseup = () => isDragging = false;
+    viewport.ontouchend = () => { isDragging = false; lastDist = 0; };
+
+    function updateTransform() {
+        // FIX: -300 berücksichtigt jetzt das CSS padding vom Grid, 58 ist die reale Größe der Zellen inkl. Lücken
+        zoomLayer.style.transform = `translate(${posX - 300 - (GRID_W*58)/2}px, ${posY - 300 - (GRID_H*58)/2}px) scale(${scale})`;
+    }
+</script>
+</body>
+</html>

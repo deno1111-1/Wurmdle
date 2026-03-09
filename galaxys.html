@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galaxies Puzzle</title>
+
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:#f0f0f0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+#menu{
+  padding:15px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#menu button {
+  padding: 8px 14px;
+  cursor: pointer;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  font-weight: bold;
+}
+
+#board{
+  display:grid;
+  width:95vw;
+  max-width:600px;
+  aspect-ratio:1;
+  background:white;
+  touch-action:none;
+  position:relative;
+}
+
+.cell{
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+.cell.dead {
+  background: #555 !important;
+  border: 1px solid #333 !important;
+  pointer-events: none; 
+}
+
+.center-dot{
+  position:absolute;
+  width:24px;
+  height:24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px; 
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+
+#message{
+  margin:15px;
+  font-weight:bold;
+  color:#333;
+  text-align: center;
+  max-width: 600px;
+  padding: 0 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <button onclick="window.location.href='index.html'" style="background:#555; color:white; border-color:#333;">🏠 Hauptmenü</button>
+  
+  <label style="font-weight: bold;">Größe: <input type="number" id="sizeInput" value="8" min="5" max="14" style="width: 50px; font-size:1rem; padding:4px;"></label>
+  <button id="startBtn" style="background:#4a90e2; color:white; border-color:#357abd;">Neues Spiel</button>
+  <button id="solveBtn">Lösung</button>
+  <button id="undoBtn">↩️ Zurück</button>
+  <button id="eraserBtn">Radierer: Aus</button>
+</div>
+
+<div id="board"></div>
+<div id="message">Schaffst du es die Glubschgalaxien zu lösen und der ultimative Glubscher zu sein?</div>
+
+<div id="winOverlay" style="
+ position:fixed;
+ inset:0;
+ background:rgba(0, 0, 0, 0.7);
+ display:none;
+ flex-direction: column;
+ justify-content:center;
+ align-items:center;
+ color:white;
+ z-index:1000;
+ text-align: center;
+ padding: 20px;
+">
+ <div style="font-size:36px; font-weight:bold; margin-bottom: 20px; line-height: 1.2;">🎉Juppie!<br>Leni ist der ultimative Glubscher!🎉</div>
+ <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+     <button onclick="window.location.href='index.html'" style="padding: 15px 30px; font-size: 20px; border-radius: 10px; cursor: pointer; border: none; background: #555; color: white; font-weight: bold;">🏠 Hauptmenü</button>
+     <button onclick="startGame()" style="padding: 15px 30px; font-size: 20px; border-radius: 10px; cursor: pointer; border: none; background: #4a90e2; color: white; font-weight: bold;">Nächstes Level</button>
+ </div>
+</div>
+
+<script>
+
+const boardEl = document.getElementById("board");
+const messageEl = document.getElementById("message");
+const sizeInput = document.getElementById("sizeInput");
+const startBtn = document.getElementById("startBtn");
+const solveBtn = document.getElementById("solveBtn");
+const eraserBtn = document.getElementById("eraserBtn");
+const undoBtn = document.getElementById("undoBtn"); // NEU
+
+let size;
+let solution=[];
+let player=[];
+let centers=[];
+let history=[]; // NEU: Speichert alte Spielzüge
+let dragging=false;
+let activeId=null;
+let eraserMode = false;
+
+let lastR = null;
+let lastC = null;
+
+function randomColor(){
+  return `hsl(${Math.random()*360}, 65%, 70%)`;
+}
+
+// NEU: Funktion, die eine perfekte Kopie des aktuellen Feldes macht
+function clonePlayerState() {
+  return player.map(row => [...row]);
+}
+
+startBtn.onclick = startGame;
+
+solveBtn.onclick = () => {
+  history.push(clonePlayerState()); // Vor dem Lösen abspeichern!
+  for(let r=0; r<size; r++){
+    for(let c=0; c<size; c++){
+      if(solution[r][c] !== "DEAD") {
+        player[r][c] = solution[r][c];
+      }
+    }
+  }
+  updateBoard();
+  checkWin();
+};
+
+// NEU: Undo Button Logik
+undoBtn.onclick = () => {
+  if (history.length > 0) {
+    player = history.pop(); // Holt den letzten Zustand aus dem Speicher
+    updateBoard();
+  }
+};
+
+eraserBtn.onclick = () => {
+  eraserMode = !eraserMode;
+  if(eraserMode) {
+    eraserBtn.innerText = "Radierer: An";
+    eraserBtn.style.background = "#ef4444";
+    eraserBtn.style.color = "white";
+    eraserBtn.style.borderColor = "#dc2626";
+  } else {
+    eraserBtn.innerText = "Radierer: Aus";
+    eraserBtn.style.background = "white";
+    eraserBtn.style.color = "black";
+    eraserBtn.style.borderColor = "#ccc";
+  }
+};
+
+function startGame(){
+  size = parseInt(sizeInput.value);
+  document.getElementById("winOverlay").style.display = "none";
+  
+  eraserMode = false;
+  eraserBtn.innerText = "Radierer: Aus";
+  eraserBtn.style.background = "white";
+  eraserBtn.style.color = "black";
+  eraserBtn.style.borderColor = "#ccc";
+
+  history = []; // NEU: Speicher beim Neustart leeren
+
+  generatePuzzle(size);
+  renderBoard();
+}
+
+function generatePuzzle(n){
+  solution = Array.from({length:n},()=>Array(n).fill(null));
+  player   = Array.from({length:n},()=>Array(n).fill(null));
+  centers=[];
+
+  let id = 0;
+  const minGalaxies = 5;
+  const maxGalaxies = 10;
+  const targetGalaxies = minGalaxies + Math.floor(Math.random()*(maxGalaxies-minGalaxies+1));
+
+  function inside(r,c){ return r>=0 && r<n && c>=0 && c<n; }
+
+  function findEmpty(){
+    for(let r=0;r<n;r++){
+      for(let c=0;c<n;c++){
+        if(solution[r][c]===null) return [r,c];
+      }
+    }
+    return null;
+  }
+
+  function findRandomEmpty(){
+    let empties = [];
+    for(let r=0;r<n;r++){
+      for(let c=0;c<n;c++){
+        if(solution[r][c]===null) empties.push([r,c]);
+      }
+    }
+    if(empties.length === 0) return null;
+    return empties[Math.floor(Math.random() * empties.length)];
+  }
+
+  function isOrthogonalTo(r, c, targetId) {
+    let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for(let [dr, dc] of dirs) {
+      let nr = r + dr, nc = c + dc;
+      if(inside(nr, nc) && solution[nr][nc] === targetId) return true;
+    }
+    return false;
+  }
+
+  while(findEmpty() && id < targetGalaxies){
+    let start = findRandomEmpty(); 
+    if(!start) break;
+    let [sr,sc] = start;
+
+    let center = {
+      x: sc + 0.5,
+      y: sr + 0.5,
+      id: id,
+      color: randomColor(),
+      emoji: "👁️" 
+    };
+    centers.push(center);
+
+    let frontier = [[sr,sc]];
+    solution[sr][sc] = id;
+    let targetSize = Math.floor((n*n)/targetGalaxies) + Math.floor(Math.random()*4);
+    let count = 1;
+
+    while(frontier.length && count < targetSize){
+      let [r,c] = frontier.shift();
+      let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+
+      for(let [dr,dc] of dirs){
+        let nr = r+dr; let nc = c+dc;
+        let symR = 2*center.y - nr - 1; let symC = 2*center.x - nc - 1;
+
+        if(Number.isInteger(symR) && Number.isInteger(symC)){
+          if(inside(nr,nc) && inside(symR,symC)){
+            if(solution[nr][nc]===null && solution[symR][symC]===null){
+              solution[nr][nc] = id; solution[symR][symC] = id;
+              frontier.push([nr,nc]); frontier.push([symR,symC]);
+              count += 2;
+              if(count >= targetSize) break;
+            }
+          }
+        }
+      }
+    }
+    id++;
+  }
+
+  while(findEmpty()){
+    let [r,c] = findEmpty();
+    let assigned = false;
+    for(let g of centers){
+      let symR = 2*g.y - r - 1; let symC = 2*g.x - c - 1;
+      if(Number.isInteger(symR) && Number.isInteger(symC)){
+        if(inside(symR,symC)){
+          if(solution[symR][symC]===null){
+            if(isOrthogonalTo(r, c, g.id) || isOrthogonalTo(symR, symC, g.id)) {
+              solution[r][c]=g.id; solution[symR][symC]=g.id;
+              assigned = true; break;
+            }
+          }
+        }
+      }
+    }
+    if(!assigned) {
+      if(Math.random() < 0.15) {
+        let newId = centers.length;
+        centers.push({ x: c + 0.5, y: r + 0.5, id: newId, color: randomColor(), emoji: "👁️" });
+        solution[r][c] = newId;
+      } else {
+        solution[r][c] = "DEAD";
+      }
+    }
+  }
+}
+
+function isCenter(r, c) {
+  return centers.some(g => Math.floor(g.y) === r && Math.floor(g.x) === c);
+}
+
+function getCenterId(r, c) {
+  let g = centers.find(g => Math.floor(g.y) === r && Math.floor(g.x) === c);
+  return g ? g.id : null;
+}
+
+function floodFillMarked(startR, startC, newId) {
+  if (startR === null || startC === null) return;
+  if (player[startR][startC] !== "MARKED") return; 
+  
+  let queue = [[startR, startC]];
+  player[startR][startC] = newId; 
+
+  while(queue.length > 0) {
+    let [r, c] = queue.shift();
+    let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for(let [dr, dc] of dirs) {
+      let nr = r + dr, nc = c + dc;
+      if(nr >= 0 && nr < size && nc >= 0 && nc < size) {
+        if(player[nr][nc] === "MARKED") {
+          player[nr][nc] = newId;
+          queue.push([nr, nc]);
+        }
+      }
+    }
+  }
+}
+
+function renderBoard(){
+  boardEl.innerHTML="";
+  boardEl.style.gridTemplateColumns=`repeat(${size},1fr)`;
+
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      let cell=document.createElement("div");
+      cell.className="cell";
+      
+      if(solution[r][c] === "DEAD") {
+        cell.classList.add("dead");
+        player[r][c] = "DEAD"; 
+      } else if (isCenter(r, c)) {
+        player[r][c] = getCenterId(r, c); 
+      } else {
+        player[r][c] = null; 
+      }
+
+      cell.dataset.r=r;
+      cell.dataset.c=c;
+      boardEl.appendChild(cell);
+    }
+  }
+
+  centers.forEach(center=>{
+    let dot=document.createElement("div");
+    dot.className="center-dot";
+    dot.innerText = center.emoji; 
+    dot.style.left=(center.x/size*100)+"%";
+    dot.style.top=(center.y/size*100)+"%";
+    boardEl.appendChild(dot);
+  });
+
+  updateBoard();
+}
+
+boardEl.addEventListener("pointerdown", e => {
+  if(!e.target.classList.contains("cell")) return;
+  
+  let r=parseInt(e.target.dataset.r);
+  let c=parseInt(e.target.dataset.c);
+  
+  if(solution[r][c] === "DEAD") return; 
+
+  boardEl.setPointerCapture(e.pointerId);
+
+  if(eraserMode) {
+    history.push(clonePlayerState()); // Zustand speichern vor dem Radieren
+    activeId = "ERASE";
+    dragging = true;
+    if(!isCenter(r, c)) { 
+      player[r][c] = null;
+      updateBoard();
+    }
+  } else {
+    let currentId = player[r][c];
+    if (currentId === null || currentId === "MARKED") {
+      history.push(clonePlayerState()); // Zustand speichern vor dem Skizzieren
+      activeId = "MARKED"; 
+      dragging = true;
+      player[r][c] = "MARKED";
+      updateBoard();
+    } else if (currentId !== "DEAD") {
+      history.push(clonePlayerState()); // Zustand speichern vor dem Malen
+      activeId = currentId; 
+      dragging = true;
+    }
+  }
+  
+  lastR = r;
+  lastC = c;
+});
+
+boardEl.addEventListener("pointermove", e => {
+  if(!dragging) return;
+  let el = document.elementFromPoint(e.clientX, e.clientY);
+  if(!el || !el.classList.contains("cell")) return;
+
+  let r=parseInt(el.dataset.r);
+  let c=parseInt(el.dataset.c);
+
+  if(r === lastR && c === lastC) return;
+  if(solution[r][c] === "DEAD") return; 
+
+  let targetId = player[r][c];
+
+  if(activeId === "ERASE") {
+    if(!isCenter(r, c)) {
+      player[r][c] = null;
+      updateBoard();
+    }
+  } else if (activeId === "MARKED") {
+    if (targetId === null) {
+        player[r][c] = "MARKED";
+        updateBoard();
+    } else if (typeof targetId === "number") {
+        floodFillMarked(lastR, lastC, targetId);
+        activeId = targetId; 
+        updateBoard();
+    }
+  } else if (typeof activeId === "number") {
+    if (targetId === null) {
+        player[r][c] = activeId;
+        updateBoard();
+    } else if (targetId === "MARKED") {
+        floodFillMarked(r, c, activeId);
+        updateBoard();
+    } else if (typeof targetId === "number" && targetId !== activeId) {
+        if(!isCenter(r, c)) {
+            player[r][c] = activeId;
+            updateBoard();
+        }
+    }
+  }
+  
+  lastR = r;
+  lastC = c;
+});
+
+window.addEventListener("pointerup",()=>{
+  if(dragging) {
+    dragging=false;
+    checkWin();
+  }
+});
+
+function updateBoard(){
+
+  document.querySelectorAll(".cell").forEach(cell=>{
+    let r=parseInt(cell.dataset.r);
+    let c=parseInt(cell.dataset.c);
+    let id=player[r][c];
+
+    if(id === "DEAD") return; 
+
+    if(id === "MARKED") {
+      cell.style.background = "#e2e8f0"; 
+    } else if(id !== null){
+      let g = centers.find(x => x.id === id);
+      if(g) cell.style.background = g.color;
+    } else {
+      cell.style.background = ""; 
+    }
+  });
+
+  drawBorders();
+}
+
+function drawBorders(){
+
+  document.querySelectorAll(".cell").forEach(cell=>{
+    let r=parseInt(cell.dataset.r);
+    let c=parseInt(cell.dataset.c);
+    let id=player[r][c];
+
+    let top    = r===0 || (player[r-1][c]!==id && (id !== null || player[r-1][c] !== null));
+    let bottom = r===size-1 || (player[r+1][c]!==id && (id !== null || player[r+1][c] !== null));
+    let left   = c===0 || (player[r][c-1]!==id && (id !== null || player[r][c-1] !== null));
+    let right  = c===size-1 || (player[r][c+1]!==id && (id !== null || player[r][c+1] !== null));
+
+    cell.style.borderTop    = top    ? "3px solid #222" : "1px solid #ccc";
+    cell.style.borderBottom = bottom ? "3px solid #222" : "1px solid #ccc";
+    cell.style.borderLeft   = left   ? "3px solid #222" : "1px solid #ccc";
+    cell.style.borderRight  = right  ? "3px solid #222" : "1px solid #ccc";
+  });
+}
+
+function checkWin() {
+  
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (solution[r][c] !== "DEAD" && (player[r][c] === null || player[r][c] === "MARKED")) return;
+    }
+  }
+  
+  for (let g of centers) {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (player[r][c] === g.id) {
+          let symR = 2 * g.y - r - 1;
+          let symC = 2 * g.x - c - 1;
+          
+          if (!Number.isInteger(symR) || !Number.isInteger(symC)) return;
+          if (symR < 0 || symR >= size || symC < 0 || symC >= size) return;
+          if (player[symR][symC] !== g.id) return;
+        }
+      }
+    }
+  }
+  
+  document.getElementById("winOverlay").style.display = "flex";
+}
+
+startGame();
+
+</script>
+</body>
+</html>

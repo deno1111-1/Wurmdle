@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Knofensas Cooler Garten</title>
+    <style>
+        :root {
+            /* Garten-Farben */
+            --bg-color: #e8f5e9;
+            --text-color: #2e7d32;
+            --grid-line: #a5d6a7;
+            --highlight: rgba(129, 199, 132, 0.5); 
+            --invalid: rgba(141, 110, 99, 0.6); 
+            --drawn: #81c784; 
+            --wrong: #8d6e63; 
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: none;
+        }
+        h1 { margin-top: 20px; margin-bottom: 5px; font-size: 1.8rem; text-align: center; }
+        
+        #menu, #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #game { display: none; }
+        
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: bold;
+        }
+        #size-input {
+            padding: 10px;
+            font-size: 20px;
+            width: 80px;
+            text-align: center;
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            margin-top: 10px;
+            background: white;
+        }
+
+        /* --- NEU: Toggle Switch Styling --- */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0 25px 0;
+            font-weight: bold;
+            color: #2e7d32;
+            cursor: pointer;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        /* --------------------------------- */
+
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 80%;
+            max-width: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 3px rgba(0,0,0,0.1); }
+        .btn-secondary { background-color: #8d6e63; margin-bottom: 10px; padding: 10px 20px; font-size: 16px; width: auto; }
+        
+        .btn-water { background-color: #29b6f6; color: white; }
+        .btn-newgame { background-color: #4caf50; color: white; }
+
+        #drag-info {
+            height: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #388e3c;
+            margin-bottom: 10px;
+        }
+
+        #grid-container {
+            display: grid;
+            border: 4px solid #388e3c; 
+            background-color: #ffffff; 
+            user-select: none;
+            width: 95vw;
+            max-width: 450px;
+            height: 95vw;
+            max-height: 450px;
+        }
+        
+        .cell {
+            border: 1px dashed var(--grid-line);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: calc(14px + 1vmin);
+            box-sizing: border-box;
+            color: #1b5e20;
+        }
+
+        .obstacle-water { background-color: #81d4fa; }
+        .obstacle-rock { background-color: #e0e0e0; }
+        
+        .highlight { background-color: var(--highlight); }
+        .invalid { background-color: var(--invalid); }
+        .drawn { background-color: var(--drawn); }
+        .wrong { background-color: var(--wrong); }
+
+        .drawn-top { border-top: 3px solid #2e7d32 !important; }
+        .drawn-bottom { border-bottom: 3px solid #2e7d32 !important; }
+        .drawn-left { border-left: 3px solid #2e7d32 !important; }
+        .drawn-right { border-right: 3px solid #2e7d32 !important; }
+
+        .wrong-top { border-top: 3px solid #4e342e !important; }
+        .wrong-bottom { border-bottom: 3px solid #4e342e !important; }
+        .wrong-left { border-left: 3px solid #4e342e !important; }
+        .wrong-right { border-right: 3px solid #4e342e !important; }
+
+        .highlight-top { border-top: 3px solid #4caf50 !important; }
+        .highlight-bottom { border-bottom: 3px solid #4caf50 !important; }
+        .highlight-left { border-left: 3px solid #4caf50 !important; }
+        .highlight-right { border-right: 3px solid #4caf50 !important; }
+
+        .invalid-top { border-top: 3px solid #d84315 !important; }
+        .invalid-bottom { border-bottom: 3px solid #d84315 !important; }
+        .invalid-left { border-left: 3px solid #d84315 !important; }
+        .invalid-right { border-right: 3px solid #d84315 !important; }
+        
+        #message {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2e7d32;
+            text-align: center;
+            min-height: 60px;
+            padding: 0 10px;
+        }
+
+        @keyframes waterMist {
+            0% { background-color: white; }
+            50% { background-color: rgba(129, 212, 250, 0.8); }
+            100% { background-color: white; }
+        }
+        .hint-mist {
+            animation: waterMist 1.2s ease-in-out 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'" style="background-color: #475569; color: white;">🏠 Hauptmenü</button>
+        <h1>🪴 Knofensas<br>Cooler Garten 🪴</h1>
+        
+        <div class="input-group">
+            <label for="size-input">Gartengröße (z.B. 10):</label>
+            <input type="number" id="size-input" value="10" min="4" max="30">
+        </div>
+
+        <label class="toggle-container">
+            <div class="switch">
+                <input type="checkbox" id="obstacle-toggle" checked>
+                <span class="slider"></span>
+            </div>
+            <span>Hindernisse aktivieren 🪨💧</span>
+        </label>
+
+        <button class="btn" onclick="startCustomGame()">Spaten in die Hand! 🌱</button>
+    </div>
+
+    <div id="game">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'" style="background-color: #475569; color: white;">🏠 Hauptmenü</button>
+            <button class="btn btn-secondary" onclick="showMenu()">Zurück</button>
+            <button class="btn btn-secondary btn-newgame" onclick="startCustomGame()">Neues Spiel 🎲</button>
+            <button class="btn btn-secondary btn-water" onclick="giveHint()">Tipp</button>
+        </div>
+        <div id="drag-info"></div>
+        <div id="grid-container"></div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let size = 10;
+        let puzzleGrid = []; 
+        let playerRects = []; 
+        let solutionRects = []; 
+        let targetWinArea = 0; 
+        
+        let isDragging = false;
+        let startX = -1, startY = -1;
+        let currX = -1, currY = -1;
+
+        const menuDiv = document.getElementById('menu');
+        const gameDiv = document.getElementById('game');
+        const gridContainer = document.getElementById('grid-container');
+        const messageDiv = document.getElementById('message');
+        const sizeInput = document.getElementById('size-input');
+        const dragInfoDiv = document.getElementById('drag-info');
+        const obstacleToggle = document.getElementById('obstacle-toggle');
+
+        function showMenu() {
+            gameDiv.style.display = 'none';
+            menuDiv.style.display = 'flex';
+        }
+
+        function giveHint() {
+            let missing = solutionRects.find(sr => {
+                return !playerRects.some(pr => pr.minX === sr.x && pr.minY === sr.y && pr.maxX === sr.x + sr.w - 1 && pr.maxY === sr.y + sr.h - 1);
+            });
+            
+            if (missing) {
+                let cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    let x = parseInt(cell.dataset.x);
+                    let y = parseInt(cell.dataset.y);
+                    if (x >= missing.x && x < missing.x + missing.w && y >= missing.y && y < missing.y + missing.h) {
+                        cell.classList.add('hint-mist');
+                        setTimeout(() => cell.classList.remove('hint-mist'), 2500);
+                    }
+                });
+            }
+        }
+
+        function startCustomGame() {
+            let inputVal = parseInt(sizeInput.value);
+            if (isNaN(inputVal) || inputVal < 4) {
+                alert("Bitte eine Zahl von 4 oder größer eingeben!");
+                return;
+            }
+            size = Math.min(inputVal, 30); 
+            
+            playerRects = [];
+            messageDiv.innerText = "Teile den Garten in Beete auf.";
+            messageDiv.style.color = "#2e7d32";
+            dragInfoDiv.innerText = "";
+            menuDiv.style.display = 'none';
+            gameDiv.style.display = 'flex';
+            
+            generatePuzzle();
+            renderGrid();
+        }
+
+        function generatePuzzle() {
+            const MIN_AREA = 4; 
+            let queue = [{x: 0, y: 0, w: size, h: size}];
+            let finalRects = [];
+            const useObstacles = obstacleToggle.checked; // Zustand des Schalters abfragen
+
+            // 1. Spielfeld in Rechtecke unterteilen
+            while(queue.length > 0) {
+                let r = queue.shift();
+                let area = r.w * r.h;
+                
+                if (area < MIN_AREA * 2) {
+                    finalRects.push(r);
+                    continue;
+                }
+                
+                if (area <= 24 && Math.random() < 0.4) {
+                    finalRects.push(r);
+                    continue;
+                }
+
+                let validVSplits = [];
+                for(let s = 1; s < r.w; s++) {
+                    if (s * r.h >= MIN_AREA && (r.w - s) * r.h >= MIN_AREA) validVSplits.push(s);
+                }
+                
+                let validHSplits = [];
+                for(let s = 1; s < r.h; s++) {
+                    if (r.w * s >= MIN_AREA && r.w * (r.h - s) >= MIN_AREA) validHSplits.push(s);
+                }
+
+                if (validVSplits.length === 0 && validHSplits.length === 0) {
+                    finalRects.push(r);
+                    continue;
+                }
+
+                let splitV = false;
+                if (validVSplits.length > 0 && validHSplits.length > 0) {
+                    splitV = Math.random() > 0.5;
+                } else {
+                    splitV = validVSplits.length > 0;
+                }
+
+                if (splitV) {
+                    let s = validVSplits[Math.floor(Math.random() * validVSplits.length)];
+                    queue.push({x: r.x, y: r.y, w: s, h: r.h});
+                    queue.push({x: r.x + s, y: r.y, w: r.w - s, h: r.h});
+                } else {
+                    let s = validHSplits[Math.floor(Math.random() * validHSplits.length)];
+                    queue.push({x: r.x, y: r.y, w: r.w, h: s});
+                    queue.push({x: r.x, y: r.y + s, w: r.w, h: r.h - s});
+                }
+            }
+
+            puzzleGrid = Array(size).fill(null).map(() => Array(size).fill(0));
+            solutionRects = [];
+            let obstacleCount = 0;
+
+            // 2. Hindernisse generieren (falls im Menü aktiviert!)
+            finalRects.forEach(r => {
+                if (useObstacles && Math.random() < 0.15 && finalRects.length > 5) {
+                    let isWater = Math.random() > 0.5;
+                    for (let y = r.y; y < r.y + r.h; y++) {
+                        for (let x = r.x; x < r.x + r.w; x++) {
+                            puzzleGrid[y][x] = isWater ? -1 : -2; 
+                            obstacleCount++;
+                        }
+                    }
+                } else {
+                    solutionRects.push(r);
+                    let area = r.w * r.h;
+                    let numX = r.x + Math.floor(Math.random() * r.w);
+                    let numY = r.y + Math.floor(Math.random() * r.h);
+                    puzzleGrid[numY][numX] = area;
+                }
+            });
+
+            targetWinArea = (size * size) - obstacleCount;
+        }
+
+        function renderGrid() {
+            gridContainer.innerHTML = '';
+            gridContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            gridContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    let val = puzzleGrid[y][x];
+                    if (val > 0) {
+                        cell.innerText = val;
+                    } else if (val === -1) {
+                        cell.innerText = "💧";
+                        cell.classList.add('obstacle-water');
+                    } else if (val === -2) {
+                        cell.innerText = "🪨";
+                        cell.classList.add('obstacle-rock');
+                    }
+                    
+                    gridContainer.appendChild(cell);
+                }
+            }
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            gridContainer.addEventListener('mousedown', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+
+            gridContainer.addEventListener('touchstart', handleStart, {passive: false});
+            document.addEventListener('touchmove', handleMove, {passive: false});
+            document.addEventListener('touchend', handleEnd);
+        }
+
+        function getCoords(e) {
+            let target = e.target;
+            if (e.touches && e.touches.length > 0) {
+                target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+            }
+            if (!target || !target.classList.contains('cell')) return null;
+            return { x: parseInt(target.dataset.x), y: parseInt(target.dataset.y) };
+        }
+
+        function handleStart(e) {
+            if(e.cancelable) e.preventDefault();
+            let coords = getCoords(e);
+            if (!coords) return;
+
+            let clickedRectIndex = playerRects.findIndex(r => 
+                coords.x >= r.minX && coords.x <= r.maxX && coords.y >= r.minY && coords.y <= r.maxY
+            );
+
+            if (clickedRectIndex !== -1) {
+                playerRects.splice(clickedRectIndex, 1);
+                updateVisuals();
+                checkWin();
+                return;
+            }
+
+            if (puzzleGrid[coords.y][coords.x] < 0) return;
+
+            isDragging = true;
+            startX = currX = coords.x;
+            startY = currY = coords.y;
+            updateVisuals();
+            updateDragInfo();
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            if(e.cancelable) e.preventDefault();
+            let coords = getCoords(e);
+            if (!coords) return;
+
+            if (coords.x !== currX || coords.y !== currY) {
+                currX = coords.x;
+                currY = coords.y;
+                updateVisuals();
+                updateDragInfo();
+            }
+        }
+
+        function handleEnd(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            dragInfoDiv.innerText = ""; 
+
+            let minX = Math.min(startX, currX);
+            let maxX = Math.max(startX, currX);
+            let minY = Math.min(startY, currY);
+            let maxY = Math.max(startY, currY);
+
+            let isInvalidPlacement = playerRects.some(r => !(maxX < r.minX || minX > r.maxX || maxY < r.minY || minY > r.maxY));
+            for (let ty = minY; ty <= maxY; ty++) {
+                for (let tx = minX; tx <= maxX; tx++) {
+                    if (puzzleGrid[ty][tx] < 0) isInvalidPlacement = true; 
+                }
+            }
+
+            if (!isInvalidPlacement) {
+                let numbersInRect = [];
+                let area = (maxX - minX + 1) * (maxY - minY + 1);
+                for (let y = minY; y <= maxY; y++) {
+                    for (let x = minX; x <= maxX; x++) {
+                        if (puzzleGrid[y][x] > 0) numbersInRect.push(puzzleGrid[y][x]);
+                    }
+                }
+                
+                let isWrong = (numbersInRect.length !== 1 || numbersInRect[0] !== area);
+                let emoji = "";
+
+                if (isWrong) {
+                    emoji = Math.random() > 0.5 ? "🥀" : "🍄";
+                } else {
+                    if (area <= 4) emoji = ["☘️", "🌼"][Math.floor(Math.random()*2)];
+                    else if (area <= 10) emoji = ["🌻", "🌹", "🌷"][Math.floor(Math.random()*3)];
+                    else emoji = ["🍎", "🌳", "🌴"][Math.floor(Math.random()*3)];
+                }
+
+                playerRects.push({ minX, maxX, minY, maxY, isWrong, emoji });
+            }
+            
+            updateVisuals();
+            checkWin();
+        }
+
+        function updateDragInfo() {
+            let w = Math.abs(currX - startX) + 1;
+            let h = Math.abs(currY - startY) + 1;
+            dragInfoDiv.innerText = `Beetgröße: ${w} x ${h} = ${w * h}`;
+        }
+
+        function updateVisuals() {
+            let tempMinX = Math.min(startX, currX);
+            let tempMaxX = Math.max(startX, currX);
+            let tempMinY = Math.min(startY, currY);
+            let tempMaxY = Math.max(startY, currY);
+            
+            let isDragInvalid = false;
+            if (isDragging) {
+                isDragInvalid = playerRects.some(r => !(tempMaxX < r.minX || tempMinX > r.maxX || tempMaxY < r.minY || tempMinY > r.maxY));
+                for (let ty = tempMinY; ty <= tempMaxY; ty++) {
+                    for (let tx = tempMinX; tx <= tempMaxX; tx++) {
+                        if (puzzleGrid[ty][tx] < 0) isDragInvalid = true;
+                    }
+                }
+            }
+
+            let cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                let x = parseInt(cell.dataset.x);
+                let y = parseInt(cell.dataset.y);
+                let val = puzzleGrid[y][x];
+
+                cell.className = 'cell'; 
+                if (val === -1) cell.classList.add('obstacle-water');
+                if (val === -2) cell.classList.add('obstacle-rock');
+
+                if (val > 0) cell.innerText = val;
+                else if (val === -1) cell.innerText = "💧";
+                else if (val === -2) cell.innerText = "🪨";
+                else cell.innerText = "";
+
+                let activeRect = playerRects.find(r => x >= r.minX && x <= r.maxX && y >= r.minY && y <= r.maxY);
+                
+                if (activeRect) {
+                    if (val === 0) {
+                        cell.innerText = activeRect.emoji;
+                    }
+
+                    if (activeRect.isWrong) {
+                        cell.classList.add('wrong');
+                        if (y === activeRect.minY) cell.classList.add('wrong-top');
+                        if (y === activeRect.maxY) cell.classList.add('wrong-bottom');
+                        if (x === activeRect.minX) cell.classList.add('wrong-left');
+                        if (x === activeRect.maxX) cell.classList.add('wrong-right');
+                    } else {
+                        cell.classList.add('drawn');
+                        if (y === activeRect.minY) cell.classList.add('drawn-top');
+                        if (y === activeRect.maxY) cell.classList.add('drawn-bottom');
+                        if (x === activeRect.minX) cell.classList.add('drawn-left');
+                        if (x === activeRect.maxX) cell.classList.add('drawn-right');
+                    }
+                }
+
+                if (isDragging) {
+                    if (x >= tempMinX && x <= tempMaxX && y >= tempMinY && y <= tempMaxY) {
+                        if (isDragInvalid) {
+                            cell.classList.add('invalid');
+                            if (y === tempMinY) cell.classList.add('invalid-top');
+                            if (y === tempMaxY) cell.classList.add('invalid-bottom');
+                            if (x === tempMinX) cell.classList.add('invalid-left');
+                            if (x === tempMaxX) cell.classList.add('invalid-right');
+                        } else {
+                            cell.classList.add('highlight');
+                            if (y === tempMinY) cell.classList.add('highlight-top');
+                            if (y === tempMaxY) cell.classList.add('highlight-bottom');
+                            if (x === tempMinX) cell.classList.add('highlight-left');
+                            if (x === tempMaxX) cell.classList.add('highlight-right');
+                        }
+                    }
+                }
+            });
+        }
+
+        function checkWin() {
+            let totalAreaCovered = 0;
+            let isValid = true;
+
+            for (let r of playerRects) {
+                let area = (r.maxX - r.minX + 1) * (r.maxY - r.minY + 1);
+                totalAreaCovered += area;
+
+                let numbersInRect = [];
+                for (let y = r.minY; y <= r.maxY; y++) {
+                    for (let x = r.minX; x <= r.maxX; x++) {
+                        if (puzzleGrid[y][x] > 0) numbersInRect.push(puzzleGrid[y][x]);
+                    }
+                }
+
+                if (numbersInRect.length !== 1 || numbersInRect[0] !== area) {
+                    isValid = false;
+                }
+            }
+
+            if (isValid && totalAreaCovered === targetWinArea) {
+                messageDiv.innerText = "🎉 Perfekt! Knofensas Garten blüht in voller Pracht!";
+                messageDiv.style.color = "#1b5e20";
+            } else {
+                messageDiv.innerText = "Teile den Garten in Beete auf.";
+                messageDiv.style.color = "#2e7d32";
+            }
+        }
+    </script>
+</body>
+</html>

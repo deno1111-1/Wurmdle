@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🫟 Dittos Dominos</title>
+    <style>
+        :root {
+            --bg-body: #1a1525; 
+            --text: #ffffff;
+            --cell-size: 50px; 
+            --gap: 2px;
+            --board-padding: 10px;
+            
+            --ditto-base: #d49eea; 
+            --ditto-border: #9a65af;
+            --shiny-base: #8de3f2;
+            --shiny-border: #449caf;
+            
+            --tray-bg: #4a3459;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text);
+            margin: 0; 
+            padding: 30px 0 50px 0; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; 
+            min-height: 100vh;
+            overflow-x: hidden; 
+            overflow-y: auto;   
+            touch-action: pan-y; 
+            user-select: none;
+        }
+
+        #game-scale-wrapper {
+            width: 480px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: top center; 
+            position: relative;
+        }
+
+        h1 { margin: 0 0 5px 0; font-size: 1.8rem; color: #f8c8dc; text-shadow: 0 2px 4px rgba(0,0,0,0.5); text-align: center;}
+        
+        /* MENÜ STYLES */
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            box-sizing: border-box;
+            margin-top: 20px;
+        }
+        .menu-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .input-group { margin: 15px 0; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .input-group input { padding: 8px; font-size: 1rem; border-radius: 8px; border: 2px solid #9a65af; text-align: center; width: 60px; }
+
+        /* MODALS (Hilfe & Optionen) */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: #32213d; padding: 20px; border-radius: 15px; border: 3px solid #9a65af;
+            max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; color: white;
+        }
+        .modal-content h2 { margin-top: 0; color: #f8c8dc; border-bottom: 2px solid #9a65af; padding-bottom: 10px; }
+        .modal-close { background: #ef4444; border-color: #b91c1c; box-shadow: 0 4px 0 #b91c1c; margin-top: 20px; width: 100%; }
+        
+        .rule-item { margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 0.95rem;}
+        .rule-item span { font-weight: bold; color: #8de3f2; font-size: 1.1rem; display: inline-block; min-width: 40px;}
+        
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;}
+
+        /* SPIEL STYLES */
+        #game-view { display: none; flex-direction: column; align-items: center; width: 100%; }
+
+        #status-bar {
+            width: 100%; max-width: 350px; text-align: center; padding: 10px;
+            border-radius: 8px; font-weight: bold; margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.1); transition: background 0.3s;
+        }
+        .status-win { background: #22c55e !important; color: white; box-shadow: 0 0 15px #22c55e; }
+        .status-error { background: #ef4444 !important; color: white; }
+
+        #game-board { position: relative; background-color: transparent; padding: var(--board-padding); }
+
+        .grid-cell {
+            position: absolute; width: var(--cell-size); height: var(--cell-size);
+            border-radius: 12px; box-sizing: border-box; 
+            border: 2px dashed rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.2);
+        }
+
+        /* NEU: Bonusfelder CSS */
+        .bonus-text {
+            position: absolute; top: 4px; left: 5px; font-size: 0.75rem; 
+            font-weight: 900; z-index: 5; text-shadow: 0px 1px 2px rgba(0,0,0,0.8);
+        }
+        .bonus-plus { color: #4ade80; }
+        .bonus-minus { color: #f87171; }
+
+        .region-badge {
+            position: absolute; bottom: -8px; right: -8px; color: #111;
+            font-weight: 900; font-size: 0.75rem; display: flex;
+            align-items: center; justify-content: center; z-index: 50; 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+            border: 2px solid #222; border-radius: 50%;
+            min-width: 26px; height: 26px; padding: 0 3px;
+            background: linear-gradient(to bottom, #ef4444 50%, #ffffff 50%);
+        }
+        .region-badge span {
+            background: white; border: 2px solid #222; border-radius: 12px;
+            padding: 1px 4px; font-size: 0.65rem; line-height: 1; white-space: nowrap;
+        }
+
+        #tray {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px;
+            justify-content: center; width: 100%; max-width: 450px; min-height: 120px;
+            padding: 15px; background: var(--tray-bg); border-radius: 20px;
+            border: 3px solid #32213d; box-sizing: border-box; box-shadow: inset 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .domino {
+            position: absolute; background: var(--ditto-base); 
+            border-radius: 20% 25% 22% 20% / 22% 20% 25% 22%; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset -2px -3px 6px rgba(0,0,0,0.2); 
+            cursor: grab; display: flex;
+            transition: border-radius 0.2s, box-shadow 0.2s, background-color 0.2s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10;
+            border: 2px solid var(--ditto-border); touch-action: none; 
+            width: calc(var(--cell-size) * 0.94); height: calc(var(--cell-size) * 0.94);
+        }
+        .domino.shiny {
+            background: var(--shiny-base); border-color: var(--shiny-border);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset -2px -3px 6px rgba(0,0,0,0.2), 0 0 15px rgba(141, 227, 242, 0.8);
+        }
+        .domino.placed { transform: scale(0.8); background-color: rgba(212, 158, 234, 0.95); border-color: var(--ditto-border); box-shadow: 0 2px 5px rgba(0,0,0,0.4); }
+        .domino.shiny.placed { background-color: rgba(141, 227, 242, 0.95); border-color: var(--shiny-border); box-shadow: 0 2px 5px rgba(0,0,0,0.4), 0 0 10px rgba(141, 227, 242, 0.6); }
+        .domino.in-tray { position: relative; transform: scale(1); }
+        .domino:active { cursor: grabbing; }
+        .domino.dragging { z-index: 100; box-shadow: 0 15px 25px rgba(0,0,0,0.6); opacity: 0.95; border-radius: 25% 20% 28% 25% / 28% 25% 20% 20% !important; }
+
+        .domino-half { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 6px; box-sizing: border-box; gap: 0px; }
+        .domino.dir-0 { flex-direction: row; width: calc(var(--cell-size) * 1.94); height: calc(var(--cell-size) * 0.94); }
+        .domino.dir-1 { flex-direction: column; width: calc(var(--cell-size) * 0.94); height: calc(var(--cell-size) * 1.94); }
+        .domino.dir-2 { flex-direction: row-reverse; width: calc(var(--cell-size) * 1.94); height: calc(var(--cell-size) * 0.94); }
+        .domino.dir-3 { flex-direction: column-reverse; width: calc(var(--cell-size) * 0.94); height: calc(var(--cell-size) * 1.94); }
+
+        .domino.dir-0 .domino-half:first-child { border-right: 1px dashed rgba(0,0,0,0.1); }
+        .domino.dir-1 .domino-half:first-child { border-bottom: 1px dashed rgba(0,0,0,0.1); }
+        .domino.dir-2 .domino-half:first-child { border-left: 1px dashed rgba(0,0,0,0.1); }
+        .domino.dir-3 .domino-half:first-child { border-top: 1px dashed rgba(0,0,0,0.1); }
+
+        .pip { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #4a2c60; font-weight: bold; line-height: 1; letter-spacing: -1.5px; width: 100%; height: 100%; white-space: nowrap; }
+        .domino.shiny .pip { color: #245866; }
+
+        .ghost-domino { position: absolute !important; z-index: 5 !important; pointer-events: none !important; opacity: 0.5; animation: pulseGhost 1.5s infinite; }
+        .hint-glow { box-shadow: 0 0 20px #fde047, inset 0 0 10px #fde047 !important; animation: pulseGlow 1.5s infinite; }
+        @keyframes pulseGhost { 0%, 100% { opacity: 0.3; filter: brightness(1); } 50% { opacity: 0.6; filter: brightness(1.2); } }
+        @keyframes pulseGlow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        .button-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 12px 20px; font-size: 1rem; border-radius: 12px; background: #d49eea; color: #32213d; border: 2px solid #9a65af; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #9a65af; transition: all 0.1s; }
+        button:active { transform: translateY(4px); box-shadow: 0 0 0 #9a65af; }
+        .btn-hint { background: #8de3f2; border-color: #449caf; box-shadow: 0 4px 0 #449caf; }
+        .btn-menu { background: #4a3459; color: white; border-color: #2c1e36; box-shadow: 0 4px 0 #2c1e36; }
+        .btn-random { background: #fde047; color: #854d0e; border-color: #ca8a04; box-shadow: 0 4px 0 #ca8a04; }
+    </style>
+</head>
+<body>
+
+    <div id="game-scale-wrapper">
+        <h1>🫟 Dittos Dominos</h1>
+
+        <div id="main-menu">
+            <button onclick="window.location.href='index.html'" style="margin-bottom: 15px;">🏠 Hauptmenü</button>
+            
+            <div class="menu-row">
+                <button onclick="document.getElementById('settings-modal').style.display='flex'">⚙️ Optionen</button>
+                <button onclick="document.getElementById('help-modal').style.display='flex'">❓ Hilfe</button>
+            </div>
+            
+            <div class="input-group">
+                <label for="domino-count">Anzahl Dominos:</label>
+                <input type="number" id="domino-count" value="12" min="4" max="24">
+            </div>
+
+            <div class="menu-row" style="margin-top: 15px;">
+                <button onclick="startGameFromMenu()">▶️ Start</button>
+                <button class="btn-random" onclick="randomMixStart()">🔀 Zufalls-Mix</button>
+            </div>
+        </div>
+
+        <div id="game-view">
+            <div id="status-bar">Ordne alle Dittos richtig an!</div>
+            <div id="game-board"></div>
+            <div id="tray"></div>
+            
+            <div class="button-row">
+                <button class="btn-menu" onclick="window.location.href='index.html'">🏠 Hauptmenü</button>
+                <button class="btn-menu" onclick="backToMenu()">🏠 Menü</button>
+                <button class="btn-hint" onclick="showHint()">💡 Tipp anzeigen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>❓ Regeln & Symbole</h2>
+            <div class="rule-item"><span>[Zahl]</span> <b>Exakte Summe:</b> Alle Dittos in der Zone addiert ergeben diesen Wert.</div>
+            <div class="rule-item"><span>&lt;</span> <b>Kleiner als:</b> Summe muss strikt kleiner sein.</div>
+            <div class="rule-item"><span>&gt;</span> <b>Größer als:</b> Summe muss strikt größer sein.</div>
+            <div class="rule-item"><span>=</span> <b>Alle gleich:</b> Jedes Feld in der Zone hat exakt denselben Wert!</div>
+            <div class="rule-item"><span>≠</span> <b>Alle verschieden:</b> Keine Zahl darf in der Zone doppelt vorkommen!</div>
+            <div class="rule-item"><span>-</span> <b>Differenz:</b> Höchste minus niedrigste Zahl ergibt diesen Wert.</div>
+            <div class="rule-item"><span>×</span> <b>Produkt:</b> Alle Zahlen miteinander multipliziert ergeben diesen Wert.</div>
+            <div class="rule-item"><span>AABB</span> <b>Pärchenzwang:</b> Jede Zahl in der Zone muss exakt paarweise vorkommen.</div>
+            <div class="rule-item"><span>G/U</span> <b>Gerade/Ungerade:</b> In der Zone liegen NUR gerade (2,4,6) oder NUR ungerade (1,3,5) Zahlen.</div>
+            <div class="rule-item"><span>🪞</span> <b>Spiegelzonen:</b> Alle Zonen mit einem Spiegel-Symbol müssen am Ende exakt dieselbe Summe haben.</div>
+            <div class="rule-item"><span>+1/-1</span> <b>Bonusfelder:</b> Felder auf dem Boden, die den Wert des daraufliegenden Dittos verändern (+1 oder -1).</div>
+            <button class="modal-close" onclick="document.getElementById('help-modal').style.display='none'">Schließen</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>⚙️ Aktive Regeln</h2>
+            <p style="font-size: 0.9rem; color: #ccc;">Wähle, welche Regeln generiert werden dürfen.</p>
+            <div class="toggle-row">Exakte Summe [Zahl] <input type="checkbox" id="rule-exact" checked></div>
+            <div class="toggle-row">Alle gleich [=] <input type="checkbox" id="rule-equal" checked></div>
+            <div class="toggle-row">Kleiner als [&lt;] <input type="checkbox" id="rule-less" checked></div>
+            <div class="toggle-row">Größer als [&gt;] <input type="checkbox" id="rule-greater" checked></div>
+            
+            <div class="toggle-row">Alle verschieden [≠] <input type="checkbox" id="rule-diff"></div>
+            <div class="toggle-row">Differenz [-] <input type="checkbox" id="rule-minus"></div>
+            <div class="toggle-row">Produkt [×] <input type="checkbox" id="rule-prod"></div>
+            <div class="toggle-row">Pärchenzwang [AABB] <input type="checkbox" id="rule-pairs"></div>
+            <div class="toggle-row">Gerade/Ungerade [G/U] <input type="checkbox" id="rule-parity"></div>
+            <div class="toggle-row">Spiegelzonen [🪞] <input type="checkbox" id="rule-mirror"></div>
+            <div class="toggle-row">Bonusfelder [+1/-1] <input type="checkbox" id="rule-bonus"></div>
+            
+            <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">Speichern</button>
+        </div>
+    </div>
+
+    <script>
+        let currentScale = 1;
+        function fitToScreen() {
+            const wrapper = document.getElementById('game-scale-wrapper');
+            const scaleW = window.innerWidth / 490; 
+            currentScale = Math.min(scaleW, 1); 
+            wrapper.style.transform = `scale(${currentScale})`;
+        }
+        window.addEventListener('resize', fitToScreen);
+        fitToScreen(); 
+
+        const CELL_SIZE = 50; const GAP = 2; const PADDING = 10;
+        const GRID_W = 8; const GRID_H = 8; 
+        let NUM_DOMINOS = 12; 
+
+        const pipsLayout = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+        const palette = ["#5e8b7e", "#d8b08c", "#a76c6e", "#4a6274", "#849974", "#b28d46", "#7b5e7b", "#4b7a8a"];
+
+        let layout = []; let regionMap = []; let regions = {}; let boardState = []; let dominos = []; let solutionPlacements = []; 
+        let bonusMap = []; // Hält die +1 / -1 Werte
+        const boardEl = document.getElementById('game-board');
+        const trayEl = document.getElementById('tray');
+        const statusEl = document.getElementById('status-bar');
+        const scaleWrapper = document.getElementById('game-scale-wrapper');
+
+        function startGameFromMenu() {
+            let inputCount = parseInt(document.getElementById('domino-count').value);
+            if(isNaN(inputCount) || inputCount < 4) inputCount = 12;
+            NUM_DOMINOS = Math.min(inputCount, 24); 
+            
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-view').style.display = 'flex';
+            generateAndStartGame();
+        }
+
+        function randomMixStart() {
+            const rules = ['rule-exact', 'rule-less', 'rule-greater', 'rule-equal', 'rule-diff', 'rule-minus', 'rule-prod', 'rule-pairs', 'rule-parity', 'rule-mirror', 'rule-bonus'];
+            rules.forEach(r => document.getElementById(r).checked = Math.random() > 0.6);
+            if(!rules.some(r => document.getElementById(r).checked)) document.getElementById('rule-exact').checked = true;
+            startGameFromMenu();
+        }
+
+        function backToMenu() {
+            document.getElementById('main-menu').style.display = 'flex';
+            document.getElementById('game-view').style.display = 'none';
+        }
+
+        function getRandomWobblyRadius() {
+            const r = () => Math.floor(Math.random() * 25) + 30; 
+            return `${r()}% ${r()}% ${r()}% ${r()}% / ${r()}% ${r()}% ${r()}% ${r()}%`;
+        }
+
+        function generateAndStartGame() {
+            clearHints(); boardEl.innerHTML = ''; trayEl.innerHTML = '';
+            statusEl.innerText = 'Ordne alle Dittos richtig an!'; statusEl.className = '';
+            layout = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(false));
+            regionMap = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+            boardState = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+            bonusMap = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(0));
+            dominos = []; regions = {}; solutionPlacements = [];
+
+            let activeCells = [];
+            let solutionBoard = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+
+            function tryPlace(x1, y1, x2, y2) {
+                if(x1 < 0 || x2 >= GRID_W || y1 < 0 || y2 >= GRID_H) return false;
+                if(layout[y1][x1] || layout[y2][x2]) return false;
+                return true;
+            }
+
+            let startX = 3, startY = 3;
+            layout[startY][startX] = true; layout[startY][startX+1] = true;
+            activeCells.push({x: startX, y: startY}, {x: startX+1, y: startY});
+            let placedDoms = [[{x: startX, y: startY}, {x: startX+1, y: startY}]];
+
+            for(let i = 1; i < NUM_DOMINOS; i++) {
+                let candidates = [];
+                for(let y = 0; y < GRID_H; y++) {
+                    for(let x = 0; x < GRID_W; x++) {
+                        if(tryPlace(x, y, x+1, y)) {
+                            if(touchesActive(x, y, activeCells) || touchesActive(x+1, y, activeCells)) candidates.push([{x,y}, {x:x+1, y}]);
+                        }
+                        if(tryPlace(x, y, x, y+1)) {
+                            if(touchesActive(x, y, activeCells) || touchesActive(x, y+1, activeCells)) candidates.push([{x,y}, {x, y:y+1}]);
+                        }
+                    }
+                }
+                if(candidates.length > 0) {
+                    let choice = candidates[Math.floor(Math.random() * candidates.length)];
+                    layout[choice[0].y][choice[0].x] = true; layout[choice[1].y][choice[1].x] = true;
+                    activeCells.push(choice[0], choice[1]); placedDoms.push(choice);
+                }
+            }
+
+            // Bonusfelder generieren (falls aktiviert)
+            if (document.getElementById('rule-bonus').checked) {
+                activeCells.forEach(c => {
+                    if (Math.random() < 0.15) bonusMap[c.y][c.x] = Math.random() > 0.5 ? 1 : -1;
+                });
+            }
+
+            placedDoms.forEach((pos, i) => {
+                let v1 = Math.floor(Math.random() * 7), v2 = Math.floor(Math.random() * 7);
+                solutionBoard[pos[0].y][pos[0].x] = v1; solutionBoard[pos[1].y][pos[1].x] = v2;
+                let isShiny = Math.random() < 0.01;
+                solutionPlacements.push({ x: pos[0].x, y: pos[0].y, dir: (pos[0].y === pos[1].y ? 0 : 1), v1, v2 });
+                
+                let displayV1 = v1, displayV2 = v2;
+                if (Math.random() > 0.5) { displayV1 = v2; displayV2 = v1; }
+                dominos.push({ id: 'd'+i, val1: displayV1, val2: displayV2, orientation: 0, x: null, y: null, isShiny, wobbleRadius: getRandomWobblyRadius() });
+            });
+
+            // Regeleinstellungen abrufen
+            const sExact = document.getElementById('rule-exact').checked;
+            const sLess = document.getElementById('rule-less').checked;
+            const sGreater = document.getElementById('rule-greater').checked;
+            const sEqual = document.getElementById('rule-equal').checked;
+            const sDiffRule = document.getElementById('rule-diff').checked; 
+            const sMinus = document.getElementById('rule-minus').checked;
+            const sProd = document.getElementById('rule-prod').checked;
+            const sPairs = document.getElementById('rule-pairs').checked;
+            const sParity = document.getElementById('rule-parity').checked;
+
+            let unassigned = [...activeCells];
+            let rIdCounter = 0;
+            while(unassigned.length > 0) {
+                let startCell = unassigned.splice(Math.floor(Math.random() * unassigned.length), 1)[0];
+                let rId = `r${rIdCounter++}`;
+                regionMap[startCell.y][startCell.x] = rId;
+                let regionCells = [startCell];
+                for(let step = 1; step < (Math.floor(Math.random() * 4) + 2); step++) {
+                    let neighbors = [];
+                    regionCells.forEach(cell => {
+                        [[0,1],[0,-1],[1,0],[-1,0]].forEach(d => {
+                            let nx = cell.x + d[0], ny = cell.y + d[1];
+                            let idx = unassigned.findIndex(u => u.x === nx && u.y === ny);
+                            if(idx !== -1 && !neighbors.includes(idx)) neighbors.push(idx);
+                        });
+                    });
+                    if(neighbors.length > 0) {
+                        let pickCell = unassigned.splice(neighbors[Math.floor(Math.random() * neighbors.length)], 1)[0];
+                        regionMap[pickCell.y][pickCell.x] = rId; regionCells.push(pickCell);
+                    } else break;
+                }
+                
+                // Modifizierte Werte für die Generierung nutzen!
+                let vals = regionCells.map(c => solutionBoard[c.y][c.x] + bonusMap[c.y][c.x]);
+                let sum = vals.reduce((a, b) => a + b, 0);
+
+                let validRules = [];
+                if (sExact) validRules.push("SUM_EXACT");
+                if (sLess) validRules.push("SUM_LESS");
+                if (sGreater) validRules.push("SUM_GREATER");
+                if (sProd) validRules.push("PRODUCT");
+                if (sEqual && vals.length > 1 && vals.every(v => v === vals[0])) validRules.push("ALL_EQUAL");
+                if (sDiffRule && vals.length > 1 && new Set(vals).size === vals.length) validRules.push("ALL_DIFFERENT");
+                if (sMinus && vals.length > 1) validRules.push("DIFFERENCE");
+                
+                if (sPairs && vals.length > 1 && vals.length % 2 === 0) {
+                    let counts = {};
+                    vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
+                    if (Object.values(counts).every(c => c % 2 === 0)) validRules.push("PAIRS");
+                }
+                if (sParity) {
+                    if (vals.every(v => v % 2 === 0)) validRules.push("ALL_EVEN");
+                    else if (vals.every(v => Math.abs(v % 2) === 1)) validRules.push("ALL_ODD");
+                }
+
+                if (validRules.length === 0) validRules.push("SUM_EXACT"); // Fallback
+
+                let ruleType = validRules[Math.floor(Math.random() * validRules.length)];
+                let text = ""; let ruleValue = 0;
+
+                if (ruleType === "SUM_EXACT") { text = sum.toString(); ruleValue = sum; }
+                else if (ruleType === "SUM_LESS") { ruleValue = sum + Math.floor(Math.random()*3) + 1; text = "<" + ruleValue; }
+                else if (ruleType === "SUM_GREATER") { ruleValue = sum - Math.floor(Math.random()*3) - 1; text = ">" + ruleValue; }
+                else if (ruleType === "PRODUCT") { ruleValue = vals.reduce((a,b)=>a*b, 1); text = "×" + ruleValue; }
+                else if (ruleType === "ALL_EQUAL") { text = "="; }
+                else if (ruleType === "ALL_DIFFERENT") { text = "≠"; }
+                else if (ruleType === "DIFFERENCE") { ruleValue = Math.max(...vals) - Math.min(...vals); text = "-" + ruleValue; }
+                else if (ruleType === "PAIRS") { text = "AABB"; }
+                else if (ruleType === "ALL_EVEN") { text = "G"; }
+                else if (ruleType === "ALL_ODD") { text = "U"; }
+
+                regions[rId] = { color: palette[rIdCounter % palette.length], cells: regionCells, ruleType, ruleValue, text };
+            }
+
+            // SPIEGELZONEN Zuweisung
+            if (document.getElementById('rule-mirror').checked) {
+                let sumGroups = {};
+                for (let rId in regions) {
+                    let r = regions[rId];
+                    let s = r.cells.map(c => solutionBoard[c.y][c.x] + bonusMap[c.y][c.x]).reduce((a,b)=>a+b,0);
+                    if (!sumGroups[s]) sumGroups[s] = [];
+                    sumGroups[s].push(rId);
+                }
+                let validSums = Object.keys(sumGroups).filter(s => sumGroups[s].length >= 2);
+                if (validSums.length > 0) {
+                    let chosenSum = validSums[Math.floor(Math.random() * validSums.length)];
+                    let r1 = sumGroups[chosenSum][0];
+                    let r2 = sumGroups[chosenSum][1];
+                    regions[r1].ruleType = "MIRROR"; regions[r1].text = "🪞";
+                    regions[r2].ruleType = "MIRROR"; regions[r2].text = "🪞";
+                }
+            }
+
+            dominos.sort(() => Math.random() - 0.5); initBoardUI();
+        }
+
+        function touchesActive(x, y, activeCells) { return activeCells.some(c => Math.abs(c.x - x) + Math.abs(c.y - y) === 1); }
+
+        function initBoardUI() {
+            boardEl.style.width = `${GRID_W * CELL_SIZE + (GRID_W - 1) * GAP + PADDING * 2}px`;
+            boardEl.style.height = `${GRID_H * CELL_SIZE + (GRID_H - 1) * GAP + PADDING * 2}px`;
+            for (let y = 0; y < GRID_H; y++) {
+                for (let x = 0; x < GRID_W; x++) {
+                    if (!layout[y][x]) continue; 
+                    const rId = regionMap[y][x], cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.style.left = `${PADDING + x * (CELL_SIZE + GAP)}px`;
+                    cell.style.top = `${PADDING + y * (CELL_SIZE + GAP)}px`;
+                    cell.style.backgroundColor = regions[rId].color + '80';
+                    
+                    // Bonus rendern
+                    let bonus = bonusMap[y][x];
+                    if (bonus !== 0) {
+                        let bEl = document.createElement('div');
+                        bEl.className = `bonus-text ${bonus > 0 ? 'bonus-plus' : 'bonus-minus'}`;
+                        bEl.innerText = bonus > 0 ? '+1' : '-1';
+                        cell.appendChild(bEl);
+                    }
+
+                    let isBadge = true;
+                    regions[rId].cells.forEach(c => { if (c.y > y || (c.y === y && c.x > x)) isBadge = false; });
+                    if (isBadge) {
+                        const b = document.createElement('div'); b.className = `region-badge`;
+                        b.innerHTML = `<span>${regions[rId].text}</span>`; cell.appendChild(b);
+                    }
+                    boardEl.appendChild(cell);
+                }
+            }
+            dominos.forEach(d => trayEl.appendChild(createDominoElement(d)));
+        }
+
+        function createDominoElement(d) {
+            const el = document.createElement('div'); el.id = d.id; el.className = `domino in-tray dir-${d.orientation}`;
+            el.style.borderRadius = d.wobbleRadius;
+            if (d.isShiny) el.classList.add('shiny'); 
+            const createHalf = (val) => {
+                const h = document.createElement('div'); h.className = 'domino-half';
+                pipsLayout[val].forEach(idx => {
+                    const p = document.createElement('div'); p.className = 'pip'; p.innerText = '•ᴗ•'; 
+                    p.style.gridArea = `${Math.floor(idx / 3) + 1} / ${(idx % 3) + 1}`; h.appendChild(p);
+                });
+                return h;
+            };
+            el.appendChild(createHalf(d.val1)); el.appendChild(createHalf(d.val2));
+            el.addEventListener('pointerdown', handlePointerDown); return el;
+        }
+
+        function showHint() {
+            clearHints(); 
+            let unsatisfied = solutionPlacements.find(sp => {
+                return !dominos.find(d => d.x === sp.x && d.y === sp.y && 
+                    ((d.orientation === sp.dir && d.val1 === sp.v1 && d.val2 === sp.v2) ||
+                     (d.orientation === (sp.dir+2)%4 && d.val1 === sp.v2 && d.val2 === sp.v1)));
+            });
+            if (!unsatisfied) return; 
+            
+            let dToUse = dominos.find(d => ((d.val1 === unsatisfied.v1 && d.val2 === unsatisfied.v2) || 
+                 (d.val1 === unsatisfied.v2 && d.val2 === unsatisfied.v1)) && !(d.x === unsatisfied.x && d.y === unsatisfied.y));
+            
+            if (dToUse) {
+                let elToUse = document.getElementById(dToUse.id);
+                elToUse.classList.add('hint-glow');
+                let g = elToUse.cloneNode(true); g.id = 'ghost-hint';
+                let targetDir = unsatisfied.dir;
+                if (dToUse.val1 !== unsatisfied.v1) { targetDir = (targetDir + 2) % 4; }
+                g.className = `domino ghost-domino dir-${targetDir}`;
+                if (dToUse.isShiny) g.classList.add('shiny');
+                g.style.left = `${PADDING + unsatisfied.x * (CELL_SIZE + GAP) + (CELL_SIZE*0.03)}px`;
+                g.style.top = `${PADDING + unsatisfied.y * (CELL_SIZE + GAP) + (CELL_SIZE*0.03)}px`;
+                g.style.position = 'absolute'; g.style.margin = '0'; g.style.transform = 'scale(0.8)'; 
+                boardEl.appendChild(g);
+            }
+        }
+
+        function clearHints() {
+            let g = document.getElementById('ghost-hint'); if(g) g.remove();
+            document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
+        }
+
+        let activeDomino = null; let startX, startY; let shiftX, shiftY; let isDragging = false;
+
+        function handlePointerDown(e) {
+            clearHints(); activeDomino = e.currentTarget; 
+            const r = activeDomino.getBoundingClientRect();
+            shiftX = (e.clientX - r.left) / currentScale; 
+            shiftY = (e.clientY - r.top) / currentScale;
+            startX = e.clientX; startY = e.clientY; isDragging = false;
+            activeDomino.setPointerCapture(e.pointerId);
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+            window.addEventListener('pointercancel', handlePointerUp);
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
+                isDragging = true; activeDomino.classList.remove('in-tray');
+                scaleWrapper.appendChild(activeDomino); 
+                activeDomino.style.position = 'absolute';
+                activeDomino.classList.add('dragging'); activeDomino.classList.remove('placed'); 
+                activeDomino.style.transform = 'none';
+                const dState = dominos.find(d => d.id === activeDomino.id);
+                if (dState.x !== null) { removeFromBoardState(dState); dState.x = null; dState.y = null; }
+            }
+            if (isDragging) { 
+                const wrapperRect = scaleWrapper.getBoundingClientRect();
+                activeDomino.style.left = `${(e.clientX - wrapperRect.left) / currentScale - shiftX}px`; 
+                activeDomino.style.top = `${(e.clientY - wrapperRect.top) / currentScale - shiftY}px`; 
+            }
+        }
+
+        function handlePointerUp(e) {
+            if (activeDomino) { try { activeDomino.releasePointerCapture(e.pointerId); } catch(err) {} }
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerUp);
+            if (!activeDomino) return;
+            
+            const dState = dominos.find(d => d.id === activeDomino.id);
+            if (!isDragging) {
+                const old = dState.orientation; const next = (old + 1) % 4;
+                if (dState.x !== null) {
+                    removeFromBoardState(dState); dState.orientation = next;
+                    if (!isValidPlacement(dState.x, dState.y, dState)) { dState.orientation = old; }
+                    activeDomino.classList.remove(`dir-${old}`); activeDomino.classList.add(`dir-${dState.orientation}`);
+                    placeOnBoard(dState.x, dState.y, dState, activeDomino);
+                } else { dState.orientation = next; activeDomino.classList.remove(`dir-${old}`); activeDomino.classList.add(`dir-${next}`); }
+            } else {
+                activeDomino.classList.remove('dragging');
+                const r = activeDomino.getBoundingClientRect(), bR = boardEl.getBoundingClientRect();
+                const gX = Math.round(((r.left - bR.left) / currentScale - PADDING) / (CELL_SIZE + GAP));
+                const gY = Math.round(((r.top - bR.top) / currentScale - PADDING) / (CELL_SIZE + GAP));
+                if (isValidPlacement(gX, gY, dState)) placeOnBoard(gX, gY, dState, activeDomino);
+                else returnToTray(dState, activeDomino);
+            }
+            
+            if(dState.x === null) activeDomino.style.transform = ''; 
+            else activeDomino.style.transform = ''; 
+            
+            activeDomino = null; checkWinCondition();
+        }
+
+        function isValidPlacement(x, y, dState) {
+            const isH = (dState.orientation % 2 === 0); const x2 = isH ? x + 1 : x, y2 = isH ? y : y + 1;
+            if (x < 0 || y < 0 || x2 >= GRID_W || y2 >= GRID_H) return false;
+            if (!layout[y][x] || !layout[y2][x2] || boardState[y][x] !== null || boardState[y2][x2] !== null) return false;
+            return true;
+        }
+
+        function placeOnBoard(x, y, dState, el) {
+            dState.x = x; dState.y = y; const isH = (dState.orientation % 2 === 0);
+            const v1 = (dState.orientation < 2) ? dState.val1 : dState.val2;
+            const v2 = (dState.orientation < 2) ? dState.val2 : dState.val1;
+            boardState[y][x] = v1; boardState[isH ? y : y + 1][isH ? x + 1 : x] = v2;
+            boardEl.appendChild(el); el.classList.add('placed');
+            el.style.left = `${PADDING + x * (CELL_SIZE + GAP) + (CELL_SIZE*0.03)}px`;
+            el.style.top = `${PADDING + y * (CELL_SIZE + GAP) + (CELL_SIZE*0.03)}px`;
+        }
+
+        function returnToTray(dS, el) { 
+            dS.x = null; dS.y = null; dS.orientation = 0; trayEl.appendChild(el); 
+            el.style.position = ''; el.style.left = ''; el.style.top = ''; el.style.margin = ''; el.style.transform = ''; 
+            el.className = `domino in-tray dir-0`; if (dS.isShiny) el.classList.add('shiny');
+        }
+
+        function removeFromBoardState(dState) {
+            const isH = (dState.orientation % 2 === 0);
+            boardState[dState.y][dState.x] = null; boardState[isH ? dState.y : dState.y + 1][isH ? dState.x + 1 : dState.x] = null;
+        }
+
+        function checkWinCondition() {
+            if (dominos.some(d => d.x === null)) return; 
+            let allV = true;
+            let mirrorSums = [];
+
+            for (const rId in regions) {
+                const r = regions[rId]; 
+                
+                // Hier greifen die Modifikatoren durch die Bonusfelder!
+                let vals = r.cells.map(c => {
+                    if(boardState[c.y][c.x] === null) return null;
+                    return boardState[c.y][c.x] + bonusMap[c.y][c.x];
+                });
+                
+                if (vals.includes(null)) { allV = false; break; }
+                const sum = vals.reduce((a, b) => a + b, 0);
+                
+                if (r.ruleType === "SUM_EXACT" && sum !== r.ruleValue) allV = false;
+                if (r.ruleType === "SUM_LESS" && sum >= r.ruleValue) allV = false;
+                if (r.ruleType === "SUM_GREATER" && sum <= r.ruleValue) allV = false;
+                if (r.ruleType === "ALL_EQUAL" && !vals.every(v => v === vals[0])) allV = false;
+                if (r.ruleType === "ALL_DIFFERENT" && new Set(vals).size !== vals.length) allV = false;
+                if (r.ruleType === "DIFFERENCE" && (Math.max(...vals) - Math.min(...vals)) !== r.ruleValue) allV = false;
+                if (r.ruleType === "PRODUCT" && vals.reduce((a, b) => a * b, 1) !== r.ruleValue) allV = false;
+                
+                if (r.ruleType === "PAIRS") {
+                    let counts = {};
+                    vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
+                    if (!Object.values(counts).every(c => c % 2 === 0)) allV = false;
+                }
+                if (r.ruleType === "ALL_EVEN" && !vals.every(v => v % 2 === 0)) allV = false;
+                if (r.ruleType === "ALL_ODD" && !vals.every(v => Math.abs(v % 2) === 1)) allV = false;
+                if (r.ruleType === "MIRROR") mirrorSums.push(sum);
+            }
+
+            if (mirrorSums.length > 0 && new Set(mirrorSums).size !== 1) allV = false;
+
+            if (allV) { statusEl.innerText = "Alle Dittos haben sich perfekt verwandelt! 🫟✨"; statusEl.className = "status-win"; }
+            else { statusEl.innerText = "Falsch! Suche den Fehler..."; statusEl.className = "status-error"; }
+        }
+        
+    </script>
+</body>
+</html>
