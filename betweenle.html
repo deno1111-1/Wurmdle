@@ -152,6 +152,17 @@
         <button class="lang-btn" onclick="window.location.href='index.html'" style="background-color: #555; width: auto; padding: 10px 20px; font-size: 1rem; position: absolute; top: 20px;">🏠 Hauptmenü</button>
         
         <h1>Wähle deine Sprache<br><span style="font-size: 1.2rem; color: #aaa;">Choose your language</span></h1>
+        
+        <div style="margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <label style="font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="babybubu-checkbox" onchange="toggleBabybubu()" style="transform: scale(1.5);">
+                Babybubu Modus 🍼
+            </label>
+            <div id="babybubu-input-container" style="display: none; text-align: center;">
+                <label style="font-size: 1rem; color: #aaa;">Extra Versuche:</label>
+                <input type="number" id="babybubu-extra" value="1" min="1" max="50" style="width: 60px; font-size: 1.2rem; text-align: center; border-radius: 5px; border: 1px solid var(--gray-border); background: var(--gray-box); color: white; padding: 5px; margin-left: 5px;">
+            </div>
+        </div>
         <button class="lang-btn" onclick="initGame('de.txt')">Deutsch</button>
         <button class="lang-btn" onclick="initGame('en.txt')" style="background-color: var(--gray-key);">English</button>
     </div>
@@ -233,7 +244,7 @@
         let secretWord = "";
         let currentGuess = "";
         let guesses = 0;
-        const MAX_GUESSES = 14;
+        let MAX_GUESSES = 14; // Geändert von const zu let
         
         let topBound = "AAAAA";
         let bottomBound = "ZZZZZ";
@@ -255,8 +266,28 @@
             else if (/^[A-Z]$/.test(key)) handleInput(key);
         });
 
+        // NEU: Funktion für das Ein- und Ausblenden des Extra-Versuche-Eingabefelds
+        function toggleBabybubu() {
+            const checkbox = document.getElementById('babybubu-checkbox');
+            const inputContainer = document.getElementById('babybubu-input-container');
+            if (checkbox.checked) {
+                inputContainer.style.display = 'block';
+            } else {
+                inputContainer.style.display = 'none';
+            }
+        }
+
         // Lädt die gewählte Sprache
         async function initGame(filename) {
+            // NEU: Babybubu Versuche berechnen
+            const isBabybubu = document.getElementById('babybubu-checkbox').checked;
+            if (isBabybubu) {
+                const extraGuesses = parseInt(document.getElementById('babybubu-extra').value) || 0;
+                MAX_GUESSES = 14 + extraGuesses;
+            } else {
+                MAX_GUESSES = 14; // Zurücksetzen, falls der Haken entfernt wurde
+            }
+
             try {
                 const response = await fetch(filename);
                 if (!response.ok) throw new Error("File not found");
@@ -349,7 +380,7 @@
             }
         }
 
-                        function submitGuess() {
+        function submitGuess() {
             if (currentGuess.length !== 5) return;
             if (currentGuess <= topBound || currentGuess >= bottomBound) return;
 
@@ -415,8 +446,6 @@
                 }
             }, 1000); 
         }
-
-
 
         function updateKeyboard() {
             document.querySelectorAll('.key').forEach(btn => {
