@@ -30,7 +30,7 @@
         #msg-toast {
             position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
             background: white; color: black; padding: 12px 24px; border-radius: 8px;
-            font-weight: bold; display: none; z-index: 2000; text-align: center;
+            font-weight: bold; display: none; z-index: 4000; text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
@@ -79,7 +79,7 @@
         .action-btn:active { background: #444; }
 
         /* --- KEYBOARD --- */
-        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; margin-top: auto; padding-bottom: 20px; }
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; }
         .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px;}
         .key { font-weight: bold; border: 0; padding: 0; height: 50px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
         .key-large { flex: 1.5; font-size: 0.9rem; }
@@ -90,11 +90,12 @@
             display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
         .modal-content {
-            background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #555;
-            text-align: center; max-width: 400px; width: 100%; position: relative;
+            background: #1e1e1f; padding: 20px; border-radius: 15px; border: 2px solid #555;
+            text-align: center; max-width: 450px; width: 95%; position: relative;
+            max-height: 95vh; overflow-y: auto; box-sizing: border-box;
         }
         .modal-content h2 { margin-top: 0; color: #eab308; }
-        #bonus-board { display: flex; flex-direction: column; gap: 5px; margin: 20px 0; align-items: center;}
+        #bonus-board { display: flex; flex-direction: column; gap: 5px; margin: 15px 0; align-items: center;}
         
         /* CONFETTI */
         .confetti { position: absolute; width: 10px; height: 10px; background: red; animation: fall 3s linear forwards; }
@@ -153,15 +154,20 @@
             <button class="action-btn" onclick="undoLastWord()">Rückgängig (Undo)</button>
         </div>
 
-        <div id="keyboard-container"></div>
+        <div id="game-keyboard-area" style="width: 100%; display: flex; justify-content: center; margin-top: auto; padding-bottom: 20px;">
+            <div id="keyboard-container"></div>
+        </div>
     </div>
 
     <div id="end-modal" class="modal-overlay">
         <div class="modal-content" id="end-content">
             <h2 id="end-title">BONUSRUNDE!</h2>
-            <p id="end-desc">Du hast überlebt! Was war das gesuchte Wort? (3 Versuche)</p>
+            <p id="end-desc" style="font-size: 0.95rem; color: #ddd;">Du hast überlebt! Was war das gesuchte Wort? (3 Versuche)</p>
             <div id="bonus-board"></div>
-            <button class="action-btn" onclick="location.reload()" style="margin-top: 15px; width: 100%;">Neues Spiel</button>
+            
+            <div id="bonus-keyboard-area" style="width: 100%; margin-top: 15px;"></div>
+            
+            <button class="action-btn" id="end-restart-btn" onclick="location.reload()" style="margin-top: 15px; width: 100%; display: none;">Neues Spiel</button>
         </div>
     </div>
 
@@ -193,7 +199,7 @@
                 const r=await fetch(lang==='de'?'de.txt':'en.txt');
                 if(!r.ok)throw new Error("Offline");
                 const t=await r.text();
-                dictionary=t.split('\n').map(w=>w.trim().toUpperCase()).filter(w=>/^[A-Z]+$/.test(w));
+                dictionary=t.split('\n').map(w=>w.trim().toUpperCase()).filter(w=>/^[A-ZÄÖÜ]+$/.test(w));
                 document.getElementById('loading-msg').innerText="Bereit.";
                 document.querySelector('.start-btn').disabled = false;
             } catch(e) {
@@ -266,7 +272,7 @@
             if(!isGameActive) return;
             if(k==='ENTER'){ handleInput('ENTER'); e.preventDefault(); }
             else if(k==='BACKSPACE'){ handleInput('BACK'); e.preventDefault(); }
-            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey) handleInput(k);
+            else if(/^[A-ZÄÖÜ]$/.test(k)&&!e.ctrlKey) handleInput(k);
         }
 
         function handleInput(k){
@@ -466,14 +472,21 @@
             currentGuess = "";
             const modal = document.getElementById('end-modal');
             const board = document.getElementById('bonus-board');
-            board.innerHTML = "";
             
+            document.getElementById('end-restart-btn').style.display = 'none'; // Restart-Button vorerst verstecken
+            
+            board.innerHTML = "";
             for(let r=0; r<maxBonusGuesses; r++){
                 let rowHtml = `<div class="board-row" id="bonus-row-${r}">`;
                 for(let c=0; c<wordLength; c++) rowHtml += `<div class="tile" id="bonus-tile-${r}-${c}"></div>`;
                 rowHtml += `</div>`;
                 board.innerHTML += rowHtml;
             }
+            
+            // DIE MAGIE: Wir schnappen uns die Tastatur aus dem Spiel und kleben sie ins Modal!
+            document.getElementById('bonus-keyboard-area').appendChild(document.getElementById('keyboard-container'));
+            document.getElementById('bonus-keyboard-area').style.display = 'block';
+            
             modal.style.display = 'flex';
         }
 
@@ -495,12 +508,22 @@
                 document.getElementById('end-title').innerText = "🎉 GEWONNEN! 🎉";
                 document.getElementById('end-title').style.color = "#4ade80";
                 document.getElementById('end-desc').innerText = "Du bist ein wahres Genie!";
+                
+                // Tastatur verstecken, Neues-Spiel Button anzeigen
+                document.getElementById('bonus-keyboard-area').style.display = 'none';
+                document.getElementById('end-restart-btn').style.display = 'block';
+                
                 isGameActive = false;
                 spawnConfetti();
             } else if(bonusGuesses.length === maxBonusGuesses) {
                 document.getElementById('end-title').innerText = "Schade!";
                 document.getElementById('end-title').style.color = "#ef4444";
                 document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
+                
+                // Tastatur verstecken, Neues-Spiel Button anzeigen
+                document.getElementById('bonus-keyboard-area').style.display = 'none';
+                document.getElementById('end-restart-btn').style.display = 'block';
+                
                 isGameActive = false;
             }
             
@@ -515,6 +538,10 @@
             document.getElementById('end-title').innerText = won ? "🎉 SIEG! 🎉" : "VERLOREN!";
             document.getElementById('end-title').style.color = won ? "#4ade80" : "#ef4444";
             document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
+            
+            document.getElementById('bonus-keyboard-area').style.display = 'none';
+            document.getElementById('end-restart-btn').style.display = 'block';
+            
             modal.style.display = 'flex';
         }
 
