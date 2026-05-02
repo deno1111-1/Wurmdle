@@ -39,7 +39,7 @@ body{
   max-width:600px;
   aspect-ratio:1;
   background:white;
-  touch-action:none;
+  touch-action: pinch-zoom; 
   position:relative;
 }
 
@@ -56,12 +56,10 @@ body{
 
 .center-dot{
   position:absolute;
-  width:24px;
-  height:24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px; 
+  font-size: calc(min(95vw, 600px) / var(--size, 8) * 0.45);
   transform:translate(-50%,-50%);
   pointer-events:none;
 }
@@ -119,13 +117,13 @@ const sizeInput = document.getElementById("sizeInput");
 const startBtn = document.getElementById("startBtn");
 const solveBtn = document.getElementById("solveBtn");
 const eraserBtn = document.getElementById("eraserBtn");
-const undoBtn = document.getElementById("undoBtn"); // NEU
+const undoBtn = document.getElementById("undoBtn");
 
 let size;
 let solution=[];
 let player=[];
 let centers=[];
-let history=[]; // NEU: Speichert alte Spielzüge
+let history=[]; 
 let dragging=false;
 let activeId=null;
 let eraserMode = false;
@@ -137,7 +135,6 @@ function randomColor(){
   return `hsl(${Math.random()*360}, 65%, 70%)`;
 }
 
-// NEU: Funktion, die eine perfekte Kopie des aktuellen Feldes macht
 function clonePlayerState() {
   return player.map(row => [...row]);
 }
@@ -145,7 +142,7 @@ function clonePlayerState() {
 startBtn.onclick = startGame;
 
 solveBtn.onclick = () => {
-  history.push(clonePlayerState()); // Vor dem Lösen abspeichern!
+  history.push(clonePlayerState()); 
   for(let r=0; r<size; r++){
     for(let c=0; c<size; c++){
       if(solution[r][c] !== "DEAD") {
@@ -157,10 +154,9 @@ solveBtn.onclick = () => {
   checkWin();
 };
 
-// NEU: Undo Button Logik
 undoBtn.onclick = () => {
   if (history.length > 0) {
-    player = history.pop(); // Holt den letzten Zustand aus dem Speicher
+    player = history.pop(); 
     updateBoard();
   }
 };
@@ -190,7 +186,7 @@ function startGame(){
   eraserBtn.style.color = "black";
   eraserBtn.style.borderColor = "#ccc";
 
-  history = []; // NEU: Speicher beim Neustart leeren
+  history = []; 
 
   generatePuzzle(size);
   renderBoard();
@@ -201,21 +197,42 @@ function generatePuzzle(n){
   player   = Array.from({length:n},()=>Array(n).fill(null));
   centers=[];
 
-  let id = 0;
-  const minGalaxies = 5;
-  const maxGalaxies = 10;
-  const targetGalaxies = minGalaxies + Math.floor(Math.random()*(maxGalaxies-minGalaxies+1));
-
   function inside(r,c){ return r>=0 && r<n && c>=0 && c<n; }
 
-  function findEmpty(){
-    for(let r=0;r<n;r++){
-      for(let c=0;c<n;c++){
-        if(solution[r][c]===null) return [r,c];
-      }
-    }
-    return null;
+  // 1. Organische "tote" Zonen an den Rändern für eine spannende Spielfeldform schaffen
+  let deadCount = Math.floor(n * n * (0.1 + Math.random() * 0.15)); // 10-25% schwarze Felder
+  let deadFrontier = [];
+  
+  for(let i=0; i<n; i++) {
+      if(Math.random() < 0.25) deadFrontier.push([0, i]);
+      if(Math.random() < 0.25) deadFrontier.push([n-1, i]);
+      if(Math.random() < 0.25) deadFrontier.push([i, 0]);
+      if(Math.random() < 0.25) deadFrontier.push([i, n-1]);
   }
+  
+  let actualDead = 0;
+  while(deadFrontier.length > 0 && actualDead < deadCount) {
+      let idx = Math.floor(Math.random() * deadFrontier.length);
+      let [r, c] = deadFrontier.splice(idx, 1)[0];
+      
+      if(solution[r][c] === null) {
+          solution[r][c] = "DEAD";
+          actualDead++;
+          
+          let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+          for(let [dr, dc] of dirs) {
+              let nr = r+dr, nc = c+dc;
+              if(inside(nr, nc) && solution[nr][nc] === null) {
+                  deadFrontier.push([nr, nc]);
+              }
+          }
+      }
+  }
+
+  // 2. Startpunkte für die Galaxien setzen
+  let id = 0;
+  let targetGalaxies = Math.floor((n * n - actualDead) / 10); // Dynamische Dichte
+  if (targetGalaxies < 3) targetGalaxies = 3;
 
   function findRandomEmpty(){
     let empties = [];
@@ -228,82 +245,121 @@ function generatePuzzle(n){
     return empties[Math.floor(Math.random() * empties.length)];
   }
 
-  function isOrthogonalTo(r, c, targetId) {
-    let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-    for(let [dr, dc] of dirs) {
-      let nr = r + dr, nc = c + dc;
-      if(inside(nr, nc) && solution[nr][nc] === targetId) return true;
-    }
-    return false;
+  let activeFrontiers = [];
+
+  for(let i=0; i<targetGalaxies; i++) {
+      let start = findRandomEmpty();
+      if(!start) break;
+      let [sr, sc] = start;
+      let center = {
+        x: sc + 0.5,
+        y: sr + 0.5,
+        id: id,
+        color: randomColor(),
+        emoji: "👁️"
+      };
+      centers.push(center);
+      solution[sr][sc] = id;
+      activeFrontiers.push({id: id, center: center, cells: [[sr, sc]]});
+      id++;
   }
 
-  while(findEmpty() && id < targetGalaxies){
-    let start = findRandomEmpty(); 
-    if(!start) break;
-    let [sr,sc] = start;
+  // 3. Gleichzeitiges, organisches Wachstum aller Galaxien
+  let growing = true;
+  while(growing) {
+      growing = false;
+      // Shuffle um keine Galaxie zu bevorzugen
+      activeFrontiers.sort(() => Math.random() - 0.5);
 
-    let center = {
-      x: sc + 0.5,
-      y: sr + 0.5,
-      id: id,
-      color: randomColor(),
-      emoji: "👁️" 
-    };
-    centers.push(center);
+      for(let f of activeFrontiers) {
+          if(f.cells.length === 0) continue;
+          
+          let idx = Math.floor(Math.random() * f.cells.length);
+          let [r, c] = f.cells.splice(idx, 1)[0];
+          
+          let dirs = [[1,0],[-1,0],[0,1],[0,-1]].sort(() => Math.random() - 0.5);
+          let expanded = false;
 
-    let frontier = [[sr,sc]];
-    solution[sr][sc] = id;
-    let targetSize = Math.floor((n*n)/targetGalaxies) + Math.floor(Math.random()*4);
-    let count = 1;
+          for(let [dr, dc] of dirs) {
+              let nr = r + dr; 
+              let nc = c + dc;
+              let symR = 2 * f.center.y - nr - 1; 
+              let symC = 2 * f.center.x - nc - 1;
 
-    while(frontier.length && count < targetSize){
-      let [r,c] = frontier.shift();
-      let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-
-      for(let [dr,dc] of dirs){
-        let nr = r+dr; let nc = c+dc;
-        let symR = 2*center.y - nr - 1; let symC = 2*center.x - nc - 1;
-
-        if(Number.isInteger(symR) && Number.isInteger(symC)){
-          if(inside(nr,nc) && inside(symR,symC)){
-            if(solution[nr][nc]===null && solution[symR][symC]===null){
-              solution[nr][nc] = id; solution[symR][symC] = id;
-              frontier.push([nr,nc]); frontier.push([symR,symC]);
-              count += 2;
-              if(count >= targetSize) break;
-            }
+              if(Number.isInteger(symR) && Number.isInteger(symC)){
+                  if(inside(nr, nc) && inside(symR, symC)){
+                      if(solution[nr][nc] === null && solution[symR][symC] === null){
+                          solution[nr][nc] = f.id; 
+                          solution[symR][symC] = f.id;
+                          f.cells.push([nr, nc]); 
+                          if (nr !== symR || nc !== symC) f.cells.push([symR, symC]);
+                          expanded = true;
+                          growing = true;
+                          break; 
+                      }
+                  }
+              }
           }
-        }
+          if(expanded) f.cells.push([r, c]); 
       }
-    }
-    id++;
   }
 
-  while(findEmpty()){
-    let [r,c] = findEmpty();
-    let assigned = false;
-    for(let g of centers){
-      let symR = 2*g.y - r - 1; let symC = 2*g.x - c - 1;
-      if(Number.isInteger(symR) && Number.isInteger(symC)){
-        if(inside(symR,symC)){
-          if(solution[symR][symC]===null){
-            if(isOrthogonalTo(r, c, g.id) || isOrthogonalTo(symR, symC, g.id)) {
-              solution[r][c]=g.id; solution[symR][symC]=g.id;
-              assigned = true; break;
-            }
+  // 4. Lücken füllen (übrig gebliebene Zellen sinnvoll verarbeiten)
+  let emptyCells = true;
+  while(emptyCells) {
+      emptyCells = false;
+      let empties = [];
+      for(let r=0;r<n;r++){
+          for(let c=0;c<n;c++){
+              if(solution[r][c]===null) empties.push([r,c]);
           }
-        }
       }
-    }
-    if(!assigned) {
-      if(Math.random() < 0.15) {
-        let newId = centers.length;
-        centers.push({ x: c + 0.5, y: r + 0.5, id: newId, color: randomColor(), emoji: "👁️" });
-        solution[r][c] = newId;
-      } else {
-        solution[r][c] = "DEAD";
+      
+      if(empties.length === 0) break;
+      emptyCells = true;
+
+      empties.sort(() => Math.random() - 0.5);
+      let assigned = false;
+
+      for(let [r, c] of empties) {
+          let attached = false;
+          for(let g of centers){
+              let symR = 2*g.y - r - 1; 
+              let symC = 2*g.x - c - 1;
+              if(Number.isInteger(symR) && Number.isInteger(symC) && inside(symR, symC)){
+                  if(solution[symR][symC] === null){
+                      let isAdj = false;
+                      let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+                      for(let [dr, dc] of dirs) {
+                          if((inside(r+dr, c+dc) && solution[r+dr][c+dc] === g.id) || 
+                             (inside(symR+dr, symC+dc) && solution[symR+dr][symC+dc] === g.id)) {
+                              isAdj = true;
+                              break;
+                          }
+                      }
+                      if(isAdj) {
+                          solution[r][c] = g.id; 
+                          solution[symR][symC] = g.id;
+                          attached = true;
+                          assigned = true;
+                          break;
+                      }
+                  }
+              }
+          }
+          if(attached) continue;
       }
-    }
+
+      if(!assigned) {
+          let [r, c] = empties[0];
+          if(Math.random() < 0.4) {
+              let newId = centers.length;
+              centers.push({ x: c + 0.5, y: r + 0.5, id: newId, color: randomColor(), emoji: "👁️" });
+              solution[r][c] = newId;
+          } else {
+              solution[r][c] = "DEAD";
+          }
+      }
   }
 }
 
@@ -340,6 +396,7 @@ function floodFillMarked(startR, startC, newId) {
 
 function renderBoard(){
   boardEl.innerHTML="";
+  boardEl.style.setProperty('--size', size); 
   boardEl.style.gridTemplateColumns=`repeat(${size},1fr)`;
 
   for(let r=0;r<size;r++){
@@ -375,6 +432,11 @@ function renderBoard(){
 }
 
 boardEl.addEventListener("pointerdown", e => {
+  if (!e.isPrimary) {
+      dragging = false;
+      return;
+  }
+
   if(!e.target.classList.contains("cell")) return;
   
   let r=parseInt(e.target.dataset.r);
@@ -385,7 +447,7 @@ boardEl.addEventListener("pointerdown", e => {
   boardEl.setPointerCapture(e.pointerId);
 
   if(eraserMode) {
-    history.push(clonePlayerState()); // Zustand speichern vor dem Radieren
+    history.push(clonePlayerState()); 
     activeId = "ERASE";
     dragging = true;
     if(!isCenter(r, c)) { 
@@ -395,13 +457,13 @@ boardEl.addEventListener("pointerdown", e => {
   } else {
     let currentId = player[r][c];
     if (currentId === null || currentId === "MARKED") {
-      history.push(clonePlayerState()); // Zustand speichern vor dem Skizzieren
+      history.push(clonePlayerState()); 
       activeId = "MARKED"; 
       dragging = true;
       player[r][c] = "MARKED";
       updateBoard();
     } else if (currentId !== "DEAD") {
-      history.push(clonePlayerState()); // Zustand speichern vor dem Malen
+      history.push(clonePlayerState()); 
       activeId = currentId; 
       dragging = true;
     }
@@ -411,8 +473,14 @@ boardEl.addEventListener("pointerdown", e => {
   lastC = c;
 });
 
-boardEl.addEventListener("pointermove", e => {
+document.addEventListener("pointermove", e => {
   if(!dragging) return;
+  
+  if (!e.isPrimary) {
+      dragging = false;
+      return;
+  }
+
   let el = document.elementFromPoint(e.clientX, e.clientY);
   if(!el || !el.classList.contains("cell")) return;
 

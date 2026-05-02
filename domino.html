@@ -101,7 +101,6 @@
             box-shadow: inset 0 0 12px rgba(0,0,0,0.2);
         }
 
-        /* NEU: Bonusfelder CSS */
         .bonus-text {
             position: absolute; top: 4px; left: 5px; font-size: 0.75rem; 
             font-weight: 900; z-index: 5; text-shadow: 0px 1px 2px rgba(0,0,0,0.8);
@@ -271,7 +270,7 @@
         const palette = ["#5e8b7e", "#d8b08c", "#a76c6e", "#4a6274", "#849974", "#b28d46", "#7b5e7b", "#4b7a8a"];
 
         let layout = []; let regionMap = []; let regions = {}; let boardState = []; let dominos = []; let solutionPlacements = []; 
-        let bonusMap = []; // Hält die +1 / -1 Werte
+        let bonusMap = []; 
         const boardEl = document.getElementById('game-board');
         const trayEl = document.getElementById('tray');
         const statusEl = document.getElementById('status-bar');
@@ -346,7 +345,6 @@
                 }
             }
 
-            // Bonusfelder generieren (falls aktiviert)
             if (document.getElementById('rule-bonus').checked) {
                 activeCells.forEach(c => {
                     if (Math.random() < 0.15) bonusMap[c.y][c.x] = Math.random() > 0.5 ? 1 : -1;
@@ -364,7 +362,6 @@
                 dominos.push({ id: 'd'+i, val1: displayV1, val2: displayV2, orientation: 0, x: null, y: null, isShiny, wobbleRadius: getRandomWobblyRadius() });
             });
 
-            // Regeleinstellungen abrufen
             const sExact = document.getElementById('rule-exact').checked;
             const sLess = document.getElementById('rule-less').checked;
             const sGreater = document.getElementById('rule-greater').checked;
@@ -397,32 +394,42 @@
                     } else break;
                 }
                 
-                // Modifizierte Werte für die Generierung nutzen!
                 let vals = regionCells.map(c => solutionBoard[c.y][c.x] + bonusMap[c.y][c.x]);
                 let sum = vals.reduce((a, b) => a + b, 0);
 
                 let validRules = [];
-                if (sExact) validRules.push("SUM_EXACT");
-                if (sLess) validRules.push("SUM_LESS");
-                if (sGreater) validRules.push("SUM_GREATER");
-                if (sProd) validRules.push("PRODUCT");
-                if (sEqual && vals.length > 1 && vals.every(v => v === vals[0])) validRules.push("ALL_EQUAL");
-                if (sDiffRule && vals.length > 1 && new Set(vals).size === vals.length) validRules.push("ALL_DIFFERENT");
-                if (sMinus && vals.length > 1) validRules.push("DIFFERENCE");
-                
+                let specialRules = []; // NEU: Trenne normale Zahlen von Sonderzeichen
+
+                if (sEqual && vals.length > 1 && vals.every(v => v === vals[0])) specialRules.push("ALL_EQUAL");
+                if (sDiffRule && vals.length > 1 && new Set(vals).size === vals.length) specialRules.push("ALL_DIFFERENT");
+                if (sMinus && vals.length > 1) specialRules.push("DIFFERENCE");
+                if (sProd && vals.length > 1) specialRules.push("PRODUCT"); // Multiplikation wird oft auch eher als "Sonderregel" wahrgenommen
                 if (sPairs && vals.length > 1 && vals.length % 2 === 0) {
                     let counts = {};
                     vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
-                    if (Object.values(counts).every(c => c % 2 === 0)) validRules.push("PAIRS");
+                    if (Object.values(counts).every(c => c % 2 === 0)) specialRules.push("PAIRS");
                 }
                 if (sParity) {
-                    if (vals.every(v => v % 2 === 0)) validRules.push("ALL_EVEN");
-                    else if (vals.every(v => Math.abs(v % 2) === 1)) validRules.push("ALL_ODD");
+                    if (vals.every(v => v % 2 === 0)) specialRules.push("ALL_EVEN");
+                    else if (vals.every(v => Math.abs(v % 2) === 1)) specialRules.push("ALL_ODD");
                 }
 
-                if (validRules.length === 0) validRules.push("SUM_EXACT"); // Fallback
+                // Standard-Regeln (Zahlen und Ungleichungen)
+                if (sExact) validRules.push("SUM_EXACT");
+                if (sLess) validRules.push("SUM_LESS");
+                if (sGreater) validRules.push("SUM_GREATER");
 
-                let ruleType = validRules[Math.floor(Math.random() * validRules.length)];
+                let ruleType = "";
+
+                // NEU: Priorisiere Sonderzeichen stark (80% Chance), wenn welche möglich sind!
+                if (specialRules.length > 0 && Math.random() < 0.8) {
+                    ruleType = specialRules[Math.floor(Math.random() * specialRules.length)];
+                } else if (validRules.length > 0) {
+                    ruleType = validRules[Math.floor(Math.random() * validRules.length)];
+                } else {
+                    ruleType = "SUM_EXACT"; // Fallback, falls absolut gar nichts passt
+                }
+
                 let text = ""; let ruleValue = 0;
 
                 if (ruleType === "SUM_EXACT") { text = sum.toString(); ruleValue = sum; }
@@ -439,7 +446,6 @@
                 regions[rId] = { color: palette[rIdCounter % palette.length], cells: regionCells, ruleType, ruleValue, text };
             }
 
-            // SPIEGELZONEN Zuweisung
             if (document.getElementById('rule-mirror').checked) {
                 let sumGroups = {};
                 for (let rId in regions) {
@@ -475,7 +481,6 @@
                     cell.style.top = `${PADDING + y * (CELL_SIZE + GAP)}px`;
                     cell.style.backgroundColor = regions[rId].color + '80';
                     
-                    // Bonus rendern
                     let bonus = bonusMap[y][x];
                     if (bonus !== 0) {
                         let bEl = document.createElement('div');
@@ -642,7 +647,6 @@
             for (const rId in regions) {
                 const r = regions[rId]; 
                 
-                // Hier greifen die Modifikatoren durch die Bonusfelder!
                 let vals = r.cells.map(c => {
                     if(boardState[c.y][c.x] === null) return null;
                     return boardState[c.y][c.x] + bonusMap[c.y][c.x];

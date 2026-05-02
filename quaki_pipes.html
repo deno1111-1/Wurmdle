@@ -38,7 +38,7 @@
 
         h1 { color: #fde047; margin-bottom: 5px; margin-top: 10px; }
         
-        input {
+        input[type="number"] {
             width: 60px; padding: 10px; border-radius: 5px; border: none;
             background: #334155; color: white; text-align: center; font-size: 1.2rem;
         }
@@ -79,7 +79,7 @@
 
         .animal-icon {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; z-index: 10;
+            font-size: 1.8rem; z-index: 10; flex-wrap: wrap; align-content: center; line-height: 1;
         }
 
         .btn {
@@ -101,6 +101,7 @@
             background: #1e293b; padding: 40px; border-radius: 20px; border: 3px solid var(--target);
             box-shadow: 0 0 40px rgba(34, 197, 94, 0.4); text-align: center;
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
         }
 
         .win-content h2 { color: var(--target); font-size: 2.5rem; margin: 0 0 10px 0; }
@@ -111,7 +112,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Kleine Anpassung für Handys in der oberen Leiste */
         @media (max-width: 600px) {
             .btn-small { padding: 10px; font-size: 0.9rem; }
             #status-box { font-size: 0.9rem; }
@@ -127,9 +127,17 @@
         <h1>Quakis Rohrrettung 🐥</h1>
         <p>Wähle die Spielfeldgröße:</p>
         <div style="margin: 20px 0;">
-            <input type="number" id="inputW" value="12" min="5" max="40"> x 
-            <input type="number" id="inputH" value="12" min="5" max="40">
+            <input type="number" id="inputW" value="12" min="5" max="40" oninput="saveMenuSettings()"> x 
+            <input type="number" id="inputH" value="12" min="5" max="40" oninput="saveMenuSettings()">
         </div>
+        
+        <div style="margin-bottom: 25px;">
+            <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.1rem; color: #f472b6;">
+                <input type="checkbox" id="boost-spawns" style="width: 20px; height: 20px; accent-color: #f472b6;">
+                Verirrungen erhöhen 🚨
+            </label>
+        </div>
+
         <button class="btn" onclick="startGame()">Spiel starten</button>
     </div>
 </div>
@@ -172,6 +180,17 @@
     let lillyFound = false;
     let gameWon = false;
 
+    const EXTRA_ANIMALS = [
+        { id: 'schnecki', name: 'Schnecki', emoji: '🐌' },
+        { id: 'okti', name: 'Okti', emoji: '🐙' },
+        { id: 'kugelfisch', name: 'Mr.Kugelfisch', emoji: '🐡' },
+        { id: 'vartoli', name: 'Vartoli', emoji: '🐦' },
+        { id: 'shrimp', name: 'Mr.Shrimp', emoji: '🦐' },
+        { id: 'krokel', name: 'Krokel', emoji: '🐊' },
+        { id: 'froxy', name: 'Froxy', emoji: '🐸' }
+    ];
+    let activeExtras = [];
+
     const TYPES = {
         'I': [true, false, true, false],
         'L': [true, true, false, false],
@@ -179,10 +198,25 @@
         'X': [true, true, true, true]
     };
 
+    function saveMenuSettings() {
+        const w = document.getElementById('inputW').value;
+        const h = document.getElementById('inputH').value;
+        localStorage.setItem('quaki_grid_w', w);
+        localStorage.setItem('quaki_grid_h', h);
+    }
+
+    function loadMenuSettings() {
+        const savedW = localStorage.getItem('quaki_grid_w');
+        const savedH = localStorage.getItem('quaki_grid_h');
+        if (savedW) document.getElementById('inputW').value = savedW;
+        if (savedH) document.getElementById('inputH').value = savedH;
+    }
+
     function startGame() {
         GRID_W = parseInt(document.getElementById('inputW').value);
         GRID_H = parseInt(document.getElementById('inputH').value);
         document.getElementById('setup-overlay').style.display = 'none';
+        saveMenuSettings();
         generateLevel();
     }
 
@@ -196,8 +230,17 @@
         quakiFound = false;
         lillyFound = false;
         gameWon = false;
-        // 5% Chance für Lilly
-        lillySpawned = Math.random() < 0.05;
+        
+        const boostSpawns = document.getElementById('boost-spawns').checked;
+        lillySpawned = boostSpawns ? true : (Math.random() < 0.05);
+
+        activeExtras = [];
+        EXTRA_ANIMALS.forEach(animal => {
+            const chance = boostSpawns ? 0.10 : 0.01;
+            if (Math.random() < chance) {
+                activeExtras.push({ ...animal, found: false });
+            }
+        });
 
         // 1. Grid & Unförmigkeit
         for (let y = 0; y < GRID_H; y++) {
@@ -209,22 +252,32 @@
                 
                 const el = document.createElement('div');
                 el.className = isVoid ? 'cell void' : 'cell';
-                cells[y][x] = { x, y, isVoid, type: 'I', rotation: 0, el, pathExits: [false,false,false,false], onPath: false };
+                cells[y][x] = { x, y, isVoid, type: 'I', rotation: 0, el, pathExits: [false,false,false,false], onPath: false, extraAnimals: [] };
                 gridEl.appendChild(el);
             }
         }
 
-        // 2. Golden Path + Quaki & Lilly
+        // 2. Golden Path + Quaki, Lilly & Extras
         const path = buildGoldenPath();
         
         const quakiIndex = Math.floor(path.length * 0.4); 
         path[quakiIndex].hasQuaki = true;
 
-        if (lillySpawned) {
-            let lillyIndex = Math.floor(path.length * 0.7); 
-            if (lillyIndex === quakiIndex) lillyIndex = Math.min(path.length - 2, quakiIndex + 1);
-            path[lillyIndex].hasLilly = true;
+        let availableIndices = [];
+        for(let i = 1; i < path.length - 1; i++) {
+            if(i !== quakiIndex) availableIndices.push(i);
         }
+        availableIndices.sort(() => Math.random() - 0.5); // mischen
+
+        if (lillySpawned) {
+            let idx = availableIndices.length > 0 ? availableIndices.pop() : quakiIndex;
+            path[idx].hasLilly = true;
+        }
+
+        activeExtras.forEach(ext => {
+            let idx = availableIndices.length > 0 ? availableIndices.pop() : quakiIndex;
+            path[idx].extraAnimals.push(ext.id);
+        });
 
         // 3. Zellen füllen
         cells.flat().forEach(c => {
@@ -266,7 +319,8 @@
             let ns = [[-1,0,0,2],[0,1,1,3],[1,0,2,0],[0,-1,3,1]].sort(()=>Math.random()-0.5);
             for(let d of ns) {
                 let ny = node.y+d[0], nx = node.x+d[1];
-                if(cells[ny]&&cells[nx]&&!cells[ny][nx].isVoid&&!visited.has(`${nx},${ny}`)) {
+                // BUGFIX: cells[ny][nx] anstelle von cells[nx] prüfen
+                if(cells[ny] && cells[ny][nx] && !cells[ny][nx].isVoid && !visited.has(`${nx},${ny}`)) {
                     node.pathExits[d[2]] = true; cells[ny][nx].pathExits[d[3]] = true;
                     if(dfs(cells[ny][nx])) return true;
                     node.pathExits[d[2]] = false; cells[ny][nx].pathExits[d[3]] = false;
@@ -292,6 +346,13 @@
         let animalsHTML = '';
         if(c.hasQuaki) animalsHTML += '🐥';
         if(c.hasLilly) animalsHTML += '🐈';
+        
+        if(c.extraAnimals && c.extraAnimals.length > 0) {
+            c.extraAnimals.forEach(id => {
+                let ext = activeExtras.find(a => a.id === id);
+                if(ext) animalsHTML += ext.emoji;
+            });
+        }
         
         if (animalsHTML !== '') {
             const icon = document.createElement('div');
@@ -320,6 +381,7 @@
         
         let qFound = false;
         let lFound = false;
+        activeExtras.forEach(a => a.found = false);
         
         let start = cells.flat().find(c => c.isSource);
         let q = [start]; start.active = true;
@@ -331,13 +393,20 @@
             
             if(curr.hasQuaki) qFound = true;
             if(curr.hasLilly) lFound = true;
+            if(curr.extraAnimals) {
+                curr.extraAnimals.forEach(id => {
+                    let ext = activeExtras.find(a => a.id === id);
+                    if(ext) ext.found = true;
+                });
+            }
 
             let ex = [...TYPES[curr.type]];
             for(let i=0; i<curr.rotation; i++) ex.unshift(ex.pop());
 
             [[-1,0,0,2],[0,1,1,3],[1,0,2,0],[0,-1,3,1]].forEach(d => {
                 let ny = curr.y+d[0], nx = curr.x+d[1];
-                if(ex[d[2]] && cells[ny] && cells[nx] && !cells[ny][nx].isVoid) {
+                // BUGFIX: cells[ny][nx] anstelle von cells[nx] prüfen
+                if(ex[d[2]] && cells[ny] && cells[ny][nx] && !cells[ny][nx].isVoid) {
                     let next = cells[ny][nx];
                     let nEx = [...TYPES[next.type]];
                     for(let i=0; i<next.rotation; i++) nEx.unshift(nEx.pop());
@@ -350,18 +419,31 @@
 
         quakiFound = qFound;
         lillyFound = lFound;
+        
+        let allSaved = quakiFound && (!lillySpawned || lillyFound) && activeExtras.every(a => a.found);
 
         const statusBox = document.getElementById('mission-status');
         const target = cells.flat().find(c => c.isTarget);
         
-        let statusHTML = `Quaki: 🐥 ${quakiFound ? '✅' : '❌'}`;
+        let statusHTML = `<span style="white-space:nowrap;">Quaki: 🐥 ${quakiFound ? '✅' : '❌'}</span>`;
+        let surpriseNames = [];
         
         if (lillySpawned) {
-            statusHTML = `<div class="surprise-text">Huch? Lilly hat sich auch in ein Rohr verirrt!</div>` + statusHTML;
-            statusHTML += ` &nbsp;|&nbsp; Lilly: 🐈 ${lillyFound ? '✅' : '❌'}`;
+            statusHTML += ` &nbsp;|&nbsp; <span style="white-space:nowrap;">Lilly: 🐈 ${lillyFound ? '✅' : '❌'}</span>`;
+            surpriseNames.push("Lilly");
         }
+        
+        activeExtras.forEach(ext => {
+            statusHTML += ` &nbsp;|&nbsp; <span style="white-space:nowrap;">${ext.name}: ${ext.emoji} ${ext.found ? '✅' : '❌'}</span>`;
+            surpriseNames.push(ext.name);
+        });
 
-        let allSaved = quakiFound && (!lillySpawned || lillyFound);
+        if (surpriseNames.length > 0) {
+            let namesText = surpriseNames.length === 1 ? surpriseNames[0] : surpriseNames.slice(0, -1).join(', ') + ' und ' + surpriseNames[surpriseNames.length - 1];
+            statusHTML = `<div class="surprise-text">Huch? ${namesText} ${surpriseNames.length === 1 ? 'hat' : 'haben'} sich auch verirrt!</div><div style="line-height: 1.6;">${statusHTML}</div>`;
+        } else {
+            statusHTML = `<div style="line-height: 1.6;">${statusHTML}</div>`;
+        }
 
         if(allSaved) {
             statusHTML += `<br><small style="color:#22c55e;">Alle gerettet! Jetzt schnell ins Ziel!</small>`;
@@ -378,11 +460,14 @@
                 const modal = document.getElementById('win-modal');
                 const winMsg = document.getElementById('win-message');
                 
-                if(lillySpawned) {
-                    winMsg.innerText = "jippie du hast Quaki und Lilly gerettet 🐥🐈";
-                } else {
-                    winMsg.innerText = "jippie du hast Quaki gerettet 🐥";
-                }
+                let rescuedNames = ["Quaki"];
+                let rescuedEmojis = "🐥";
+                if(lillySpawned) { rescuedNames.push("Lilly"); rescuedEmojis += "🐈"; }
+                activeExtras.forEach(ext => { rescuedNames.push(ext.name); rescuedEmojis += ext.emoji; });
+
+                let nameString = rescuedNames.length === 1 ? "Quaki" : rescuedNames.slice(0, -1).join(', ') + ' und ' + rescuedNames[rescuedNames.length - 1];
+                
+                winMsg.innerText = `jippie du hast ${nameString} gerettet ${rescuedEmojis}`;
                 
                 modal.style.display = 'flex';
             }, 400);
@@ -426,9 +511,11 @@
     viewport.ontouchend = () => { isDragging = false; lastDist = 0; };
 
     function updateTransform() {
-        // FIX: -300 berücksichtigt jetzt das CSS padding vom Grid, 58 ist die reale Größe der Zellen inkl. Lücken
         zoomLayer.style.transform = `translate(${posX - 300 - (GRID_W*58)/2}px, ${posY - 300 - (GRID_H*58)/2}px) scale(${scale})`;
     }
+
+    // Beim Starten des Scripts Einstellungen laden
+    loadMenuSettings();
 </script>
 </body>
 </html>
