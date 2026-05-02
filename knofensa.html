@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knofensas Cooler Garten</title>
     <style>
         :root {
@@ -24,7 +24,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            touch-action: none;
         }
         h1 { margin-top: 20px; margin-bottom: 5px; font-size: 1.8rem; text-align: center; }
         
@@ -57,7 +56,6 @@
             background: white;
         }
 
-        /* --- NEU: Toggle Switch Styling --- */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -103,7 +101,6 @@
         input:checked + .slider:before {
             transform: translateX(22px);
         }
-        /* --------------------------------- */
 
         .btn {
             background-color: #4CAF50;
@@ -142,6 +139,7 @@
             max-width: 450px;
             height: 95vw;
             max-height: 450px;
+            touch-action: pinch-zoom;
         }
         
         .cell {
@@ -150,9 +148,10 @@
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: calc(14px + 1vmin);
+            font-size: calc(min(95vw, 450px) / var(--size, 10) * 0.45);
             box-sizing: border-box;
             color: #1b5e20;
+            overflow: hidden;
         }
 
         .obstacle-water { background-color: #81d4fa; }
@@ -247,6 +246,9 @@
         let isDragging = false;
         let startX = -1, startY = -1;
         let currX = -1, currY = -1;
+        let listenersAdded = false; 
+
+        let lastTouchTime = 0; // Fix für das "Doppelklick"-Verhalten auf Handys
 
         const menuDiv = document.getElementById('menu');
         const gameDiv = document.getElementById('game');
@@ -302,9 +304,8 @@
             const MIN_AREA = 4; 
             let queue = [{x: 0, y: 0, w: size, h: size}];
             let finalRects = [];
-            const useObstacles = obstacleToggle.checked; // Zustand des Schalters abfragen
+            const useObstacles = obstacleToggle.checked; 
 
-            // 1. Spielfeld in Rechtecke unterteilen
             while(queue.length > 0) {
                 let r = queue.shift();
                 let area = r.w * r.h;
@@ -356,7 +357,6 @@
             solutionRects = [];
             let obstacleCount = 0;
 
-            // 2. Hindernisse generieren (falls im Menü aktiviert!)
             finalRects.forEach(r => {
                 if (useObstacles && Math.random() < 0.15 && finalRects.length > 5) {
                     let isWater = Math.random() > 0.5;
@@ -380,8 +380,9 @@
 
         function renderGrid() {
             gridContainer.innerHTML = '';
-            gridContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-            gridContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+            gridContainer.style.setProperty('--size', size);
+            gridContainer.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+            gridContainer.style.gridTemplateRows = `repeat(${size}, minmax(0, 1fr))`;
 
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
@@ -408,6 +409,9 @@
         }
 
         function setupEventListeners() {
+            if (listenersAdded) return;
+            listenersAdded = true;
+            
             gridContainer.addEventListener('mousedown', handleStart);
             document.addEventListener('mousemove', handleMove);
             document.addEventListener('mouseup', handleEnd);
@@ -427,7 +431,17 @@
         }
 
         function handleStart(e) {
-            if(e.cancelable) e.preventDefault();
+            // Ignoriert synthetische Maus-Events nach einem Touch-Event
+            if (e.type.startsWith('touch')) lastTouchTime = Date.now();
+            if (e.type.startsWith('mouse') && Date.now() - lastTouchTime < 1000) return;
+
+            if (e.touches && e.touches.length > 1) {
+                isDragging = false;
+                return; 
+            }
+            
+            if(e.cancelable && e.type === 'mousedown') e.preventDefault();
+            
             let coords = getCoords(e);
             if (!coords) return;
 
@@ -452,8 +466,13 @@
         }
 
         function handleMove(e) {
+            if (e.type.startsWith('touch')) lastTouchTime = Date.now();
+            if (e.type.startsWith('mouse') && Date.now() - lastTouchTime < 1000) return;
+
+            if (e.touches && e.touches.length > 1) return; 
             if (!isDragging) return;
-            if(e.cancelable) e.preventDefault();
+            if(e.cancelable) e.preventDefault(); 
+            
             let coords = getCoords(e);
             if (!coords) return;
 
@@ -466,6 +485,9 @@
         }
 
         function handleEnd(e) {
+            if (e.type.startsWith('touch')) lastTouchTime = Date.now();
+            if (e.type.startsWith('mouse') && Date.now() - lastTouchTime < 1000) return;
+
             if (!isDragging) return;
             isDragging = false;
             dragInfoDiv.innerText = ""; 
