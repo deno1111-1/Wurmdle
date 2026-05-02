@@ -42,7 +42,7 @@
         }
 
         .overlay h1 { font-size: 2rem; margin-bottom: 20px; text-align: center; padding: 0 20px; }
-        .overlay p { font-size: 1.2rem; margin-bottom: 30px; color: #aaa; }
+        .overlay p { font-size: 1.2rem; margin-bottom: 20px; color: #aaa; }
 
         .lang-btn {
             background-color: var(--blue); color: white; border: none;
@@ -155,21 +155,21 @@
         
         <div style="margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <label style="font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                <input type="checkbox" id="babybubu-checkbox" onchange="toggleBabybubu()" style="transform: scale(1.5);">
+                <input type="checkbox" id="babybubu-checkbox" onchange="toggleBabybubu(); saveSettings();" style="transform: scale(1.5);">
                 Babybubu Modus 🍼
             </label>
             <div id="babybubu-input-container" style="display: none; text-align: center;">
                 <label style="font-size: 1rem; color: #aaa;">Extra Versuche:</label>
-                <input type="number" id="babybubu-extra" value="1" min="1" max="50" style="width: 60px; font-size: 1.2rem; text-align: center; border-radius: 5px; border: 1px solid var(--gray-border); background: var(--gray-box); color: white; padding: 5px; margin-left: 5px;">
+                <input type="number" id="babybubu-extra" value="1" min="1" max="50" oninput="saveSettings();" style="width: 60px; font-size: 1.2rem; text-align: center; border-radius: 5px; border: 1px solid var(--gray-border); background: var(--gray-box); color: white; padding: 5px; margin-left: 5px;">
             </div>
 
             <label style="font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-                <input type="checkbox" id="length-checkbox" onchange="toggleLength()" style="transform: scale(1.5);">
+                <input type="checkbox" id="length-checkbox" onchange="toggleLength(); saveSettings();" style="transform: scale(1.5);">
                 Wortlänge anpassen 📏
             </label>
             <div id="length-input-container" style="display: none; text-align: center;">
                 <label style="font-size: 1rem; color: #aaa;">Buchstaben:</label>
-                <input type="number" id="length-input" value="5" min="3" max="10" style="width: 60px; font-size: 1.2rem; text-align: center; border-radius: 5px; border: 1px solid var(--gray-border); background: var(--gray-box); color: white; padding: 5px; margin-left: 5px;">
+                <input type="number" id="length-input" value="5" min="3" max="10" oninput="saveSettings();" style="width: 60px; font-size: 1.2rem; text-align: center; border-radius: 5px; border: 1px solid var(--gray-border); background: var(--gray-box); color: white; padding: 5px; margin-left: 5px;">
             </div>
         </div>
         <button class="lang-btn" onclick="initGame('de.txt')">Deutsch</button>
@@ -178,7 +178,8 @@
 
     <div id="end-screen" class="overlay" style="display: none;">
         <h1 id="end-title"></h1>
-        <p id="end-word"></p>
+        <p id="end-word" style="margin-bottom: 10px;"></p>
+        <p id="end-guesses" style="font-size: 1.1rem; color: #ccc; margin-bottom: 30px;"></p>
         <button class="restart-btn" onclick="location.reload()">Zurück zum Menü</button>
     </div>
 
@@ -254,13 +255,28 @@
         let currentGuess = "";
         let guesses = 0;
         let MAX_GUESSES = 14; 
-        let WORD_LENGTH = 5; // NEU: Dynamische Wortlänge
+        let WORD_LENGTH = 5; 
         
         let topBound = "AAAAA";
         let bottomBound = "ZZZZZ";
         let isAnimating = false;
 
-        let inputLetters = []; // Wird nun dynamisch befüllt
+        let inputLetters = [];
+
+        // NEU: Einstellungen laden und speichern
+        function saveSettings() {
+            const extra = document.getElementById('babybubu-extra').value;
+            const length = document.getElementById('length-input').value;
+            localStorage.setItem('betwurmdle_extra', extra);
+            localStorage.setItem('betwurmdle_length', length);
+        }
+
+        function loadSettings() {
+            const savedExtra = localStorage.getItem('betwurmdle_extra');
+            const savedLength = localStorage.getItem('betwurmdle_length');
+            if (savedExtra) document.getElementById('babybubu-extra').value = savedExtra;
+            if (savedLength) document.getElementById('length-input').value = savedLength;
+        }
 
         // Tastatur Events
         document.querySelectorAll('.key').forEach(btn => {
@@ -275,27 +291,16 @@
         function toggleBabybubu() {
             const checkbox = document.getElementById('babybubu-checkbox');
             const inputContainer = document.getElementById('babybubu-input-container');
-            if (checkbox.checked) {
-                inputContainer.style.display = 'block';
-            } else {
-                inputContainer.style.display = 'none';
-            }
+            inputContainer.style.display = checkbox.checked ? 'block' : 'none';
         }
 
-        // NEU: Funktion für das Ein- und Ausblenden des Längen-Eingabefelds
         function toggleLength() {
             const checkbox = document.getElementById('length-checkbox');
             const inputContainer = document.getElementById('length-input-container');
-            if (checkbox.checked) {
-                inputContainer.style.display = 'block';
-            } else {
-                inputContainer.style.display = 'none';
-            }
+            inputContainer.style.display = checkbox.checked ? 'block' : 'none';
         }
 
-        // Lädt die gewählte Sprache
         async function initGame(filename) {
-            // Babybubu Versuche berechnen
             const isBabybubu = document.getElementById('babybubu-checkbox').checked;
             if (isBabybubu) {
                 const extraGuesses = parseInt(document.getElementById('babybubu-extra').value) || 0;
@@ -304,7 +309,6 @@
                 MAX_GUESSES = 14; 
             }
 
-            // NEU: Wortlänge berechnen
             const isCustomLength = document.getElementById('length-checkbox').checked;
             if (isCustomLength) {
                 WORD_LENGTH = parseInt(document.getElementById('length-input').value) || 5;
@@ -314,7 +318,6 @@
                 WORD_LENGTH = 5;
             }
 
-            // NEU: Spielfeld dynamisch an die Wortlänge anpassen
             const rowTop = document.getElementById('row-top');
             const rowInput = document.getElementById('row-input');
             const rowBot = document.getElementById('row-bottom');
@@ -353,11 +356,8 @@
                     .sort();
             } catch (error) {
                 console.warn(`Konnte ${filename} nicht laden. Nutze Fallback.`);
-                // Notfall-Wörterbuch, gefiltert auf aktuelle Wortlänge
                 dictionary = ["APPLE", "BEACH", "CHAIR", "DANCE", "EAGLE", "HOUSE", "MAGIC", "OCEAN", "RADIO", "TABLE", "ZEBRA", "KATZE", "APFEL", "VOGEL", "STADT", "BLUME", "BAUM", "AUTO", "HAUS", "MAUS", "REGEN", "SONNE", "WOLKE", "FENSTER", "COMPUTER"];
                 dictionary = dictionary.filter(w => w.length === WORD_LENGTH).sort();
-                
-                // Falls es für die gewählte Länge keine Wörter im Fallback gibt:
                 if (dictionary.length === 0) {
                     dictionary = ["A".repeat(WORD_LENGTH), "Z".repeat(WORD_LENGTH)];
                 }
@@ -383,7 +383,6 @@
 
         function handleInput(key) {
             if (isAnimating || guesses >= MAX_GUESSES) return;
-
             if (key === 'BACKSPACE') {
                 currentGuess = currentGuess.slice(0, -1);
             } else if (key === 'ENTER') {
@@ -405,12 +404,10 @@
         function updateUI(topNodeText, bottomNodeText) {
             const rowTop = document.getElementById('row-top');
             const rowBot = document.getElementById('row-bottom');
-            
             for (let i = 0; i < WORD_LENGTH; i++) {
                 rowTop.children[i].innerText = topBound[i] || "A";
                 rowBot.children[i].innerText = bottomBound[i] || "Z";
             }
-            
             document.getElementById('node-top').innerText = topNodeText;
             document.getElementById('node-bottom').innerText = bottomNodeText;
         }
@@ -426,6 +423,7 @@
             const endScreen = document.getElementById('end-screen');
             const endTitle = document.getElementById('end-title');
             const endWord = document.getElementById('end-word');
+            const endGuesses = document.getElementById('end-guesses');
             
             endScreen.style.display = 'flex';
             endWord.innerText = `Das gesuchte Wort war: ${secretWord}`;
@@ -433,9 +431,12 @@
             if(won) {
                 endTitle.innerText = "super Leni hat gewonnen";
                 endTitle.style.color = "var(--orange)";
+                endGuesses.innerText = `Du hast ${guesses} Versuch(e) gebraucht!`;
+                endGuesses.style.display = 'block';
             } else {
                 endTitle.innerText = "Schade, verloren!";
                 endTitle.style.color = "#ef4444";
+                endGuesses.style.display = 'none';
             }
         }
 
@@ -446,11 +447,7 @@
             if (!dictionary.includes(currentGuess)) {
                 const inputRow = document.getElementById('row-input');
                 inputRow.classList.add('invalid-word');
-                
-                setTimeout(() => {
-                    inputRow.classList.remove('invalid-word');
-                }, 400);
-                
+                setTimeout(() => { inputRow.classList.remove('invalid-word'); }, 400);
                 return; 
             }
 
@@ -480,9 +477,13 @@
             let range = valBot - valTop;
             let distToTop = valSecret - valTop;
             let distToBot = valBot - valSecret;
+
+            let valAbsoluteTop = getWordValue("A".repeat(WORD_LENGTH));
+            let valAbsoluteBot = getWordValue("Z".repeat(WORD_LENGTH));
+            let totalRange = valAbsoluteBot - valAbsoluteTop;
             
-            let pctTop = range === 0 ? 0 : Math.max(1, Math.round((distToTop / range) * 100));
-            let pctBot = range === 0 ? 0 : Math.max(1, Math.round((distToBot / range) * 100));
+            let pctTop = totalRange === 0 ? 0 : parseFloat(((distToTop / totalRange) * 100).toFixed(1));
+            let pctBot = totalRange === 0 ? 0 : parseFloat(((distToBot / totalRange) * 100).toFixed(1));
 
             const dot = document.getElementById('orange-dot');
             dot.style.display = 'block';
@@ -495,10 +496,7 @@
                 updateUI(pctTop, pctBot);
                 updateKeyboard();
                 isAnimating = false;
-                
-                if (guesses >= MAX_GUESSES) {
-                    showEndScreen(false);
-                }
+                if (guesses >= MAX_GUESSES) showEndScreen(false);
             }, 1000); 
         }
 
@@ -506,22 +504,18 @@
             document.querySelectorAll('.key').forEach(btn => {
                 let letter = btn.dataset.key;
                 if(letter === "ENTER" || letter === "BACKSPACE") return;
-
                 let testPrefix = currentGuess + letter;
                 let wordMin = testPrefix + "A".repeat(WORD_LENGTH - testPrefix.length);
                 let wordMax = testPrefix + "Z".repeat(WORD_LENGTH - testPrefix.length);
-
-                if (wordMax < topBound || wordMin > bottomBound) {
-                    btn.classList.add('disabled');
-                } else {
-                    btn.classList.remove('disabled');
-                }
+                if (wordMax < topBound || wordMin > bottomBound) btn.classList.add('disabled');
+                else btn.classList.remove('disabled');
             });
         }
 
-        function giveUp() {
-            showEndScreen(false);
-        }
+        function giveUp() { showEndScreen(false); }
+
+        // Start-Konfiguration laden
+        loadSettings();
 
     </script>
 </body>
