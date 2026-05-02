@@ -194,7 +194,8 @@
             const basis = 100 / cols; 
             lay.forEach((row,i)=>{
                 const d=document.createElement('div'); d.className='keyboard-row';
-                if(i===lay.length-1) appKey(d,'ENTER','key-large',()=>handleWurmdleKey('ENTER'));
+                // LÖSCHEN (Backspace) jetzt links!
+                if(i===lay.length-1) appKey(d,'⌫','key-large',()=>handleWurmdleKey('BACK'));
                 for(let c of row){
                     const k=document.createElement('div'); k.className='key'; k.id=`key-${c}`; k.onclick=()=>handleWurmdleKey(c);
                     let h=`<div class="key-heatmap">`;
@@ -204,7 +205,8 @@
                     h+=`</div><div class="key-char">${c}</div>`;
                     k.innerHTML=h; d.appendChild(k);
                 }
-                if(i===lay.length-1) appKey(d,'⌫','key-large',()=>handleWurmdleKey('BACK'));
+                // ENTER jetzt rechts!
+                if(i===lay.length-1) appKey(d,'ENTER','key-large',()=>handleWurmdleKey('ENTER'));
                 kb.appendChild(d);
             });
         }
