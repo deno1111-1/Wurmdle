@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Lilly's Leiterspaß</title>
+    <style>
+        :root {
+            --bg: #121213;
+            --text: #ffffff;
+            --accent: #538d4e; /* Wordle Grün */
+            --secondary: #3a3a3c; /* Wordle Grau */
+            --highlight: #b59f3b; /* Wordle Gelb */
+        }
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        header {
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
+        }
+        h1 { margin: 0; font-size: 1.1rem; color: var(--accent); }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; font-weight: bold; }
+
+        /* SETUP AREA */
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 30px; text-align: center; overflow-y: auto;}
+        .setting-row { display: flex; flex-direction: column; gap: 5px; align-items: center;}
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;}
+        .lang-btn.active { background: var(--accent); color: white; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 80px; text-align: center; background: #222; border: 2px solid var(--accent); color: white; border-radius: 10px; }
+        .start-btn { background-color: var(--accent); padding: 15px 50px; font-size: 1.2rem; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;}
+        .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* GAME AREA */
+        #game-view { display: none; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; padding-top: 10px; }
+        
+        #toolbar { display: flex; gap: 8px; margin-bottom: 5px; justify-content: center; flex-wrap: wrap;}
+        .tool-btn { background: #374151; color: white; border: 1px solid #555; padding: 8px 15px; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+        .tool-btn:active { background: #4b5563; }
+        
+        #word-ladder { display: flex; flex-direction: column; align-items: center; gap: 5px; overflow-y: auto; width: 100%; max-height: 45vh; padding: 10px 0; }
+        
+        .ladder-row { display: flex; gap: 5px; }
+        .tile {
+            width: 45px; height: 45px; border: 2px solid var(--secondary);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; font-weight: bold; text-transform: uppercase;
+            border-radius: 5px; background: var(--bg); color: white;
+        }
+        .tile.filled { border-color: #888; }
+        .tile.correct { background: var(--accent); border-color: var(--accent); }
+        .tile.present { background: var(--highlight); border-color: var(--highlight); }
+        .tile.absent { background: var(--secondary); border-color: var(--secondary); }
+
+        .arrow { font-size: 1.2rem; color: #555; margin: 2px 0; font-weight: bold;}
+
+        /* TOAST */
+        #msg-toast { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 10px; font-weight: bold; display: none; z-index: 4000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5);}
+
+        /* KEYBOARD */
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; margin-top: auto; padding-bottom: 20px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; height: 50px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; }
+        .key-large { flex: 1.5; font-size: 0.9rem; }
+
+        /* WIN MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid var(--accent);
+            text-align: center; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .stat-grid { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-box { display: flex; flex-direction: column; }
+        .stat-val { font-size: 2rem; font-weight: bold; color: var(--accent); }
+        .stat-label { font-size: 0.8rem; color: #aaa; }
+        
+        #optimal-path-box { 
+            background: #2a2a2c; padding: 10px; border-radius: 8px; margin-top: 15px; 
+            display: none; font-size: 0.9rem; color: var(--highlight); line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐾 Lilly's Leiterspaß</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <div class="setting-row">
+            <span style="color:#aaa; font-weight:bold;">Sprache</span>
+            <div class="toggle-group">
+                <button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button>
+                <button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button>
+            </div>
+        </div>
+        <div class="setting-row" style="margin-top: 10px;">
+            <span style="color:#aaa; font-weight:bold;">Buchstaben (Standard: 4)</span>
+            <input type="number" id="letter-count" value="4" min="3" max="7">
+        </div>
+        <div id="loading-msg" style="color:#555; margin-top: 10px; font-weight: bold;">Lade Wörter...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>SPIEL STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="toolbar">
+            <button class="tool-btn" onclick="undoWord()">🔙 Rückgängig</button>
+            <button class="tool-btn" onclick="showHint()" style="background: #5a3c94;">💡 Tipp</button>
+        </div>
+        <div id="word-ladder"></div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color: var(--accent); margin-top: 0;">🎉 Gewonnen! 🎉</h2>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <span class="stat-val" id="user-steps">0</span>
+                    <span class="stat-label">Deine Schritte</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val" id="opt-steps">0</span>
+                    <span class="stat-label">Optimal</span>
+                </div>
+            </div>
+            
+            <button class="tool-btn" onclick="toggleOptimalPath()" style="width: 100%; margin-bottom: 10px;">💡 Optimalen Weg zeigen</button>
+            <div id="optimal-path-box"></div>
+
+            <hr style="border: 0; border-top: 1px solid #444; margin: 20px 0;">
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="tool-btn" onclick="location.reload()" style="flex: 1;">🏠 Hauptmenü</button>
+                <button class="tool-btn active-tool" onclick="startGame()" style="flex: 1; background: var(--accent);">🔄 Noch mal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dictionary = [], filteredDict = [], currentLang = 'de';
+        let wordLength = 4, startWord = "", targetWord = "";
+        let ladder = [], currentInput = "";
+        let isGameActive = false;
+        let adjacency = {}; 
+
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        window.onload = () => loadWords('de');
+
+        async function loadWords(lang) {
+            currentLang = lang;
+            document.getElementById('loading-msg').innerText = "Lade Wörterbuch...";
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
+            document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
+            
+            try {
+                const r = await fetch(lang + '.txt');
+                const t = await r.text();
+                dictionary = t.split('\n').map(w => w.trim().toUpperCase()).filter(w => /^[A-ZÄÖÜ]+$/.test(w));
+                document.getElementById('loading-msg').innerText = "Bereit zum Spielen!";
+                document.getElementById('start-btn').disabled = false;
+            } catch(e) {
+                document.getElementById('loading-msg').innerText = "Fehler beim Laden!";
+            }
+        }
+
+        function startGame() {
+            wordLength = parseInt(document.getElementById('letter-count').value) || 4;
+            filteredDict = dictionary.filter(w => w.length === wordLength);
+            
+            if(filteredDict.length < 20) { alert("Zu wenige Wörter!"); return; }
+
+            document.getElementById('loading-msg').innerText = "Berechne Netzwerke...";
+            
+            setTimeout(() => {
+                buildAdjacency();
+                let found = false, attempts = 0;
+                while(!found && attempts < 300) {
+                    attempts++;
+                    let w1 = filteredDict[Math.floor(Math.random() * filteredDict.length)];
+                    let path = findRandomPath(w1);
+                    if(path && path.length >= 4 && path.length <= 6) {
+                        startWord = w1;
+                        targetWord = path[path.length - 1];
+                        found = true;
+                    }
+                }
+
+                if(!found) { alert("Level-Fehler. Erneut versuchen!"); return; }
+
+                ladder = [startWord];
+                currentInput = "";
+                isGameActive = true;
+
+                document.getElementById('setup-area').style.display = 'none';
+                document.getElementById('win-modal').style.display = 'none';
+                document.getElementById('game-view').style.display = 'flex';
+                document.getElementById('optimal-path-box').style.display = 'none';
+                
+                renderLadder();
+                renderKeyboard();
+            }, 50);
+        }
+
+        function buildAdjacency() {
+            adjacency = {};
+            for(let w of filteredDict) adjacency[w] = [];
+            for(let i=0; i<filteredDict.length; i++) {
+                for(let j=i+1; j<filteredDict.length; j++) {
+                    let w1 = filteredDict[i], w2 = filteredDict[j], diff = 0;
+                    for(let k=0; k<wordLength; k++) if(w1[k] !== w2[k]) diff++;
+                    if(diff === 1) { adjacency[w1].push(w2); adjacency[w2].push(w1); }
+                }
+            }
+        }
+
+        function findRandomPath(start) {
+            let queue = [[start]], visited = new Set([start]), possiblePaths = [];
+            while(queue.length > 0 && queue.length < 2000) {
+                let path = queue.shift(), last = path[path.length - 1];
+                if(path.length >= 4) possiblePaths.push(path);
+                if(path.length > 6) continue;
+                if (adjacency[last]) for(let n of adjacency[last]) if(!visited.has(n)) { visited.add(n); queue.push([...path, n]); }
+            }
+            return possiblePaths.length ? possiblePaths[Math.floor(Math.random() * possiblePaths.length)] : null;
+        }
+
+        function findShortestPath(start, target) {
+            let queue = [[start]], visited = new Set([start]);
+            while(queue.length > 0) {
+                let path = queue.shift(), last = path[path.length - 1];
+                if (last === target) return path;
+                if (adjacency[last]) for(let n of adjacency[last]) if(!visited.has(n)) { visited.add(n); queue.push([...path, n]); }
+            }
+            return null;
+        }
+
+        function getColors(guess, target) {
+            let res = new Array(wordLength).fill('absent'), targetArr = target.split(''), guessArr = guess.split('');
+            for(let i=0; i<wordLength; i++) if(guessArr[i] === targetArr[i]) { res[i] = 'correct'; targetArr[i] = null; guessArr[i] = null; }
+            for(let i=0; i<wordLength; i++) if(guessArr[i] !== null && targetArr.includes(guessArr[i])) { res[i] = 'present'; targetArr[targetArr.indexOf(guessArr[i])] = null; }
+            return res;
+        }
+
+        function renderLadder() {
+            const container = document.getElementById('word-ladder');
+            container.innerHTML = "";
+            for(let i=0; i<ladder.length; i++) {
+                if(i > 0) container.innerHTML += `<div class="arrow">↓</div>`;
+                container.appendChild(createRow(ladder[i], false, true));
+            }
+            if(ladder[ladder.length-1] !== targetWord) {
+                container.innerHTML += `<div class="arrow">↓</div>`;
+                container.appendChild(createRow(currentInput.padEnd(wordLength, " "), true, false));
+                container.innerHTML += `<div class="arrow" style="opacity: 0.3">...</div>`;
+                container.appendChild(createRow(targetWord, false, true, true));
+            } else triggerWin();
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function createRow(word, isInput, applyColors, isFinalTarget = false) {
+            const row = document.createElement('div');
+            row.className = 'ladder-row';
+            let colors = (applyColors && !isFinalTarget) ? getColors(word, targetWord) : [];
+            for(let i=0; i<word.length; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                if(word[i] !== " ") tile.classList.add('filled');
+                if (isFinalTarget) tile.classList.add('correct');
+                else if (applyColors && word[i] !== " ") tile.classList.add(colors[i]);
+                tile.innerText = word[i];
+                row.appendChild(tile);
+            }
+            return row;
+        }
+
+        function renderKeyboard() {
+            const kb = document.getElementById('keyboard-container'); kb.innerHTML = "";
+            const layout = currentLang === 'de' ? keysDE : keysEN;
+            layout.forEach((row, i) => {
+                const div = document.createElement('div'); div.className = 'keyboard-row';
+                if(i === 2) appendKey(div, '⌫', 'key-large', () => handleInput('BACK'));
+                for(let char of row) appendKey(div, char, '', () => handleInput(char));
+                if(i === 2) appendKey(div, 'ENTER', 'key-large', () => handleInput('ENTER'));
+                kb.appendChild(div);
+            });
+        }
+        function appendKey(p, t, c, a) {
+            const b = document.createElement('button'); b.className = 'key ' + c; b.innerText = t; b.onclick = a; p.appendChild(b);
+        }
+
+        function handleInput(key) {
+            if(!isGameActive) return;
+            if(key === 'BACK') (currentInput.length > 0) ? currentInput = currentInput.slice(0, -1) : undoWord();
+            else if(key === 'ENTER') submitWord();
+            else if(currentInput.length < wordLength) currentInput += key;
+            renderLadder();
+        }
+
+        function undoWord() {
+            if(!isGameActive) return;
+            if(ladder.length > 1) { currentInput = ladder.pop(); renderLadder(); }
+            else showToast("Anfang erreicht!");
+        }
+
+        function submitWord() {
+            if(currentInput.length !== wordLength) { showToast("Zu kurz!"); return; }
+            if(!filteredDict.includes(currentInput)) { showToast("Wort unbekannt!"); return; }
+            let d = 0, last = ladder[ladder.length - 1];
+            for(let i=0; i<wordLength; i++) if(currentInput[i] !== last[i]) d++;
+            if(d !== 1) { showToast("Genau 1 Buchstabe!"); return; }
+            ladder.push(currentInput); currentInput = ""; renderLadder();
+        }
+
+        function triggerWin() {
+            isGameActive = false;
+            const optPath = findShortestPath(startWord, targetWord);
+            document.getElementById('user-steps').innerText = ladder.length - 1;
+            document.getElementById('opt-steps').innerText = optPath.length - 1;
+            document.getElementById('optimal-path-box').innerText = optPath.join(" ➔ ");
+            setTimeout(() => document.getElementById('win-modal').style.display = 'flex', 600);
+        }
+
+        function toggleOptimalPath() {
+            const b = document.getElementById('optimal-path-box');
+            b.style.display = (b.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function showHint() {
+            if(!isGameActive) return;
+            let path = findShortestPath(ladder[ladder.length - 1], targetWord);
+            if (path && path.length > 1) showToast("💡 Probier '" + path[1] + "'");
+            else showToast("Geh einen Schritt zurück!");
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('msg-toast'); t.innerText = m; t.style.display = 'block';
+            setTimeout(()=>t.style.display='none', 2000);
+        }
+    </script>
+</body>
+</html>

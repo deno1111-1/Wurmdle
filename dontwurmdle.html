@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Don't Wurmdle</title>
+    <style>
+        /* --- GLOBAL --- */
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* --- TOAST MESSAGES --- */
+        #msg-toast {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 12px 24px; border-radius: 8px;
+            font-weight: bold; display: none; z-index: 2000; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* --- SETUP AREA --- */
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;}
+        .lang-btn.active { background: #538d4e; color: white; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 80px; text-align: center; background: #222; border: 2px solid #555; color: white; border-radius: 10px; }
+        .start-btn { background-color: #538d4e; padding: 15px 50px; font-size: 1.2rem; border: none; color: white; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .start-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+        
+        .checkbox-container { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; color: #eab308; font-weight: bold; }
+        .checkbox-container input { width: 20px; height: 20px; accent-color: #eab308; }
+
+        /* --- GAME UI --- */
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; padding-top: 10px; }
+        
+        #stats-bar {
+            display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center;
+        }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.8rem; color: #aaa; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+        .val-high { color: #4ade80; }
+        .val-med { color: #eab308; }
+        .val-low { color: #ef4444; }
+
+        #board-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px; }
+        .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; position: relative; }
+        .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: bold; text-transform: uppercase; background: #121213; box-sizing: border-box;}
+        
+        .row-count { position: absolute; right: -40px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: #aaa; font-weight: bold; }
+
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        /* --- BUTTONS --- */
+        #action-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 12px 20px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .action-btn:active { background: #444; }
+
+        /* --- KEYBOARD --- */
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; margin-top: auto; padding-bottom: 20px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px;}
+        .key { font-weight: bold; border: 0; padding: 0; height: 50px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
+        .key-large { flex: 1.5; font-size: 0.9rem; }
+
+        /* --- BONUS MODAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000;
+            display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #555;
+            text-align: center; max-width: 400px; width: 100%; position: relative;
+        }
+        .modal-content h2 { margin-top: 0; color: #eab308; }
+        #bonus-board { display: flex; flex-direction: column; gap: 5px; margin: 20px 0; align-items: center;}
+        
+        /* CONFETTI */
+        .confetti { position: absolute; width: 10px; height: 10px; background: red; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⛔ Don't Wurmdle</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0; color: #aaa;">Spieleinstellungen</h2>
+        <div class="setting-row">
+            <span class="label">Sprache</span>
+            <div class="toggle-group">
+                <button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button>
+                <button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span class="label">Wortlänge</span>
+            <input type="number" id="letter-count" value="5" min="4" max="8">
+        </div>
+        <div class="setting-row">
+            <span class="label">Undos (Babybubu)</span>
+            <input type="number" id="undo-count" value="5" min="0" max="50">
+        </div>
+        <label class="checkbox-container">
+            <input type="checkbox" id="bonus-toggle" checked>
+            🎁 Bonusfrage am Ende
+        </label>
+        <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
+        <button class="start-btn" onclick="startDontWordle()" disabled>SPIELEN</button>
+    </div>
+    
+    <div id="game-view">
+        <div id="stats-bar">
+            <div class="stat-box">
+                <div class="stat-label">Valid Words Remaining</div>
+                <div class="stat-value val-high" id="stat-words">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Undos Remaining</div>
+                <div class="stat-value" id="stat-undos" style="color: white;">5</div>
+            </div>
+        </div>
+
+        <div id="board-container"></div>
+        
+        <div id="action-row">
+            <button class="action-btn" onclick="undoLastWord()">Rückgängig (Undo)</button>
+        </div>
+
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="end-modal" class="modal-overlay">
+        <div class="modal-content" id="end-content">
+            <h2 id="end-title">BONUSRUNDE!</h2>
+            <p id="end-desc">Du hast überlebt! Was war das gesuchte Wort? (3 Versuche)</p>
+            <div id="bonus-board"></div>
+            <button class="action-btn" onclick="location.reload()" style="margin-top: 15px; width: 100%;">Neues Spiel</button>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE VARIABLES ---
+        let currentLang='de', dictionary=[], validWords=[];
+        let secretWord="", wordLength=5, maxRows=6;
+        let guesses=[], currentGuess="", undosLeft=5;
+        let historyStack=[]; // Speichert {guesses, validWords}
+        let isGameActive=false, isBonusPhase=false;
+        let bonusGuesses=[], maxBonusGuesses=3;
+
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        window.onload=()=>{
+            setTimeout(()=>loadWords('de'),100);
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        // --- SETUP & LOADING ---
+        async function loadWords(lang){
+            currentLang=lang;
+            document.getElementById('loading-msg').innerText="Lade Wörterbuch...";
+            document.querySelector('.start-btn').disabled = true;
+            document.getElementById('btn-de').className=lang==='de'?'lang-btn active':'lang-btn';
+            document.getElementById('btn-en').className=lang==='en'?'lang-btn active':'lang-btn';
+            
+            try {
+                const r=await fetch(lang==='de'?'de.txt':'en.txt');
+                if(!r.ok)throw new Error("Offline");
+                const t=await r.text();
+                dictionary=t.split('\n').map(w=>w.trim().toUpperCase()).filter(w=>/^[A-Z]+$/.test(w));
+                document.getElementById('loading-msg').innerText="Bereit.";
+                document.querySelector('.start-btn').disabled = false;
+            } catch(e) {
+                document.getElementById('loading-msg').innerText="Fehler beim Laden!";
+            }
+        }
+
+        function startDontWordle(){
+            wordLength = parseInt(document.getElementById('letter-count').value) || 5;
+            undosLeft = parseInt(document.getElementById('undo-count').value) || 0;
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            
+            let filteredDict = dictionary.filter(w=>w.length === wordLength);
+            if(filteredDict.length < 50){ alert("Zu wenige Wörter für diese Länge!"); return; }
+            
+            dictionary = filteredDict;
+            validWords = [...dictionary];
+            secretWord = dictionary[Math.floor(Math.random()*dictionary.length)];
+            
+            guesses = []; currentGuess = ""; historyStack = [];
+            isGameActive = true; isBonusPhase = false; bonusGuesses = [];
+
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            
+            buildBoard();
+            createKeyboard();
+            updateStats();
+        }
+
+        // --- UI BUILDING ---
+        function buildBoard() {
+            const container = document.getElementById('board-container');
+            container.innerHTML = '';
+            for(let r=0; r<maxRows; r++){
+                let rowHtml = `<div class="board-row" id="row-${r}">`;
+                for(let c=0; c<wordLength; c++) rowHtml += `<div class="tile" id="tile-${r}-${c}"></div>`;
+                rowHtml += `<div class="row-count" id="count-${r}"></div></div>`;
+                container.innerHTML += rowHtml;
+            }
+        }
+
+        function createKeyboard(){
+            const kb = document.getElementById('keyboard-container'); kb.innerHTML='';
+            const lay = (currentLang==='de') ? keysDE : keysEN;
+            lay.forEach((row,i)=>{
+                const d=document.createElement('div'); d.className='keyboard-row';
+                // LÖSCHEN LINKS!
+                if(i===lay.length-1) appKey(d,'⌫','key-large',()=>handleInput('BACK'));
+                for(let c of row) appKey(d, c, `key-${c}`, ()=>handleInput(c));
+                // ENTER RECHTS!
+                if(i===lay.length-1) appKey(d,'ENTER','key-large',()=>handleInput('ENTER'));
+                kb.appendChild(d);
+            });
+            updateKeyboardColors();
+        }
+
+        function appKey(parent, text, idClass, action){
+            const btn = document.createElement('button');
+            btn.className = `key ${idClass.includes('key-large') ? 'key-large' : ''}`;
+            if(!idClass.includes('key-large')) btn.id = idClass;
+            btn.innerText = text;
+            btn.onclick = action;
+            parent.appendChild(btn);
+        }
+
+        // --- INPUT HANDLING ---
+        function handleGlobalKey(e){
+            const k=e.key.toUpperCase();
+            if(!isGameActive) return;
+            if(k==='ENTER'){ handleInput('ENTER'); e.preventDefault(); }
+            else if(k==='BACKSPACE'){ handleInput('BACK'); e.preventDefault(); }
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey) handleInput(k);
+        }
+
+        function handleInput(k){
+            if(!isGameActive) return;
+            if(k==='ENTER') submitWord();
+            else if(k==='BACK'){ currentGuess=currentGuess.slice(0,-1); updateGridPreview(); }
+            else { if(currentGuess.length < wordLength){ currentGuess+=k; updateGridPreview(); } }
+        }
+
+        function updateGridPreview(){
+            let targetRow = isBonusPhase ? bonusGuesses.length : guesses.length;
+            let prefix = isBonusPhase ? "bonus-" : "";
+            for(let i=0; i<wordLength; i++){
+                const t = document.getElementById(`${prefix}tile-${targetRow}-${i}`);
+                if(t) { t.innerText = currentGuess[i]||""; t.style.borderColor = currentGuess[i]?"#888":"#3a3a3c"; }
+            }
+        }
+
+        function shakeRow(rowIdx, isBonus=false){
+            let prefix = isBonus ? "bonus-" : "";
+            const row = document.getElementById(`${prefix}row-${rowIdx}`);
+            if(row){ row.classList.remove('shake-effect'); void row.offsetWidth; row.classList.add('shake-effect'); }
+        }
+
+        function showToast(txt){
+            const t=document.getElementById('msg-toast');
+            t.innerText=txt; t.style.display='block';
+            setTimeout(()=>t.style.display='none', 2500);
+        }
+
+        // --- GAME LOGIC (DON'T WORDLE) ---
+        function evaluateWord(guess, secret) {
+            let res = new Array(wordLength).fill('absent');
+            let secretArr = secret.split('');
+            let guessArr = guess.split('');
+            for (let i = 0; i < wordLength; i++) {
+                if (guessArr[i] === secretArr[i]) { res[i] = 'correct'; secretArr[i] = null; guessArr[i] = null; }
+            }
+            for (let i = 0; i < wordLength; i++) {
+                if (guessArr[i] !== null && secretArr.includes(guessArr[i])) {
+                    res[i] = 'present'; secretArr[secretArr.indexOf(guessArr[i])] = null;
+                }
+            }
+            return res;
+        }
+
+        function arraysEqual(a, b) {
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        function validateHardMode(guessStr) {
+            for (let i = 0; i < guesses.length; i++) {
+                let pastGuess = guesses[i];
+                let evalRes = evaluateWord(pastGuess, secretWord);
+                
+                // Check Greens
+                for (let j = 0; j < wordLength; j++) {
+                    if (evalRes[j] === 'correct' && guessStr[j] !== pastGuess[j]) return `Stelle ${j+1} muss '${pastGuess[j]}' sein.`;
+                }
+                
+                // Check Yellows
+                let guessCounts = {}; for(let char of guessStr) guessCounts[char] = (guessCounts[char] || 0) + 1;
+                let reqCounts = {};
+                for (let j = 0; j < wordLength; j++) {
+                    if (evalRes[j] === 'present' || evalRes[j] === 'correct') reqCounts[pastGuess[j]] = (reqCounts[pastGuess[j]] || 0) + 1;
+                }
+                for (let char in reqCounts) {
+                    if ((guessCounts[char] || 0) < reqCounts[char]) return `Muss '${char}' enthalten.`;
+                }
+            }
+            return null; 
+        }
+
+        function submitWord(){
+            if(currentGuess.length !== wordLength) { showToast("Zu kurz!"); shakeRow(isBonusPhase ? bonusGuesses.length : guesses.length, isBonusPhase); return; }
+            if(!dictionary.includes(currentGuess)) { showToast("Wort unbekannt!"); shakeRow(isBonusPhase ? bonusGuesses.length : guesses.length, isBonusPhase); return; }
+
+            if(isBonusPhase) { submitBonusGuess(); return; }
+
+            // DON'T WORDLE LOGIK
+            let hardModeError = validateHardMode(currentGuess);
+            if(!validWords.includes(currentGuess)) {
+                showToast(hardModeError || "Wort verletzt bekannte Hinweise!");
+                shakeRow(guesses.length); return;
+            }
+
+            // Speichere History für Undo
+            historyStack.push({ guesses: [...guesses], validWords: [...validWords] });
+
+            // Auswertung gegen Geheimwort
+            let evalRes = evaluateWord(currentGuess, secretWord);
+            
+            // UI Update
+            let r = guesses.length;
+            for(let i=0; i<wordLength; i++){
+                const t = document.getElementById(`tile-${r}-${i}`);
+                t.style.borderColor="transparent";
+                if(evalRes[i]==='correct') t.classList.add('correct');
+                else if(evalRes[i]==='present') t.classList.add('present');
+                else t.classList.add('absent');
+            }
+
+            guesses.push(currentGuess);
+            
+            // LOSE CONDITION: Geheimes Wort getippt
+            if(currentGuess === secretWord){
+                showToast("GAME OVER! Du hast das gesuchte Wort getippt!");
+                isGameActive = false;
+                setTimeout(()=> triggerEndScreen(false), 1500);
+                return;
+            }
+
+            // Filter Valid Words
+            let newValidWords = [];
+            for (let w of validWords) {
+                if (arraysEqual(evaluateWord(currentGuess, w), evalRes)) newValidWords.push(w);
+            }
+            validWords = newValidWords;
+            document.getElementById(`count-${r}`).innerText = validWords.length;
+
+            currentGuess = "";
+            updateStats();
+            updateKeyboardColors();
+
+            // WIN CONDITION (Main Phase)
+            if(guesses.length === maxRows){
+                if (document.getElementById('bonus-toggle').checked) {
+                    setTimeout(() => startBonusPhase(), 1000);
+                } else {
+                    showToast("🎉 DU HAST ÜBERLEBT! 🎉");
+                    isGameActive = false;
+                }
+            }
+        }
+
+        function undoLastWord() {
+            if(!isGameActive || isBonusPhase) return;
+            if(undosLeft <= 0) { showToast("Keine Undos mehr übrig!"); return; }
+            if(guesses.length === 0) return;
+
+            let lastState = historyStack.pop();
+            let rowToClear = guesses.length - 1;
+            
+            guesses = lastState.guesses;
+            validWords = lastState.validWords;
+            undosLeft--;
+
+            // Clear Row UI
+            for(let i=0; i<wordLength; i++){
+                const t = document.getElementById(`tile-${rowToClear}-${i}`);
+                t.innerText = "";
+                t.className = "tile";
+                t.style.borderColor = "#3a3a3c";
+            }
+            document.getElementById(`count-${rowToClear}`).innerText = "";
+
+            currentGuess = "";
+            updateStats();
+            updateKeyboardColors();
+        }
+
+        function updateStats(){
+            const wLabel = document.getElementById('stat-words');
+            wLabel.innerText = validWords.length;
+            if(validWords.length > 500) wLabel.className = "stat-value val-high";
+            else if(validWords.length > 50) wLabel.className = "stat-value val-med";
+            else wLabel.className = "stat-value val-low";
+
+            document.getElementById('stat-undos').innerText = undosLeft;
+        }
+
+        function updateKeyboardColors() {
+            let activeGuesses = isBonusPhase ? [...guesses, ...bonusGuesses] : guesses;
+            let charStatus = {}; 
+            activeGuesses.forEach(g => {
+                let evalRes = evaluateWord(g, secretWord);
+                for(let i=0; i<wordLength; i++) {
+                    let char = g[i];
+                    let st = evalRes[i]==='correct' ? 3 : (evalRes[i]==='present' ? 2 : 1);
+                    if (st > (charStatus[char] || 0)) charStatus[char] = st;
+                }
+            });
+            document.querySelectorAll('.key').forEach(k => {
+                let c = k.innerText;
+                if(c.length===1 && charStatus[c]){
+                    k.style.backgroundColor = (charStatus[c] === 3) ? '#538d4e' : (charStatus[c] === 2) ? '#b59f3b' : '#3a3a3c';
+                } else if (c.length===1) {
+                    k.style.backgroundColor = '#818384'; // Reset
+                }
+            });
+        }
+
+        // --- BONUS PHASE ---
+        function startBonusPhase() {
+            isBonusPhase = true;
+            currentGuess = "";
+            const modal = document.getElementById('end-modal');
+            const board = document.getElementById('bonus-board');
+            board.innerHTML = "";
+            
+            for(let r=0; r<maxBonusGuesses; r++){
+                let rowHtml = `<div class="board-row" id="bonus-row-${r}">`;
+                for(let c=0; c<wordLength; c++) rowHtml += `<div class="tile" id="bonus-tile-${r}-${c}"></div>`;
+                rowHtml += `</div>`;
+                board.innerHTML += rowHtml;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function submitBonusGuess() {
+            let evalRes = evaluateWord(currentGuess, secretWord);
+            let r = bonusGuesses.length;
+            
+            for(let i=0; i<wordLength; i++){
+                const t = document.getElementById(`bonus-tile-${r}-${i}`);
+                t.style.borderColor="transparent";
+                if(evalRes[i]==='correct') t.classList.add('correct');
+                else if(evalRes[i]==='present') t.classList.add('present');
+                else t.classList.add('absent');
+            }
+
+            bonusGuesses.push(currentGuess);
+
+            if(currentGuess === secretWord) {
+                document.getElementById('end-title').innerText = "🎉 GEWONNEN! 🎉";
+                document.getElementById('end-title').style.color = "#4ade80";
+                document.getElementById('end-desc').innerText = "Du bist ein wahres Genie!";
+                isGameActive = false;
+                spawnConfetti();
+            } else if(bonusGuesses.length === maxBonusGuesses) {
+                document.getElementById('end-title').innerText = "Schade!";
+                document.getElementById('end-title').style.color = "#ef4444";
+                document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
+                isGameActive = false;
+            }
+            
+            currentGuess = "";
+            updateKeyboardColors();
+        }
+
+        function triggerEndScreen(won) {
+            const modal = document.getElementById('end-modal');
+            const board = document.getElementById('bonus-board');
+            board.innerHTML = "";
+            document.getElementById('end-title').innerText = won ? "🎉 SIEG! 🎉" : "VERLOREN!";
+            document.getElementById('end-title').style.color = won ? "#4ade80" : "#ef4444";
+            document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
+            modal.style.display = 'flex';
+        }
+
+        function spawnConfetti() {
+            for(let i=0; i<50; i++){
+                let conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = ['#eab308', '#4ade80', '#3b82f6', '#ec4899'][Math.floor(Math.random()*4)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(conf);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Kokoweis Kopf-Chaos</title>
+    <style>
+        :root {
+            --bg-color: #1a2f1c; /* Tropisches dunkles Grün */
+            --text-main: #f0f4f0;
+            --accent: #eab308; /* Alola Gold/Gelb */
+            --board-bg: #ffffff;
+            --cell-border: #888;
+            --clue-bg: #d1d5db; /* Grau für die Hinweise */
+            --clue-text: #1f2937;
+            --selected: #4ade80; /* Auswahl Grün */
+            --note-color: #2563eb;
+        }
+
+        body {
+            margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        header {
+            width: 100%; padding: 15px; background: rgba(0,0,0,0.3); text-align: center;
+            border-bottom: 2px solid var(--accent); box-sizing: border-box;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+        /* --- TOAST MESSAGES --- */
+        #msg-toast {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 12px 24px; border-radius: 8px;
+            font-weight: bold; display: none; z-index: 2000; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* --- HAUPTMENÜ --- */
+        #main-menu {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            flex-grow: 1; gap: 20px; width: 100%;
+        }
+        .menu-title { font-size: 1.2rem; color: #aaa; margin-bottom: 10px; }
+        .size-btn {
+            background: #274e2a; border: 2px solid var(--accent); color: white;
+            padding: 15px 40px; font-size: 1.5rem; border-radius: 15px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.1s; width: 200px;
+        }
+        .size-btn:active { transform: scale(0.95); }
+
+        /* --- SPIEL-ANSICHT --- */
+        #game-view {
+            display: none; flex-direction: column; align-items: center; width: 100%; height: 100%;
+            padding-top: 10px; box-sizing: border-box;
+        }
+
+        /* Toolbar (Menü, Undo, Redo, Notizen, Tipp) */
+        #toolbar {
+            display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; align-items: center; flex-wrap: wrap;
+        }
+        .tool-btn {
+            background: #374151; color: white; border: 2px solid #555; padding: 10px 15px;
+            border-radius: 8px; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .tool-btn:active { background: #4b5563; }
+        .tool-btn.active-tool { background: var(--accent); color: #000; border-color: #ca8a04; }
+        .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Tipp Button Farbe */
+        #btn-hint { background: #5a3c94; border-color: #7c5cb1; } 
+        #btn-hint:active { background: #6b4cae; }
+
+        /* Raster-Container */
+        #board-wrapper {
+            background: white; padding: 15px; border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: grid; gap: 3px;
+        }
+
+        .board-cell {
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; box-sizing: border-box; position: relative;
+        }
+
+        /* Spielbare Felder */
+        .playable {
+            background: white; border: 2px solid var(--cell-border); cursor: pointer;
+            font-size: 1.8rem; color: #111; transition: background-color 0.2s;
+        }
+        .playable.selected { background: var(--selected); border-color: #16a34a; }
+        .playable.error { color: #ef4444; }
+        
+        /* Tipp-Aufleuchten */
+        .playable.hint { animation: hint-pulse 2s ease-out; }
+        @keyframes hint-pulse {
+            0% { background-color: rgba(234, 179, 8, 0.8); }
+            100% { background-color: var(--board-bg); }
+        }
+
+        /* Hinweise am Rand (Pfeil-Schilder) */
+        .clue {
+            background: var(--clue-bg); color: var(--clue-text); font-size: 1.2rem;
+            border: 1px solid #999;
+        }
+        /* Formen für die Hinweise */
+        .clue.top { border-bottom-left-radius: 50%; border-bottom-right-radius: 50%; }
+        .clue.bottom { border-top-left-radius: 50%; border-top-right-radius: 50%; }
+        .clue.left { border-top-right-radius: 50%; border-bottom-right-radius: 50%; }
+        .clue.right { border-top-left-radius: 50%; border-bottom-left-radius: 50%; }
+
+        /* Notizen-Gitter (Pencil) */
+        .notes-grid {
+            position: absolute; inset: 2px; display: grid;
+            grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+        }
+        .note {
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.6rem; color: var(--note-color); line-height: 1;
+        }
+
+        /* Numpad (Tastatur unten) */
+        #numpad {
+            display: flex; gap: 10px; margin-top: auto; padding-bottom: 20px;
+            flex-wrap: wrap; justify-content: center; max-width: 400px;
+        }
+        .num-btn {
+            background: #274e2a; color: white; border: 2px solid #4ade80;
+            width: 50px; height: 50px; border-radius: 10px; font-size: 1.5rem; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+        .num-btn:active { background: #16a34a; transform: translateY(2px); }
+        .num-btn.eraser { background: #ef4444; border-color: #b91c1c; width: auto; padding: 0 15px;}
+
+        /* --- WIN MODAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: #1a2f1c; padding: 30px; border-radius: 15px; border: 3px solid var(--accent);
+            text-align: center; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .modal-content h2 { margin-top: 0; color: var(--accent); font-size: 2.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);}
+        .modal-content p { font-size: 1.2rem; color: white; margin-bottom: 25px;}
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌴 Kokoweis Kopf-Chaos 🌴</h1>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="main-menu">
+        <button class="tool-btn" onclick="window.location.href='index.html'" style="margin-bottom: 20px; font-size: 1.2rem; font-weight: bold; padding: 15px 30px;">🏠 Hauptmenü</button>
+        <div class="menu-title">Wähle die Wald-Größe:</div>
+        <button class="size-btn" onclick="startGame(4)">4 x 4</button>
+        <button class="size-btn" onclick="startGame(5)">5 x 5</button>
+        <button class="size-btn" onclick="startGame(6)">6 x 6</button>
+    </div>
+
+    <div id="game-view">
+        <div id="toolbar">
+            <button class="tool-btn" onclick="window.location.href='index.html'" style="font-size: 0.9rem; font-weight: bold;">🏠 Hauptmenü</button>
+            <button class="tool-btn" onclick="backToMenu()" style="font-size: 0.9rem; font-weight: bold;">🔙 Zurück</button>
+            <button class="tool-btn" id="btn-undo" onclick="undo()" disabled>↩️</button>
+            <button class="tool-btn" id="btn-redo" onclick="redo()" disabled>↪️</button>
+            <button class="tool-btn" id="btn-notes" onclick="toggleNotes()">✏️</button>
+            <button class="tool-btn" id="btn-hint" onclick="giveHint()">💡 Tipp</button>
+        </div>
+
+        <div id="board-wrapper"></div>
+
+        <div id="numpad"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🎉 GEWONNEN! 🎉</h2>
+            <p>Kokowei ist unfassbar stolz auf dich!</p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="tool-btn" onclick="goToMenuFromWin()">🏠 Menü</button>
+                <button class="tool-btn active-tool" onclick="restartFromWin()">🔄 Neues Spiel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let N = 4;
+        let solution = [];
+        let state = []; // Speichert die gesetzten Zahlen
+        let notes = []; // Speichert die Notizen (Arrays)
+        let clues = { top: [], bottom: [], left: [], right: [] };
+        
+        let history = [];
+        let historyPtr = -1;
+
+        let activeCell = null; // {r, c}
+        let hintedCell = null; // Speichert die Zelle, die zuletzt als Tipp aufgeleuchtet ist
+        let isNoteMode = false;
+        let isGameActive = false; 
+
+        function showToast(txt) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = txt; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2500);
+        }
+
+        function backToMenu() {
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+            isGameActive = false;
+        }
+
+        function goToMenuFromWin() {
+            document.getElementById('win-modal').style.display = 'none';
+            backToMenu();
+        }
+
+        function restartFromWin() {
+            document.getElementById('win-modal').style.display = 'none';
+            startGame(N); // Startet ein neues Spiel mit der aktuell gewählten Größe
+        }
+
+        function startGame(size) {
+            N = size;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('win-modal').style.display = 'none';
+            document.getElementById('game-view').style.display = 'flex';
+            
+            isNoteMode = false;
+            isGameActive = true; 
+            document.getElementById('btn-notes').classList.remove('active-tool');
+            activeCell = null;
+            resetHintAnimation(); 
+            
+            generatePuzzle();
+            buildUI();
+            
+            // Initialen State speichern
+            history = [];
+            historyPtr = -1; 
+            saveState();
+        }
+
+        function toggleNotes() {
+            if(!isGameActive) return;
+            isNoteMode = !isNoteMode;
+            const btn = document.getElementById('btn-notes');
+            if(isNoteMode) btn.classList.add('active-tool');
+            else btn.classList.remove('active-tool');
+        }
+
+        // --- PUZZLE GENERATOR ---
+        function generatePuzzle() {
+            // 1. Generiere gültiges Sudoku (Lateinisches Quadrat)
+            solution = Array.from({length: N}, () => Array(N).fill(0));
+            solveLatinSquare(0, 0);
+
+            // 2. Berechne die Hinweise (Skyscrapers Sichtbarkeit)
+            clues = { top: [], bottom: [], left: [], right: [] };
+            for (let i = 0; i < N; i++) {
+                // Top
+                let max = 0, count = 0;
+                for (let j = 0; j < N; j++) { if (solution[j][i] > max) { max = solution[j][i]; count++; } }
+                clues.top.push(count);
+                
+                // Bottom
+                max = 0; count = 0;
+                for (let j = N - 1; j >= 0; j--) { if (solution[j][i] > max) { max = solution[j][i]; count++; } }
+                clues.bottom.push(count);
+                
+                // Left
+                max = 0; count = 0;
+                for (let j = 0; j < N; j++) { if (solution[i][j] > max) { max = solution[i][j]; count++; } }
+                clues.left.push(count);
+                
+                // Right
+                max = 0; count = 0;
+                for (let j = N - 1; j >= 0; j--) { if (solution[i][j] > max) { max = solution[i][j]; count++; } }
+                clues.right.push(count);
+            }
+
+            // 3. Setze leere Spieler-Felder auf
+            state = Array.from({length: N}, () => Array(N).fill(0));
+            notes = Array.from({length: N}, () => Array(N).fill([]));
+        }
+
+        function solveLatinSquare(r, c) {
+            if (r === N) return true;
+            let nextR = c === N - 1 ? r + 1 : r;
+            let nextC = c === N - 1 ? 0 : c + 1;
+            
+            let nums = Array.from({length: N}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+            for (let num of nums) {
+                if (isValidInLatinSquare(solution, r, c, num)) {
+                    solution[r][c] = num;
+                    if (solveLatinSquare(nextR, nextC)) return true;
+                    solution[r][c] = 0;
+                }
+            }
+            return false;
+        }
+
+        function isValidInLatinSquare(board, r, c, num) {
+            for (let i = 0; i < N; i++) {
+                if (board[r][i] === num) return false;
+                if (board[i][c] === num) return false;
+            }
+            return true;
+        }
+
+        // --- UI BUILDING ---
+        function buildUI() {
+            const wrapper = document.getElementById('board-wrapper');
+            wrapper.innerHTML = '';
+            
+            // Grid ist N+2 x N+2 groß (inklusive Hinweis-Ränder)
+            wrapper.style.gridTemplateColumns = `40px repeat(${N}, 55px) 40px`;
+            wrapper.style.gridTemplateRows = `40px repeat(${N}, 55px) 40px`;
+
+            for (let r = -1; r <= N; r++) {
+                for (let c = -1; c <= N; c++) {
+                    const div = document.createElement('div');
+                    div.className = 'board-cell';
+
+                    // Ecken (leer)
+                    if ((r === -1 && c === -1) || (r === -1 && c === N) || (r === N && c === -1) || (r === N && c === N)) {
+                        wrapper.appendChild(div);
+                        continue;
+                    }
+
+                    // Hinweise Oben
+                    if (r === -1) {
+                        div.classList.add('clue', 'top');
+                        div.innerText = clues.top[c];
+                    }
+                    // Hinweise Unten
+                    else if (r === N) {
+                        div.classList.add('clue', 'bottom');
+                        div.innerText = clues.bottom[c];
+                    }
+                    // Hinweise Links
+                    else if (c === -1) {
+                        div.classList.add('clue', 'left');
+                        div.innerText = clues.left[r];
+                    }
+                    // Hinweise Rechts
+                    else if (c === N) {
+                        div.classList.add('clue', 'right');
+                        div.innerText = clues.right[r];
+                    }
+                    // Spielbares Feld
+                    else {
+                        div.classList.add('playable');
+                        div.id = `cell-${r}-${c}`;
+                        div.onclick = () => selectCell(r, c);
+                        
+                        // Hauptnummer Container
+                        const mainNum = document.createElement('div');
+                        mainNum.className = 'main-num';
+                        div.appendChild(mainNum);
+
+                        // Notizen Container
+                        const notesGrid = document.createElement('div');
+                        notesGrid.className = 'notes-grid';
+                        for(let i=1; i<=9; i++) {
+                            const noteCell = document.createElement('div');
+                            noteCell.className = 'note';
+                            noteCell.id = `note-${r}-${c}-${i}`;
+                            notesGrid.appendChild(noteCell);
+                        }
+                        div.appendChild(notesGrid);
+                    }
+
+                    wrapper.appendChild(div);
+                }
+            }
+
+            buildNumpad();
+            updateBoardVisuals();
+        }
+
+        function buildNumpad() {
+            const pad = document.getElementById('numpad');
+            pad.innerHTML = '';
+            for (let i = 1; i <= N; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'num-btn';
+                btn.innerText = i;
+                btn.onclick = () => handleInput(i);
+                pad.appendChild(btn);
+            }
+            const eraseBtn = document.createElement('button');
+            eraseBtn.className = 'num-btn eraser';
+            eraseBtn.innerText = '🧽 Radierer';
+            eraseBtn.onclick = () => handleInput(0);
+            pad.appendChild(eraseBtn);
+        }
+
+        // --- INTERACTION ---
+        function selectCell(r, c) {
+            if(!isGameActive) return;
+            resetHintAnimation(); 
+            if (activeCell) {
+                document.getElementById(`cell-${activeCell.r}-${activeCell.c}`).classList.remove('selected');
+            }
+            activeCell = {r, c};
+            document.getElementById(`cell-${r}-${c}`).classList.add('selected');
+        }
+
+        function handleInput(num) {
+            if(!isGameActive) return;
+            resetHintAnimation(); 
+            if (!activeCell) return;
+            const {r, c} = activeCell;
+
+            if (isNoteMode && num !== 0) {
+                // Notizen togglen
+                let cellNotes = [...notes[r][c]];
+                if (cellNotes.includes(num)) {
+                    cellNotes = cellNotes.filter(n => n !== num);
+                } else {
+                    cellNotes.push(num);
+                }
+                notes[r][c] = cellNotes;
+            } else {
+                // Zahl setzen oder löschen (0)
+                state[r][c] = num;
+                if(num !== 0) notes[r][c] = []; // Notizen löschen wenn Zahl gesetzt wird
+            }
+
+            saveState();
+            updateBoardVisuals();
+            checkWin();
+        }
+
+        // --- RENDERING ---
+        function updateBoardVisuals() {
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    const mainNum = cell.querySelector('.main-num');
+                    
+                    // Hauptzahl
+                    if (state[r][c] !== 0) {
+                        mainNum.innerText = state[r][c];
+                        // Verstecke Notizen wenn Hauptzahl da ist
+                        cell.querySelector('.notes-grid').style.display = 'none';
+                    } else {
+                        mainNum.innerText = '';
+                        cell.querySelector('.notes-grid').style.display = 'grid';
+                        
+                        // Notizen updaten
+                        for (let i = 1; i <= 9; i++) {
+                            const noteEl = document.getElementById(`note-${r}-${c}-${i}`);
+                            if(noteEl) {
+                                noteEl.innerText = notes[r][c].includes(i) ? i : '';
+                            }
+                        }
+                    }
+
+                    // Fehlerhervorhebung (doppelte Zahlen in Reihe/Spalte)
+                    cell.classList.remove('error');
+                    if (state[r][c] !== 0) {
+                        for(let i=0; i<N; i++) {
+                            if (i !== c && state[r][i] === state[r][c]) cell.classList.add('error');
+                            if (i !== r && state[i][c] === state[r][c]) cell.classList.add('error');
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- UNDO / REDO ---
+        function saveState() {
+            // Schneide History nach dem Pointer ab (falls wir zurückgegangen sind und neu spielen)
+            history = history.slice(0, historyPtr + 1);
+            
+            history.push({
+                state: JSON.parse(JSON.stringify(state)),
+                notes: JSON.parse(JSON.stringify(notes))
+            });
+            historyPtr++;
+            updateToolbarButtons();
+        }
+
+        function undo() {
+            if(!isGameActive) return;
+            resetHintAnimation(); 
+            if (historyPtr > 0) {
+                historyPtr--;
+                state = JSON.parse(JSON.stringify(history[historyPtr].state));
+                notes = JSON.parse(JSON.stringify(history[historyPtr].notes));
+                updateBoardVisuals();
+                updateToolbarButtons();
+            }
+        }
+
+        function redo() {
+            if(!isGameActive) return;
+            resetHintAnimation(); 
+            if (historyPtr < history.length - 1) {
+                historyPtr++;
+                state = JSON.parse(JSON.stringify(history[historyPtr].state));
+                notes = JSON.parse(JSON.stringify(history[historyPtr].notes));
+                updateBoardVisuals();
+                updateToolbarButtons();
+            }
+        }
+
+        function updateToolbarButtons() {
+            document.getElementById('btn-undo').disabled = historyPtr <= 0;
+            document.getElementById('btn-redo').disabled = historyPtr >= history.length - 1;
+        }
+        
+        // --- TIPP LOGIK ---
+        function giveHint() {
+            if(!isGameActive) return;
+            resetHintAnimation(); 
+
+            let wrongCells = [];
+            let emptyCells = [];
+
+            // 1. Suche nach falschen und leeren Zellen
+            for(let r=0; r<N; r++) {
+                for(let c=0; c<N; c++) {
+                    if (state[r][c] !== 0 && state[r][c] !== solution[r][c]) {
+                        wrongCells.push({r, c});
+                    } else if (state[r][c] === 0) {
+                        emptyCells.push({r, c});
+                    }
+                }
+            }
+
+            let cellToHint = null;
+
+            // 2. Falsche korrigieren hat Priorität
+            if (wrongCells.length > 0) {
+                cellToHint = wrongCells[Math.floor(Math.random() * wrongCells.length)];
+            } else if (emptyCells.length > 0) {
+                // 3. Sonst zufällige leere Zelle füllen
+                cellToHint = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            } else {
+                return;
+            }
+
+            if (cellToHint) {
+                const {r, c} = cellToHint;
+                
+                // Zelle auswählen und richtige Zahl eintragen
+                selectCell(r, c);
+                state[r][c] = solution[r][c];
+                notes[r][c] = []; // Notizen für diese Zelle löschen
+                
+                // UI updaten und aufleuchten lassen
+                saveState();
+                updateBoardVisuals();
+                checkWin(); // Prüfen, ob der Tipp das Spiel gewinnt
+                
+                hintedCell = document.getElementById(`cell-${r}-${c}`);
+                if(hintedCell) hintedCell.classList.add('hint');
+                
+                // Animation nach 2 Sekunden entfernen
+                setTimeout(() => {
+                    if(hintedCell) {
+                        hintedCell.classList.remove('hint');
+                        hintedCell = null;
+                    }
+                }, 2000);
+            }
+        }
+        
+        function resetHintAnimation() {
+            if(hintedCell) {
+                hintedCell.classList.remove('hint');
+                hintedCell = null;
+            }
+        }
+
+        // --- WIN CHECK ---
+        function checkWin() {
+            // 1. Prüfe ob voll
+            for(let r=0; r<N; r++) {
+                for(let c=0; c<N; c++) {
+                    if(state[r][c] === 0) return;
+                }
+            }
+
+            // 2. Prüfe auf Duplikate
+            for(let r=0; r<N; r++) {
+                let rowSet = new Set(), colSet = new Set();
+                for(let c=0; c<N; c++) {
+                    rowSet.add(state[r][c]);
+                    colSet.add(state[c][r]);
+                }
+                if(rowSet.size !== N || colSet.size !== N) return;
+            }
+
+            // 3. Prüfe Hinweise
+            for (let i = 0; i < N; i++) {
+                // Top
+                if(clues.top[i] !== "") {
+                    let max = 0, count = 0;
+                    for (let j = 0; j < N; j++) { if (state[j][i] > max) { max = state[j][i]; count++; } }
+                    if(count != clues.top[i]) return;
+                }
+                // Bottom
+                if(clues.bottom[i] !== "") {
+                    let max = 0, count = 0;
+                    for (let j = N - 1; j >= 0; j--) { if (state[j][i] > max) { max = state[j][i]; count++; } }
+                    if(count != clues.bottom[i]) return;
+                }
+                // Left
+                if(clues.left[i] !== "") {
+                    let max = 0, count = 0;
+                    for (let j = 0; j < N; j++) { if (state[i][j] > max) { max = state[i][j]; count++; } }
+                    if(count != clues.left[i]) return;
+                }
+                // Right
+                if(clues.right[i] !== "") {
+                    let max = 0, count = 0;
+                    for (let j = N - 1; j >= 0; j--) { if (state[i][j] > max) { max = state[i][j]; count++; } }
+                    if(count != clues.right[i]) return;
+                }
+            }
+
+            // Wenn alles passt:
+            activeCell = null;
+            document.querySelectorAll('.playable').forEach(el => el.classList.remove('selected'));
+            isGameActive = false;
+            
+            setTimeout(() => {
+                document.getElementById('win-modal').style.display = 'flex';
+            }, 300);
+        }
+
+    </script>
+</body>
+</html>
