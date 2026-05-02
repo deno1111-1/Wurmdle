@@ -26,112 +26,44 @@
         #main-menu {
             position: absolute; top: 60px; left: 0; width: 100%; height: calc(100% - 60px);
             background: #121213; z-index: 200;
-            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 15px;
+            display: flex; flex-direction: column; align-items: center;
             overflow-y: auto; padding: 20px 0 40px 0; box-sizing: border-box;
             scroll-behavior: smooth;
         }
-        
-        .mode-card {
-            background: #1e1e1f; border: 2px solid #538d4e; border-radius: 20px;
-            padding: 15px 20px; width: 85%; max-width: 320px; text-align: left;
-            cursor: pointer; transition: transform 0.1s; text-decoration: none; color: inherit;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: row; align-items: center; gap: 15px;
-            flex-shrink: 0;
+
+        /* GRUPPEN CONTAINER (Für den Abstand zwischen den Blöcken) */
+        .game-group {
+            display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;
+            margin-bottom: 35px;
         }
         
-        .mode-card:hover { border-color: #fff; }
+        /* CARD BASIS DESIGN */
+        .mode-card {
+            background: #1e1e1f; border: 2px solid; border-radius: 20px;
+            padding: 15px 20px; width: 85%; max-width: 320px; text-align: left;
+            cursor: pointer; transition: transform 0.1s; text-decoration: none; color: inherit;
+            display: flex; flex-direction: row; align-items: center; gap: 15px;
+            flex-shrink: 0;
+        }
+        .mode-card:hover { border-color: #fff !important; }
         .mode-card:active { transform: scale(0.95); }
         
         .mode-icon { font-size: 2.5rem; }
         .mode-info { flex-grow: 1; }
-        .mode-title { font-size: 1.1rem; font-weight: bold; color: white; }
+        .mode-title { font-size: 1.1rem; font-weight: bold; }
         .mode-desc { color: #888; font-size: 0.8rem; margin-top: 2px; }
 
-        /* --- SECRET TRIGGER & PASSWORD --- */
-        #secret-trigger {
-            margin-top: 20px; font-size: 0.8rem; color: #444; 
-            cursor: pointer; padding: 10px 40px; border-radius: 10px;
-        }
-        
-        #password-area {
-            display: none; 
-            flex-direction: column; align-items: center; gap: 10px;
-            margin-top: 10px; padding: 15px; background: #1a1a1a; 
-            border-radius: 15px; border: 1px dashed #555;
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-        
-        #password-area input {
-            background: #222; border: 2px solid #444; color: #fff;
-            padding: 10px; border-radius: 8px; text-align: center; font-family: inherit; font-size: 1rem;
-        }
-        
-        #password-area button {
-            background: #e91e63; color: white; border: none; font-weight: bold;
-            padding: 8px 20px; border-radius: 8px; cursor: pointer; font-family: inherit;
-        }
+        /* --- FARBSCHEMA GRUPPE 1 (GRÜN) --- */
+        .group-1-card { border-color: #538d4e; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .group-1-card .mode-title { color: white; }
 
-        /* --- SECRET GAMES SECTION --- */
-        #secret-games-section {
-            display: none; 
-            flex-direction: column; align-items: center; gap: 15px; width: 100%;
-            margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ffd700;
-            opacity: 0; transform: translateY(20px); transition: all 1s ease-out;
-        }
-        
-        #secret-games-section.reveal {
-            opacity: 1; transform: translateY(0);
-        }
+        /* --- FARBSCHEMA GRUPPE 2 (GELB) --- */
+        .group-2-card { border-color: #ffd700; box-shadow: 0 5px 15px rgba(255, 215, 0, 0.15); }
+        .group-2-card .mode-title { color: #ffd700; }
 
-        .secret-title { color: #ffd700; font-size: 1.3rem; margin: 0 0 10px 0; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        
-        .secret-card { border-color: #ffd700; box-shadow: 0 5px 15px rgba(255, 215, 0, 0.2); }
-        .secret-card .mode-title { color: #ffd700; }
-
-        /* --- GESCHENK ANIMATION OVERLAY --- */
-        #gift-overlay {
-            position: fixed; inset: 0; background: rgba(18, 18, 19, 0.95); z-index: 1000;
-            display: none; justify-content: center; align-items: center; flex-direction: column;
-            opacity: 1; transition: opacity 1s ease-in-out;
-        }
-
-        .gift-container { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center;}
-        
-        .gift-body {
-            position: absolute; bottom: 0; width: 100px; height: 75px; background: #e91e63;
-            border-radius: 5px; border: 3px solid #fff; box-shadow: 0 10px 30px rgba(233,30,99,0.5);
-            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        .gift-body::after { content: ''; position: absolute; left: 38px; width: 18px; height: 100%; background: #ffd700; }
-        
-        .gift-lid {
-            position: absolute; top: 25px; width: 110px; height: 25px; background: #e91e63;
-            border-radius: 4px; border: 3px solid #fff; z-index: 2;
-            transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        .gift-lid::after { content: ''; position: absolute; left: 43px; width: 18px; height: 100%; background: #ffd700; }
-        .gift-lid::before { content: '🎀'; position: absolute; top: -38px; left: 30px; font-size: 45px; }
-
-        .gift-text {
-            position: absolute; color: #ffd700; font-size: 1.8rem; font-weight: bold; opacity: 0;
-            text-align: center; text-shadow: 0 0 15px #e91e63, 0 0 30px #ffd700; transform: scale(0.5);
-            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; width: 300px;
-        }
-
-        .wiggle { animation: shake 0.5s ease-in-out infinite; }
-        
-        .open-gift .gift-lid { transform: translateY(-150px) rotate(20deg) scale(1.2); opacity: 0; }
-        .open-gift .gift-body { transform: translateY(150px) scale(0.8); opacity: 0; }
-        .open-gift .gift-text { opacity: 1; transform: scale(1); }
-
-        @keyframes shake {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(-5deg); }
-            50% { transform: rotate(0deg); }
-            75% { transform: rotate(5deg); }
-            100% { transform: rotate(0deg); }
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* --- FARBSCHEMA GRUPPE 3 (BLAU) --- */
+        .group-3-card { border-color: #0ea5e9; box-shadow: 0 5px 15px rgba(14, 165, 233, 0.15); }
+        .group-3-card .mode-title { color: #0ea5e9; }
 
     </style>
 </head>
@@ -142,167 +74,76 @@
     </header>
 
     <div id="main-menu">
-        <a href="wurmdle.html" class="mode-card">
-            <div class="mode-icon">🐛</div>
-            <div class="mode-info"><div class="mode-title">Wurmdle</div><div class="mode-desc">Errate das Wort! (DE/EN)</div></div>
-        </a>
-        <a href="lilly.html" class="mode-card">
-            <div class="mode-icon">🐱</div>
-            <div class="mode-info"><div class="mode-title">Lillys Spelling Game</div><div class="mode-desc">Finde die Wörter (DE/EN)</div></div>
-        </a>
-        <a href="schnecki.html" class="mode-card">
-            <div class="mode-icon">🐌</div>
-            <div class="mode-info"><div class="mode-title">Schneckis Wörter Box</div><div class="mode-desc">Verbinde die Buchstaben!</div></div>
-        </a>
-        <a href="klossi.html" class="mode-card">
-            <div class="mode-icon">🐈</div>
-            <div class="mode-info"><div class="mode-title">Kloßis Leckerlijagd</div><div class="mode-desc">Käsekästchen vs Kloßi</div></div>
-        </a>
-        <a href="krokel.html" class="mode-card">
-            <div class="mode-icon">🐢🔥</div>
-            <div class="mode-info"><div class="mode-title">Krokels Wörterbox</div><div class="mode-desc">Löse das Gitter!</div></div>
-        </a>
-        <a href="schneckerich.html" class="mode-card">
-            <div class="mode-icon">🐌🧩</div>
-            <div class="mode-info"><div class="mode-title">Schneckerichs Sortierspaß</div><div class="mode-desc">Finde 4 Gruppen!</div></div>
-        </a>
+        
+        <div class="game-group">
+            <a href="wurmdle.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐛</div>
+                <div class="mode-info"><div class="mode-title">Wurmdle</div><div class="mode-desc">Errate das Wort! (DE/EN)</div></div>
+            </a>
+            <a href="lilly.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐱</div>
+                <div class="mode-info"><div class="mode-title">Lillys Spelling Game</div><div class="mode-desc">Finde die Wörter (DE/EN)</div></div>
+            </a>
+            <a href="schnecki.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐌</div>
+                <div class="mode-info"><div class="mode-title">Schneckis Wörter Box</div><div class="mode-desc">Verbinde die Buchstaben!</div></div>
+            </a>
+            <a href="klossi.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐈</div>
+                <div class="mode-info"><div class="mode-title">Kloßis Leckerlijagd</div><div class="mode-desc">Käsekästchen vs Kloßi</div></div>
+            </a>
+            <a href="krokel.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐢🔥</div>
+                <div class="mode-info"><div class="mode-title">Krokels Wörterbox</div><div class="mode-desc">Löse das Gitter!</div></div>
+            </a>
+            <a href="schneckerich.html" class="mode-card group-1-card">
+                <div class="mode-icon">🐌🧩</div>
+                <div class="mode-info"><div class="mode-title">Schneckerichs Sortierspaß</div><div class="mode-desc">Finde 4 Gruppen!</div></div>
+            </a>
+        </div>
 
-        <div id="secret-games-section">
-            <h2 class="secret-title">✨ Geburtstags-Kollektion ✨</h2>
-            
-            <a href="betweenle.html" class="mode-card secret-card">
+        <div class="game-group">
+            <a href="betweenle.html" class="mode-card group-2-card">
                 <div class="mode-icon">🪱</div>
                 <div class="mode-info"><div class="mode-title">Betwurmdle</div><div class="mode-desc">Wurmdle, nur anders</div></div>
             </a>
-            <a href="galaxys.html" class="mode-card secret-card">
+            <a href="galaxys.html" class="mode-card group-2-card">
                 <div class="mode-icon">👁️</div>
                 <div class="mode-info"><div class="mode-title">Glubschgalaxien</div><div class="mode-desc">Male die Felder an!</div></div>
             </a>
-            <a href="domino.html" class="mode-card secret-card">
+            <a href="domino.html" class="mode-card group-2-card">
                 <div class="mode-icon">🫟</div>
                 <div class="mode-info"><div class="mode-title">Dittos Dominos</div><div class="mode-desc">Dominos mit Dittos!</div></div>
             </a>
-            <a href="knofensa.html" class="mode-card secret-card">
+            <a href="knofensa.html" class="mode-card group-2-card">
                 <div class="mode-icon">🪴</div>
                 <div class="mode-info"><div class="mode-title">Knofensas Cooler Garten</div><div class="mode-desc">Pflanze perfekte Beete!</div></div>
             </a>
-            <a href="mathestunde.html" class="mode-card secret-card">
+            <a href="mathestunde.html" class="mode-card group-2-card">
                 <div class="mode-icon">🐔🧮</div>
                 <div class="mode-info"><div class="mode-title">Frau Huhns Mathestunde</div><div class="mode-desc">Rechne dich zum Sieg!</div></div>
             </a>
-            <a href="quaki_pipes.html" class="mode-card secret-card">
+            <a href="quaki_pipes.html" class="mode-card group-2-card">
                 <div class="mode-icon">🐥</div>
                 <div class="mode-info"><div class="mode-title">Quakis Pipes</div><div class="mode-desc">Leite das Wasser um!</div></div>
             </a>
         </div>
 
-        <div id="secret-trigger">Made for Leni</div>
-
-        <div id="password-area">
-            <div style="font-size: 0.9rem; color: #888;">Ein Geheimnis wurde gefunden...</div>
-            <input type="password" id="pw-input" placeholder="Passwort?">
-            <button onclick="checkPw()">🎁 Öffnen</button>
+        <div class="game-group">
+            <a href="dontwurmdle.html" class="mode-card group-3-card">
+                <div class="mode-icon">⛔</div>
+                <div class="mode-info"><div class="mode-title">Don't Wurmdle</div><div class="mode-desc">Tippe NICHT das Wort!</div></div>
+            </a>
+            <a href="kokowei.html" class="mode-card group-3-card">
+                <div class="mode-icon">🌴</div>
+                <div class="mode-info"><div class="mode-title">Kokoweis Kopf-Chaos</div><div class="mode-desc">Stapel die Palmen!</div></div>
+            </a>
+            <a href="lillyleiter.html" class="mode-card group-3-card">
+                <div class="mode-icon">🐾</div>
+                <div class="mode-info"><div class="mode-title">Lilly's Leiterspaß</div><div class="mode-desc">Verbinde die Wörter!</div></div>
+            </a>
         </div>
+
     </div>
-
-    <div id="gift-overlay">
-        <div class="gift-container" id="gift-container">
-            <div class="gift-body"></div>
-            <div class="gift-lid"></div>
-            <div class="gift-text">🎉 Alles Gute zum Geburtstag! 🎉</div>
-        </div>
-    </div>
-
-    <script>
-        // --- NEU: DIREKT BEIM START PRÜFEN ---
-        window.addEventListener('DOMContentLoaded', () => {
-            // Wenn im Hintergrund gespeichert ist, dass es freigeschaltet wurde:
-            if (localStorage.getItem('leniSecretUnlocked') === 'true') {
-                document.getElementById('secret-trigger').style.display = 'none';
-                document.getElementById('password-area').style.display = 'none';
-                
-                const secretSection = document.getElementById('secret-games-section');
-                secretSection.style.display = 'flex';
-                // Animation weglassen, einfach sofort anzeigen
-                secretSection.style.opacity = '1';
-                secretSection.style.transform = 'translateY(0)';
-            }
-        });
-
-        let clicks = 0;
-        let clickTimer;
-
-        // --- DER 3-FACH KLICK AUSLÖSER ---
-        document.getElementById('secret-trigger').addEventListener('pointerdown', () => {
-            clicks++;
-            clearTimeout(clickTimer);
-            
-            if(clicks >= 3) {
-                document.getElementById('password-area').style.display = 'flex';
-                setTimeout(() => {
-                    document.getElementById('main-menu').scrollTop = document.getElementById('main-menu').scrollHeight;
-                }, 50);
-                clicks = 0;
-            } else {
-                clickTimer = setTimeout(() => { clicks = 0; }, 500); 
-            }
-        });
-
-        // --- PASSWORT PRÜFUNG ---
-        function checkPw() {
-            const pw = document.getElementById('pw-input').value.toLowerCase().trim();
-            
-            if(pw === 'gewurmstag') { 
-                startGiftAnimation();
-            } else {
-                const input = document.getElementById('pw-input');
-                input.style.border = '2px solid red';
-                input.value = '';
-                input.placeholder = 'Falsch!';
-                setTimeout(() => {
-                    input.style.border = '2px solid #444';
-                    input.placeholder = 'Passwort?';
-                }, 1000);
-            }
-        }
-
-        // --- DIE MAGISCHE ANIMATION ---
-        function startGiftAnimation() {
-            // NEU: Speichern, damit es beim nächsten Mal offen bleibt!
-            localStorage.setItem('leniSecretUnlocked', 'true');
-
-            document.getElementById('password-area').style.display = 'none';
-            document.getElementById('secret-trigger').style.display = 'none';
-
-            const overlay = document.getElementById('gift-overlay');
-            const container = document.getElementById('gift-container');
-            
-            overlay.style.display = 'flex';
-            container.classList.add('wiggle');
-
-            setTimeout(() => {
-                container.classList.remove('wiggle');
-                container.classList.add('open-gift');
-            }, 1200);
-
-            setTimeout(() => {
-                overlay.style.opacity = '0'; 
-                
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    
-                    const secretSection = document.getElementById('secret-games-section');
-                    secretSection.style.display = 'flex';
-                    
-                    setTimeout(() => {
-                        secretSection.classList.add('reveal');
-                        document.getElementById('main-menu').scrollTop = document.getElementById('main-menu').scrollHeight;
-                    }, 50);
-                    
-                }, 1000); 
-                
-            }, 4500); 
-        }
-    </script>
 </body>
 </html>
