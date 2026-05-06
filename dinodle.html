@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Dinodle</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #4ade80; display: flex; align-items: center; gap: 10px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* TOAST */
+        #msg-toast {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 12px 24px; border-radius: 8px;
+            font-weight: bold; display: none; z-index: 4000; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* --- EINGABE & AUTOCOMPLETE --- */
+        #input-section {
+            width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+        }
+        .autocomplete-wrapper { position: relative; width: 100%; }
+        #dino-input { 
+            width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; 
+            border: 2px solid #4ade80; background: #1e1e1f; color: white; box-sizing: border-box;
+        }
+        .autocomplete-items {
+            position: absolute; border: 1px solid #555; border-top: none; z-index: 99;
+            top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto;
+            background-color: #1e1e1f; border-radius: 0 0 8px 8px; display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .autocomplete-item {
+            padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; font-weight: bold;
+        }
+        .autocomplete-item:hover { background-color: #333; }
+        
+        .button-row { display: flex; gap: 10px; width: 100%; }
+        .action-btn { 
+            flex: 1; background: #4ade80; color: #121213; border: none; padding: 12px 20px; 
+            font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; 
+        }
+        .action-btn:active { filter: brightness(0.9); }
+        .give-up-btn { background: #ef4444; color: white; }
+
+        /* --- SPIELFELD (GRID) --- */
+        #game-board-container {
+            flex-grow: 1; width: 100%; max-width: 800px; padding: 0 10px 20px 10px;
+            box-sizing: border-box; overflow-y: auto; overflow-x: auto;
+        }
+        
+        .grid-header {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1fr; gap: 5px;
+            font-size: 0.7rem; color: #aaa; font-weight: bold; text-align: center;
+            margin-bottom: 10px; min-width: 600px;
+        }
+        
+        .guess-row {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1fr; gap: 5px;
+            margin-bottom: 5px; min-width: 600px;
+            animation: popIn 0.3s ease-out forwards;
+        }
+
+        .tile {
+            background-color: #3a3a3c; border: 2px solid #3a3a3c; border-radius: 5px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 8px 2px; font-size: 0.85rem; font-weight: bold; text-align: center;
+            word-wrap: break-word; color: white;
+        }
+        
+        .tile-name { font-size: 0.9rem; }
+        .arrow { font-size: 1.1rem; margin-top: 2px; }
+
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .close { background-color: #b59f3b; border-color: #b59f3b; } 
+        .wrong { background-color: #3a3a3c; border-color: #3a3a3c; }
+
+        /* MODAL & BILD */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #4ade80; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #4ade80; }
+        
+        /* Das Wikipedia-Bild */
+        #win-dino-img {
+            max-width: 100%; height: 180px; object-fit: contain; margin: 15px 0;
+            border-radius: 10px; display: none; /* Erst anzeigen, wenn es geladen ist */
+        }
+
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🦖 Dinodle</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="input-section">
+        <div class="autocomplete-wrapper">
+            <input type="text" id="dino-input" placeholder="Dinosaurier suchen..." autocomplete="off">
+            <div id="autocomplete-list" class="autocomplete-items"></div>
+        </div>
+        <div class="button-row">
+            <button class="action-btn" id="guess-btn" onclick="submitGuess()">Raten</button>
+            <button class="action-btn give-up-btn" onclick="giveUp()">Aufgeben 🏳️</button>
+        </div>
+    </div>
+
+    <div id="game-board-container">
+        <div class="grid-header">
+            <div>DINO</div>
+            <div>LÄNGE</div>
+            <div>HÖHE</div>
+            <div>NAHRUNG</div>
+            <div>ORT</div>
+            <div>ALTER</div>
+            <div>GEWICHT</div>
+        </div>
+        <div id="guesses-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Richtig! 🎉</h2>
+            <p id="modal-desc">Du hast den Dino erraten!</p>
+            
+            <img id="win-dino-img" src="" alt="Dinosaurier">
+            
+            <h3 id="win-name" style="font-size: 1.8rem; margin: 10px 0;">---</h3>
+            <button class="action-btn" onclick="location.reload()" style="width: 100%; margin-top: 15px;">Nächster Dino</button>
+        </div>
+    </div>
+
+    <script>
+        let dinoDB = []; 
+        let targetDino = null;
+        let guesses = [];
+        let isGameActive = false;
+
+        window.onload = loadDatabase;
+
+        async function loadDatabase() {
+            try {
+                const response = await fetch('dinos.json');
+                dinoDB = await response.json();
+                
+                setupAutocomplete();
+                startNewGame();
+            } catch (e) {
+                console.error(e);
+                showToast("Fehler beim Laden der dinos.json!");
+            }
+        }
+
+        // --- AUTOCOMPLETE ---
+        function setupAutocomplete() {
+            const input = document.getElementById('dino-input');
+            const list = document.getElementById('autocomplete-list');
+
+            dinoDB.sort((a,b) => a.Name.localeCompare(b.Name));
+
+            function updateList() {
+                const val = input.value;
+                list.innerHTML = '';
+                list.style.display = 'block';
+                
+                const matches = dinoDB.filter(d => d.Name.toLowerCase().includes(val.toLowerCase()));
+                
+                matches.forEach(d => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerText = d.Name;
+                    
+                    item.addEventListener('click', function(e) {
+                        input.value = d.Name;
+                        list.style.display = 'none';
+                        e.stopPropagation();
+                    });
+                    
+                    list.appendChild(item);
+                });
+            }
+
+            input.addEventListener('input', updateList);
+            input.addEventListener('focus', updateList);
+            input.addEventListener('click', updateList);
+
+            document.addEventListener('click', function (e) {
+                if (e.target !== input) list.style.display = 'none';
+            });
+        }
+
+        function startNewGame() {
+            targetDino = dinoDB[Math.floor(Math.random() * dinoDB.length)];
+            isGameActive = true;
+        }
+
+        function submitGuess() {
+            if(!isGameActive) return;
+            const input = document.getElementById('dino-input');
+            const guessName = input.value.trim();
+            const guessedDino = dinoDB.find(d => d.Name.toLowerCase() === guessName.toLowerCase());
+            
+            if(!guessedDino) { showToast("Dino nicht gefunden!"); return; }
+            if(guesses.includes(guessedDino.Name)) { showToast("Schon geraten!"); return; }
+
+            document.getElementById('autocomplete-list').style.display = 'none';
+            input.value = "";
+            
+            guesses.push(guessedDino.Name);
+            renderGuess(guessedDino);
+
+            if(guessedDino.Name === targetDino.Name) {
+                // Ein kleiner Delay, damit die letzte Reihe noch reinanimiert, bevor das Modal ploppt
+                setTimeout(() => triggerEnd(true), 600);
+            }
+        }
+
+        // --- AUSWERTUNGS LOGIK ---
+        function evaluateNumber(guessVal, targetVal) {
+            if (guessVal === targetVal) return { status: 'correct', arrow: '' };
+            
+            let margin = targetVal * 0.25;
+            let status = Math.abs(guessVal - targetVal) <= margin ? 'close' : 'wrong';
+            let arrow = guessVal < targetVal ? '⬆️' : '⬇️';
+            
+            return { status, arrow };
+        }
+
+        function evaluateLocation(guessDino, targetDino) {
+            if (guessDino.Land === targetDino.Land) return 'correct';
+            if (guessDino.Kontinent === targetDino.Kontinent) return 'close'; 
+            return 'wrong';
+        }
+
+        function renderGuess(g) {
+            const container = document.getElementById('guesses-container');
+            const row = document.createElement('div');
+            row.className = 'guess-row';
+
+            let nameStat = g.Name === targetDino.Name ? 'correct' : 'wrong';
+            row.appendChild(createTile(g.Name, nameStat, '', 'tile-name'));
+
+            let len = evaluateNumber(g.Laenge_m, targetDino.Laenge_m);
+            row.appendChild(createTile(g.Laenge_m + 'm', len.status, len.arrow));
+
+            let height = evaluateNumber(g.Hoehe_m, targetDino.Hoehe_m);
+            row.appendChild(createTile(g.Hoehe_m + 'm', height.status, height.arrow));
+
+            let dietStat = g.Nahrung === targetDino.Nahrung ? 'correct' : 'wrong';
+            let dietText = g.Nahrung === 'carnivor' ? '🥩 Carni' : (g.Nahrung === 'herbivor' ? '🌿 Herbi' : '🍗 Omni');
+            row.appendChild(createTile(dietText, dietStat, ''));
+
+            let locStat = evaluateLocation(g, targetDino);
+            row.appendChild(createTile(g.Land, locStat, ''));
+
+            let age = evaluateNumber(g.Alter_Mio_Jahre, targetDino.Alter_Mio_Jahre);
+            row.appendChild(createTile(g.Alter_Mio_Jahre + ' Mio', age.status, age.arrow));
+
+            let weight = evaluateNumber(g.Gewicht_t, targetDino.Gewicht_t);
+            row.appendChild(createTile(g.Gewicht_t + 't', weight.status, weight.arrow));
+
+            container.insertBefore(row, container.firstChild);
+        }
+
+        function createTile(text, statusClass, arrowText, extraClass = '') {
+            const tile = document.createElement('div');
+            tile.className = `tile ${statusClass} ${extraClass}`;
+            tile.innerHTML = `<span>${text}</span>`;
+            if (arrowText) {
+                tile.innerHTML += `<span class="arrow">${arrowText}</span>`;
+            }
+            return tile;
+        }
+
+        function giveUp() {
+            if(!isGameActive) return;
+            triggerEnd(false);
+        }
+
+        // --- WIKIPEDIA BILD MAGIE ---
+        async function fetchWikipediaImage(dinoName) {
+            // Wir suchen in der deutschen Wikipedia. "redirects=1" sorgt dafür, dass auch Alternativnamen gefunden werden
+            const url = `https://de.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(dinoName)}&prop=pageimages&format=json&pithumbsize=500&redirects=1&origin=*`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const pages = data.query.pages;
+                const pageId = Object.keys(pages)[0];
+                
+                // Wenn die Seite existiert und ein Vorschaubild hat
+                if (pageId !== "-1" && pages[pageId].thumbnail) {
+                    return pages[pageId].thumbnail.source;
+                }
+            } catch (e) {
+                console.error("Fehler beim Laden des Wikipedia-Bildes:", e);
+            }
+            return null;
+        }
+
+        async function triggerEnd(won) {
+            isGameActive = false;
+            document.getElementById('win-name').innerText = targetDino.Name;
+            
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const content = document.querySelector('.modal-content');
+            const imgEl = document.getElementById('win-dino-img');
+            
+            // Bild zurücksetzen, während es lädt
+            imgEl.style.display = 'none';
+            imgEl.src = '';
+            
+            if (won) {
+                title.innerText = "🎉 Richtig! 🎉";
+                title.style.color = "#4ade80";
+                desc.innerText = `Du hast den Dino in ${guesses.length} Versuchen erraten!`;
+                content.style.borderColor = "#4ade80";
+            } else {
+                title.innerText = "Schade! 🏳️";
+                title.style.color = "#ef4444";
+                desc.innerText = "Der gesuchte Dinosaurier war:";
+                content.style.borderColor = "#ef4444";
+            }
+
+            // Modal schon mal anzeigen
+            document.getElementById('win-modal').style.display = 'flex';
+
+            // Bild live von Wikipedia laden
+            const imageUrl = await fetchWikipediaImage(targetDino.Name);
+            if (imageUrl) {
+                imgEl.src = imageUrl;
+                imgEl.style.display = 'block'; // Bild einblenden, sobald es da ist!
+            }
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = m; t.style.display = 'block';
+            setTimeout(() => t.style.display='none', 2500);
+        }
+
+        document.getElementById('dino-input').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                submitGuess();
+            }
+        });
+    </script>
+</body>
+</html>

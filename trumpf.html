@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>🦖Dino Card Game Pocket</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #2a472c; /* Dschungel-Grün für den Tisch */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 3px solid #facc15; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #facc15; display: flex; align-items: center; gap: 10px; text-transform: uppercase;}
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* BATTLE ARENA */
+        #arena {
+            flex-grow: 1; width: 100%; max-width: 900px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;
+            position: relative;
+        }
+
+        .score-board {
+            display: flex; justify-content: space-between; width: 100%; max-width: 600px;
+            font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; box-sizing: border-box;
+        }
+        .score-cpu { color: #ef4444; }
+        .score-player { color: #3b82f6; }
+        
+        #turn-indicator {
+            font-size: 1.2rem; font-weight: bold; color: #facc15; text-align: center;
+            margin-bottom: 15px; min-height: 28px;
+        }
+
+        /* CARDS CONTAINER */
+        .cards-container {
+            display: flex; justify-content: center; gap: 20px; width: 100%;
+            perspective: 1000px;
+        }
+
+        /* THE CARD */
+        .card {
+            width: 260px; height: 420px; background: #ddd; border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 8px solid #fff;
+            display: flex; flex-direction: column; overflow: hidden; position: relative;
+            color: black; transition: transform 0.5s;
+        }
+        
+        .card-hidden .card-inner { display: none; }
+
+        /* --- KARTENRÜCKSEITE MIT DEINEM BILD --- */
+        .card-hidden { 
+            /* Hier wird dein Bild geladen. Die Datei muss 'card-back.png' heißen! */
+            background-image: url('card-back.jpg'); 
+            background-size: cover;       /* Das Bild füllt die Karte aus */
+            background-position: center;  /* Das Bild wird zentriert */
+            background-repeat: no-repeat; /* Das Bild wird nicht gekachelt */
+            border-color: #cbd5e1;        /* Ein heller Rahmen passt gut */
+        }
+        
+        /* Die alte Text-Überlagerung ("TOP ASS") entfernen wir, damit dein Bild voll wirkt */
+        .card-hidden::after { display: none; }
+
+        /* CARD CONTENT */
+        .c-header { background: #3b82f6; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 1.1rem; }
+        .cpu-card .c-header { background: #ef4444; }
+        
+        .c-image-box { width: 100%; height: 140px; background: white; display: flex; justify-content: center; align-items: center; border-bottom: 3px solid #333; position: relative;}
+        .c-image { max-width: 90%; max-height: 90%; object-fit: contain; }
+        .loading-text { position: absolute; color: #888; font-size: 0.8rem; }
+
+        .c-flavor { font-size: 0.75rem; background: #eee; padding: 5px 10px; text-align: center; border-bottom: 2px solid #ccc; color: #555; }
+        
+        .c-stats { display: flex; flex-direction: column; flex-grow: 1; background: #fff; }
+        .stat-row { 
+            display: flex; justify-content: space-between; padding: 8px 15px; 
+            border-bottom: 1px solid #ddd; cursor: pointer; transition: background 0.2s;
+            font-weight: bold; font-size: 0.9rem;
+        }
+        
+        /* Interaktive Stats für den Spieler */
+        .player-card .stat-row:hover { background: #bfdbfe; }
+        .stat-selected { background: #fef08a !important; color: #854d0e; }
+        .stat-win { background: #bbf7d0 !important; color: #166534; }
+        .stat-lose { background: #fecaca !important; color: #991b1b; }
+
+        /* ACTIONS */
+        #action-area { height: 60px; margin-top: 20px; display: flex; justify-content: center; align-items: center;}
+        .next-btn {
+            background: #facc15; color: #121213; border: none; padding: 12px 30px;
+            font-size: 1.2rem; border-radius: 8px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 5px 0 #ca8a04; display: none; text-transform: uppercase;
+        }
+        .next-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* POT INFO */
+        #pot-info { color: #facc15; font-weight: bold; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🦖 Dino Card Game Pocket</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="arena">
+        <div class="score-board">
+            <div class="score-cpu">Computer: <span id="cpu-count">40</span></div>
+            <div class="score-player">Du: <span id="player-count">40</span></div>
+        </div>
+
+        <div id="turn-indicator">Wird gemischt...</div>
+
+        <div class="cards-container">
+            <div id="cpu-card" class="card card-hidden cpu-card">
+                <div class="card-inner">
+                    <div class="c-header" id="cpu-name">Dino Name</div>
+                    <div class="c-image-box">
+                        <span class="loading-text">Lädt Bild...</span>
+                        <img class="c-image" id="cpu-img" src="" alt="">
+                    </div>
+                    <div class="c-flavor" id="cpu-flavor">Fleischfresser | Nordamerika, USA</div>
+                    <div class="c-stats">
+                        <div class="stat-row" id="cpu-stat-Laenge_m"><span>Länge</span> <span id="cpu-val-Laenge_m">0 m</span></div>
+                        <div class="stat-row" id="cpu-stat-Hoehe_m"><span>Höhe</span> <span id="cpu-val-Hoehe_m">0 m</span></div>
+                        <div class="stat-row" id="cpu-stat-Gewicht_t"><span>Gewicht</span> <span id="cpu-val-Gewicht_t">0 t</span></div>
+                        <div class="stat-row" id="cpu-stat-Alter_Mio_Jahre"><span>Alter</span> <span id="cpu-val-Alter_Mio_Jahre">0 Mio</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="player-card" class="card player-card">
+                <div class="card-inner">
+                    <div class="c-header" id="player-name">Dino Name</div>
+                    <div class="c-image-box">
+                        <span class="loading-text">Lädt Bild...</span>
+                        <img class="c-image" id="player-img" src="" alt="">
+                    </div>
+                    <div class="c-flavor" id="player-flavor">Pflanzenfresser | Europa, Deutschland</div>
+                    <div class="c-stats">
+                        <div class="stat-row" id="player-stat-Laenge_m" onclick="playerPickStat('Laenge_m')"><span>Länge</span> <span id="player-val-Laenge_m">0 m</span></div>
+                        <div class="stat-row" id="player-stat-Hoehe_m" onclick="playerPickStat('Hoehe_m')"><span>Höhe</span> <span id="player-val-Hoehe_m">0 m</span></div>
+                        <div class="stat-row" id="player-stat-Gewicht_t" onclick="playerPickStat('Gewicht_t')"><span>Gewicht</span> <span id="player-val-Gewicht_t">0 t</span></div>
+                        <div class="stat-row" id="player-stat-Alter_Mio_Jahre" onclick="playerPickStat('Alter_Mio_Jahre')"><span>Alter</span> <span id="player-val-Alter_Mio_Jahre">0 Mio</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pot-info">Karten im Pot (Unentschieden): <span id="pot-count">0</span></div>
+
+        <div id="action-area">
+            <button class="next-btn" id="next-btn" onclick="nextRound()">Nächste Runde ➔</button>
+        </div>
+    </div>
+
+    <script>
+        let fullDeck = [];
+        let playerDeck = [];
+        let cpuDeck = [];
+        let pot = []; // Für Unentschieden
+        
+        let playerTurn = true; // True = Spieler, False = CPU
+        let roundActive = false; // Verhindert Klicks während Animationen
+
+        // Max-Werte für die schlaue Computer-KI
+        const MAX_STATS = {
+            Laenge_m: 35.0,
+            Hoehe_m: 13.0,
+            Gewicht_t: 80.0,
+            Alter_Mio_Jahre: 230
+        };
+
+        window.onload = loadDatabase;
+
+        async function loadDatabase() {
+            try {
+                const response = await fetch('dinos.json');
+                fullDeck = await response.json();
+                startGame();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('turn-indicator').innerText = "Fehler beim Laden der Dinos!";
+            }
+        }
+
+        function startGame() {
+            // Mischen
+            for (let i = fullDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
+            }
+            
+            // Aufteilen (40 / 40)
+            playerDeck = fullDeck.slice(0, Math.floor(fullDeck.length / 2));
+            cpuDeck = fullDeck.slice(Math.floor(fullDeck.length / 2));
+            
+            playerTurn = true;
+            updateScore();
+            prepareRound();
+        }
+
+        function prepareRound() {
+            if(playerDeck.length === 0) return endGame("Computer");
+            if(cpuDeck.length === 0) return endGame("Du");
+
+            roundActive = true;
+            resetCardStyles();
+            
+            // Karten verstecken/anzeigen
+            document.getElementById('cpu-card').classList.add('card-hidden');
+            document.getElementById('next-btn').style.display = 'none';
+
+            // Daten auf Karten schreiben
+            fillCard('player', playerDeck[0]);
+            fillCard('cpu', cpuDeck[0]);
+
+            // Bilder via Wikipedia laden
+            loadWikiImage('player', playerDeck[0].Name);
+            loadWikiImage('cpu', cpuDeck[0].Name);
+
+            if(playerTurn) {
+                document.getElementById('turn-indicator').innerText = "Du bist am Zug! Wähle einen Wert.";
+                document.getElementById('turn-indicator').style.color = "#4ade80";
+            } else {
+                document.getElementById('turn-indicator').innerText = "Computer wählt...";
+                document.getElementById('turn-indicator').style.color = "#ef4444";
+                // CPU "überlegt" 1.5 Sekunden
+                setTimeout(cpuPickStat, 1500);
+            }
+        }
+
+        function fillCard(prefix, dino) {
+            document.getElementById(`${prefix}-name`).innerText = dino.Name;
+            
+            let diet = dino.Nahrung === 'carnivor' ? 'Fleischfresser 🥩' : (dino.Nahrung === 'herbivor' ? 'Pflanzenfresser 🌿' : 'Allesfresser 🍗');
+            document.getElementById(`${prefix}-flavor`).innerText = `${diet} | ${dino.Kontinent}, ${dino.Land}`;
+            
+            document.getElementById(`${prefix}-val-Laenge_m`).innerText = dino.Laenge_m + ' m';
+            document.getElementById(`${prefix}-val-Hoehe_m`).innerText = dino.Hoehe_m + ' m';
+            document.getElementById(`${prefix}-val-Gewicht_t`).innerText = dino.Gewicht_t + ' t';
+            document.getElementById(`${prefix}-val-Alter_Mio_Jahre`).innerText = dino.Alter_Mio_Jahre + ' Mio';
+            
+            document.getElementById(`${prefix}-img`).src = ""; // Clear old image
+            document.getElementById(`${prefix}-img`).style.display = "none";
+        }
+
+        function resetCardStyles() {
+            const stats = ['Laenge_m', 'Hoehe_m', 'Gewicht_t', 'Alter_Mio_Jahre'];
+            stats.forEach(s => {
+                document.getElementById(`player-stat-${s}`).className = 'stat-row';
+                document.getElementById(`cpu-stat-${s}`).className = 'stat-row';
+            });
+        }
+
+        // --- BILDER MAGIE ---
+        async function loadWikiImage(prefix, dinoName) {
+            const url = `https://de.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(dinoName)}&prop=pageimages&format=json&pithumbsize=300&redirects=1&origin=*`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const pages = data.query.pages;
+                const pageId = Object.keys(pages)[0];
+                
+                if (pageId !== "-1" && pages[pageId].thumbnail) {
+                    document.getElementById(`${prefix}-img`).src = pages[pageId].thumbnail.source;
+                    document.getElementById(`${prefix}-img`).style.display = "block";
+                }
+            } catch (e) {
+                console.error("Kein Bild gefunden für: " + dinoName);
+            }
+        }
+
+        // --- SPIELLOGIK ---
+        function playerPickStat(statKey) {
+            if(!roundActive || !playerTurn) return;
+            resolveRound(statKey);
+        }
+
+        function cpuPickStat() {
+            if(!roundActive || playerTurn) return;
+            
+            let card = cpuDeck[0];
+            let bestStat = 'Laenge_m';
+            let bestScore = 0;
+
+            const statsToCheck = ['Laenge_m', 'Hoehe_m', 'Gewicht_t', 'Alter_Mio_Jahre'];
+            
+            statsToCheck.forEach(stat => {
+                let score = card[stat] / MAX_STATS[stat];
+                if(score > bestScore) {
+                    bestScore = score;
+                    bestStat = stat;
+                }
+            });
+
+            resolveRound(bestStat);
+        }
+
+        function resolveRound(statKey) {
+            roundActive = false;
+            
+            // CPU Karte aufdecken
+            document.getElementById('cpu-card').classList.remove('card-hidden');
+
+            // Auswahl markieren
+            document.getElementById(`player-stat-${statKey}`).classList.add('stat-selected');
+            document.getElementById(`cpu-stat-${statKey}`).classList.add('stat-selected');
+
+            let pVal = playerDeck[0][statKey];
+            let cVal = cpuDeck[0][statKey];
+
+            setTimeout(() => {
+                let winner = "";
+                if(pVal > cVal) winner = "player";
+                else if (cVal > pVal) winner = "cpu";
+                else winner = "tie";
+
+                if(winner === "player") {
+                    document.getElementById('turn-indicator').innerText = "Du gewinnst die Runde!";
+                    document.getElementById(`player-stat-${statKey}`).classList.add('stat-win');
+                    document.getElementById(`cpu-stat-${statKey}`).classList.add('stat-lose');
+                    
+                    playerDeck.push(playerDeck.shift(), cpuDeck.shift(), ...pot);
+                    pot = [];
+                    playerTurn = true; // Gewinner bleibt am Zug
+                } 
+                else if(winner === "cpu") {
+                    document.getElementById('turn-indicator').innerText = "Computer gewinnt die Runde!";
+                    document.getElementById(`cpu-stat-${statKey}`).classList.add('stat-win');
+                    document.getElementById(`player-stat-${statKey}`).classList.add('stat-lose');
+                    
+                    cpuDeck.push(cpuDeck.shift(), playerDeck.shift(), ...pot);
+                    pot = [];
+                    playerTurn = false;
+                } 
+                else {
+                    document.getElementById('turn-indicator').innerText = "UNENTSCHIEDEN! Ab in den Pot.";
+                    document.getElementById(`player-stat-${statKey}`).classList.add('stat-selected');
+                    document.getElementById(`cpu-stat-${statKey}`).classList.add('stat-selected');
+                    
+                    pot.push(playerDeck.shift(), cpuDeck.shift());
+                }
+
+                updateScore();
+                document.getElementById('next-btn').style.display = 'block';
+
+            }, 800);
+        }
+
+        function nextRound() {
+            prepareRound();
+        }
+
+        function updateScore() {
+            document.getElementById('player-count').innerText = playerDeck.length;
+            document.getElementById('cpu-count').innerText = cpuDeck.length;
+            
+            const potInfo = document.getElementById('pot-info');
+            if(pot.length > 0) {
+                potInfo.style.display = 'block';
+                document.getElementById('pot-count').innerText = pot.length;
+            } else {
+                potInfo.style.display = 'none';
+            }
+        }
+
+        function endGame(winnerName) {
+            document.getElementById('arena').innerHTML = `
+                <h1 style="font-size: 3rem; color: #facc15; margin-bottom: 20px;">${winnerName} hat gewonnen!</h1>
+                <button class="next-btn" style="display:block;" onclick="location.reload()">Neues Spiel</button>
+            `;
+        }
+    </script>
+</body>
+</html>
