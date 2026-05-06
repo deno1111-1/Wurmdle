@@ -195,7 +195,7 @@
                 matches.forEach(c => {
                     const item = document.createElement('div');
                     item.className = 'autocomplete-item';
-                    item.innerHTML = `<img src="svg/${c.code}.svg" class="autocomplete-flag"> <span>${c.name}</span>`;
+                    item.innerHTML = `<img src="SVG/${c.code}.svg" class="autocomplete-flag"> <span>${c.name}</span>`;
                     
                     item.addEventListener('click', function(e) {
                         input.value = c.name;
@@ -225,7 +225,7 @@
         async function startNewGame() {
             targetCountry = countryDB[Math.floor(Math.random() * countryDB.length)];
             try {
-                const img = await loadImage(`svg/${targetCountry.code}.svg`);
+                const img = await loadImage(`SVG/${targetCountry.code}.svg`);
                 targetCtx.clearRect(0,0, C_WIDTH, C_HEIGHT);
                 targetCtx.drawImage(img, 0, 0, C_WIDTH, C_HEIGHT);
                 isGameActive = true;
@@ -261,7 +261,7 @@
             btn.disabled = true;
 
             try {
-                const img = await loadImage(`svg/${guessedCountry.code}.svg`);
+                const img = await loadImage(`SVG/${guessedCountry.code}.svg`);
                 guessCtx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
                 guessCtx.drawImage(img, 0, 0, C_WIDTH, C_HEIGHT);
 
@@ -303,7 +303,7 @@
             const list = document.getElementById('history-list');
             const item = document.createElement('div');
             item.className = 'history-item';
-            item.innerHTML = `<img src="svg/${country.code}.svg" class="history-flag"><div class="history-name">${country.name}</div>`;
+            item.innerHTML = `<img src="SVG/${country.code}.svg" class="history-flag"><div class="history-name">${country.name}</div>`;
             list.insertBefore(item, list.firstChild);
         }
 
@@ -318,7 +318,7 @@
         function triggerEnd(won) {
             isGameActive = false;
             document.getElementById('win-name').innerText = targetCountry.name;
-            document.getElementById('win-flag').src = `svg/${targetCountry.code}.svg`;
+            document.getElementById('win-flag').src = `SVG/${targetCountry.code}.svg`;
             
             const title = document.getElementById('modal-title');
             const desc = document.getElementById('modal-desc');
