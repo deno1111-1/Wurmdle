@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Flaggen Flubbern</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #0ea5e9; display: flex; align-items: center; gap: 10px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* --- TOAST MESSAGES --- */
+        #msg-toast {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 12px 24px; border-radius: 8px;
+            font-weight: bold; display: none; z-index: 4000; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* --- GAME UI --- */
+        #game-view { 
+            flex-grow: 1; width: 100%; display: flex; flex-direction: column; 
+            align-items: center; padding-top: 20px; overflow-y: auto; box-sizing: border-box;
+        }
+        
+        #canvas-container {
+            width: 300px; height: 200px; background: #222; border: 3px solid #444; 
+            border-radius: 10px; position: relative; overflow: hidden; margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            background-image: linear-gradient(45deg, #2a2a2c 25%, transparent 25%, transparent 75%, #2a2a2c 75%, #2a2a2c),
+                              linear-gradient(45deg, #2a2a2c 25%, transparent 25%, transparent 75%, #2a2a2c 75%, #2a2a2c);
+            background-size: 20px 20px; background-position: 0 0, 10px 10px;
+            flex-shrink: 0;
+        }
+        
+        #display-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* --- EINGABE & AUTOCOMPLETE --- */
+        .input-container {
+            display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; margin-bottom: 20px;
+        }
+        
+        .autocomplete-wrapper { position: relative; width: 100%; }
+        
+        #country-input { 
+            width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; 
+            border: 2px solid #0ea5e9; background: #1e1e1f; color: white; box-sizing: border-box;
+        }
+        
+        .autocomplete-items {
+            position: absolute; border: 1px solid #555; border-top: none; z-index: 99;
+            top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto;
+            background-color: #1e1e1f; border-radius: 0 0 8px 8px; display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        .autocomplete-item {
+            padding: 10px 15px; cursor: pointer; display: flex; align-items: center; gap: 15px;
+            border-bottom: 1px solid #333; font-weight: bold;
+        }
+        .autocomplete-item:hover { background-color: #333; }
+        .autocomplete-flag { width: 30px; height: 20px; object-fit: cover; border-radius: 2px; border: 1px solid #555; }
+
+        /* BUTTONS */
+        .button-row { display: flex; gap: 10px; width: 100%; }
+        .action-btn { 
+            flex: 1; background: #0ea5e9; color: white; border: none; padding: 12px 20px; 
+            font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; 
+        }
+        .action-btn:active { filter: brightness(0.9); }
+        .give-up-btn { background: #ef4444; }
+
+        /* HISTORIE */
+        #history-list { display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; padding-bottom: 30px; }
+        .history-item { display: flex; align-items: center; gap: 15px; background: #1e1e1f; padding: 10px 15px; border-radius: 10px; border: 1px solid #333; }
+        .history-flag { width: 45px; height: 30px; border-radius: 3px; border: 1px solid #555; object-fit: cover; }
+        .history-name { font-weight: bold; font-size: 1.1rem; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #0ea5e9; text-align: center; max-width: 400px; width: 100%; }
+        #modal-title { margin-top: 0; color: #4ade80; }
+        #win-flag { width: 150px; height: 100px; border: 2px solid #555; border-radius: 5px; margin: 15px 0; object-fit: cover;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🏳️ Flaggen Flubbern</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="game-view">
+        <div id="canvas-container">
+            <canvas id="display-canvas" width="300" height="200"></canvas>
+        </div>
+
+        <div class="input-container">
+            <div class="autocomplete-wrapper">
+                <input type="text" id="country-input" placeholder="Land suchen..." autocomplete="off">
+                <div id="autocomplete-list" class="autocomplete-items"></div>
+            </div>
+            <div class="button-row">
+                <button class="action-btn" id="guess-btn" onclick="submitGuess()">Raten</button>
+                <button class="action-btn give-up-btn" onclick="giveUp()">Aufgeben 🏳️</button>
+            </div>
+        </div>
+
+        <div id="history-list"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Richtig! 🎉</h2>
+            <p id="modal-desc">Du hast die Flagge perfekt vervollständigt.</p>
+            <img id="win-flag" src="" alt="Ziel-Flagge">
+            <h3 id="win-name">---</h3>
+            <button class="action-btn" onclick="location.reload()" style="width: 100%; margin-top: 15px;">Nächstes Land</button>
+        </div>
+    </div>
+
+    <script>
+        let countryDB = []; 
+        let targetCountry = null;
+        let guesses = [];
+        let isGameActive = false;
+
+        const C_WIDTH = 300, C_HEIGHT = 200;
+        const displayCanvas = document.getElementById('display-canvas');
+        const displayCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
+        
+        const targetCanvas = document.createElement('canvas');
+        targetCanvas.width = C_WIDTH; targetCanvas.height = C_HEIGHT;
+        const targetCtx = targetCanvas.getContext('2d', { willReadFrequently: true });
+
+        const guessCanvas = document.createElement('canvas');
+        guessCanvas.width = C_WIDTH; guessCanvas.height = C_HEIGHT;
+        const guessCtx = guessCanvas.getContext('2d', { willReadFrequently: true });
+
+        window.onload = loadDatabase;
+
+        async function loadDatabase() {
+            try {
+                const response = await fetch('countries.json');
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    countryDB = data;
+                } else {
+                    countryDB = Object.keys(data).map(key => ({ code: key.toLowerCase(), name: data[key] }));
+                }
+
+                setupAutocomplete();
+                startNewGame();
+            } catch (e) {
+                console.error(e);
+                showToast("Fehler beim Laden der countries.json!");
+            }
+        }
+
+        // --- AUTOCOMPLETE LOGIK ---
+        function setupAutocomplete() {
+            const input = document.getElementById('country-input');
+            const list = document.getElementById('autocomplete-list');
+
+            countryDB.sort((a,b) => a.name.localeCompare(b.name));
+
+            // Funktion zum Aktualisieren und Anzeigen der Liste
+            function updateList() {
+                const val = input.value;
+                list.innerHTML = '';
+                list.style.display = 'block';
+                
+                // Filtere die Länder nach der Eingabe (wenn leer, werden alle angezeigt)
+                const matches = countryDB.filter(c => c.name.toLowerCase().includes(val.toLowerCase()));
+                
+                matches.forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `<img src="svg/${c.code}.svg" class="autocomplete-flag"> <span>${c.name}</span>`;
+                    
+                    item.addEventListener('click', function(e) {
+                        input.value = c.name;
+                        list.style.display = 'none';
+                        e.stopPropagation(); // Verhindert, dass der Klick das Menü direkt wieder öffnet
+                    });
+                    
+                    list.appendChild(item);
+                });
+            }
+
+            // Liste aktualisieren, wenn getippt wird
+            input.addEventListener('input', updateList);
+            
+            // Liste sofort anzeigen, wenn das Feld angeklickt/fokussiert wird
+            input.addEventListener('focus', updateList);
+            input.addEventListener('click', updateList);
+
+            // Schließt die Liste, wenn man woanders hin klickt
+            document.addEventListener('click', function (e) {
+                if (e.target !== input) {
+                    list.style.display = 'none';
+                }
+            });
+        }
+
+        async function startNewGame() {
+            targetCountry = countryDB[Math.floor(Math.random() * countryDB.length)];
+            try {
+                const img = await loadImage(`svg/${targetCountry.code}.svg`);
+                targetCtx.clearRect(0,0, C_WIDTH, C_HEIGHT);
+                targetCtx.drawImage(img, 0, 0, C_WIDTH, C_HEIGHT);
+                isGameActive = true;
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Laden der Flagge: " + targetCountry.code);
+            }
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        async function submitGuess() {
+            if(!isGameActive) return;
+            const input = document.getElementById('country-input');
+            const btn = document.getElementById('guess-btn');
+            const guessName = input.value.trim();
+            const guessedCountry = countryDB.find(c => c.name.toLowerCase() === guessName.toLowerCase());
+            
+            if(!guessedCountry) { showToast("Land nicht gefunden!"); return; }
+            if(guesses.includes(guessedCountry.code)) { showToast("Schon geraten!"); return; }
+
+            // Verstecke Dropdown falls noch offen
+            document.getElementById('autocomplete-list').style.display = 'none';
+
+            input.value = "";
+            btn.disabled = true;
+
+            try {
+                const img = await loadImage(`svg/${guessedCountry.code}.svg`);
+                guessCtx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
+                guessCtx.drawImage(img, 0, 0, C_WIDTH, C_HEIGHT);
+
+                comparePixels();
+                addHistoryItem(guessedCountry);
+                guesses.push(guessedCountry.code);
+
+                if(guessedCountry.code === targetCountry.code) triggerEnd(true);
+            } catch(e) {
+                showToast("Bildfehler bei " + guessedCountry.name);
+            }
+            btn.disabled = false;
+        }
+
+        function comparePixels() {
+            const targetData = targetCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
+            const guessData = guessCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
+            const displayData = displayCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT);
+            const d = displayData.data;
+
+            for(let i = 0; i < targetData.length; i += 4) {
+                if(d[i+3] === 255) continue; 
+
+                let rDiff = Math.abs(guessData[i] - targetData[i]);
+                let gDiff = Math.abs(guessData[i+1] - targetData[i+1]);
+                let bDiff = Math.abs(guessData[i+2] - targetData[i+2]);
+
+                if(rDiff < 20 && gDiff < 20 && bDiff < 20) {
+                    d[i] = targetData[i];
+                    d[i+1] = targetData[i+1];
+                    d[i+2] = targetData[i+2];
+                    d[i+3] = 255;
+                }
+            }
+            displayCtx.putImageData(displayData, 0, 0);
+        }
+
+        function addHistoryItem(country) {
+            const list = document.getElementById('history-list');
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `<img src="svg/${country.code}.svg" class="history-flag"><div class="history-name">${country.name}</div>`;
+            list.insertBefore(item, list.firstChild);
+        }
+
+        function giveUp() {
+            if(!isGameActive) return;
+            
+            // Malt die komplette Zielflagge auf den sichtbaren Bildschirm
+            displayCtx.drawImage(targetCanvas, 0, 0);
+            triggerEnd(false);
+        }
+
+        function triggerEnd(won) {
+            isGameActive = false;
+            document.getElementById('win-name').innerText = targetCountry.name;
+            document.getElementById('win-flag').src = `svg/${targetCountry.code}.svg`;
+            
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            
+            if (won) {
+                title.innerText = "🎉 Richtig! 🎉";
+                title.style.color = "#4ade80";
+                desc.innerText = "Du hast die Flagge perfekt vervollständigt.";
+                document.querySelector('.modal-content').style.borderColor = "#4ade80";
+            } else {
+                title.innerText = "Schade! 🏳️";
+                title.style.color = "#ef4444";
+                desc.innerText = "Das war die gesuchte Flagge.";
+                document.querySelector('.modal-content').style.borderColor = "#ef4444";
+            }
+
+            setTimeout(() => { document.getElementById('win-modal').style.display = 'flex'; }, 800);
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = m; t.style.display = 'block';
+            setTimeout(() => t.style.display='none', 2500);
+        }
+
+        document.getElementById('country-input').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault(); // Verhindert Neuladen der Seite bei Enter
+                submitGuess();
+            }
+        });
+    </script>
+</body>
+</html>
