@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Lilly vs Kloßi</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #1a1a1c; box-sizing: border-box;
+            border-bottom: 2px solid #333; height: 60px; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #fff; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* --- MENÜ --- */
+        #main-menu {
+            position: absolute; inset: 0; background: rgba(18, 18, 19, 0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 2000; padding: 20px; text-align: center;
+        }
+        .menu-box {
+            background: #222; padding: 30px; border-radius: 15px; border: 2px solid #555;
+            max-width: 350px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        select, button {
+            width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px; font-size: 1rem;
+            border: none; font-weight: bold; cursor: pointer;
+        }
+        select { background: #333; color: white; border: 1px solid #777; outline: none; }
+        button { background: #0ea5e9; color: white; }
+        button:active { filter: brightness(0.9); }
+
+        /* --- SPIEL-UI --- */
+        #game-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            width: 100%; max-width: 400px; height: calc(100vh - 60px); padding: 10px 0; box-sizing: border-box;
+        }
+
+        .player-hud {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 90%; background: #222; padding: 10px 15px; border-radius: 10px; border: 2px solid #444;
+            box-sizing: border-box; transition: 0.3s;
+        }
+        .hud-p2 { border-color: #9333ea; }
+        .hud-p1 { border-color: #ec4899; }
+        .active-hud { box-shadow: 0 0 15px rgba(255,255,255,0.2); background: #2a2a2c; }
+        
+        .hud-info { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 10px;}
+        .wall-count { font-size: 1rem; color: #aaa; }
+
+        /* Wände im HUD */
+        .drag-walls { display: flex; gap: 15px; }
+        .drag-item {
+            background: #555; border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            touch-action: none; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: 0.2s;
+        }
+        .drag-item.p1 { background: #ec4899; }
+        .drag-item.p2 { background: #9333ea; }
+        
+        .drag-h { width: 40px; height: 15px; }
+        .drag-v { width: 15px; height: 40px; }
+        
+        /* Wenn man eine Wand antippt */
+        .drag-item.selected { transform: scale(1.1); box-shadow: 0 0 10px white; border: 2px solid white; }
+
+        /* --- SPIELFELD --- */
+        #board {
+            position: relative; display: block; background: #111; border: 3px solid #555; 
+            border-radius: 5px; width: 340px; height: 340px; touch-action: none;
+        }
+
+        .cell {
+            position: absolute; background: #333; border-radius: 4px;
+            display: flex; justify-content: center; align-items: center; font-size: 1.5rem;
+            transition: background 0.2s; z-index: 1; cursor: pointer;
+        }
+        .cell.highlight { background: #4ade80 !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        
+        .wall-slot { position: absolute; background: transparent; z-index: 10; cursor: pointer; }
+        .wall-slot.h { height: 16px; transform: translateY(-4px); }
+        .wall-slot.v { width: 16px; transform: translateX(-4px); }
+        
+        .wall-slot.highlight-slot { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+        .wall-slot.hover { background: rgba(255, 255, 255, 0.5); }
+        
+        .wall-placed { position: absolute; z-index: 5; border-radius: 2px; }
+        .wall-placed.p1 { background: #ec4899; box-shadow: 0 0 8px #ec4899; }
+        .wall-placed.p2 { background: #9333ea; box-shadow: 0 0 8px #9333ea; }
+
+        #drag-ghost {
+            position: fixed; pointer-events: none; z-index: 9999; display: none;
+            border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        
+        #status-msg { font-size: 1.1rem; font-weight: bold; color: #fff; height: 25px; margin: 5px 0;}
+    </style>
+</head>
+<body>
+
+    <div id="main-menu">
+        <div class="menu-box">
+            <h2 style="margin-top: 0; color: #ec4899;">🐈‍⬛ Lilly vs Kloßi 🐈</h2>
+            <p style="color: #aaa; font-size: 0.9rem;">Erreiche die andere Seite!</p>
+            
+            <label style="display:block; text-align: left; margin-top: 15px; font-weight: bold;">Gegner auswählen:</label>
+            <select id="mode-select">
+                <option value="random">🎲 Zufällige KI</option>
+                <option value="human">🤜🤛 Pass & Play (2 Spieler)</option>
+                <option value="sprinter">🏃 KI: Sprinter</option>
+                <option value="builder">🧱 KI: Baumeister</option>
+                <option value="trapper">🪤 KI: Fallenleger</option>
+                <option value="shadow">👤 KI: Schatten</option>
+            </select>
+            
+            <button onclick="startGame()">Spiel Starten</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>🧱Miauern</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="game-container">
+        <!-- Spieler 2 (Oben) -->
+        <div class="player-hud hud-p2" id="hud-p2">
+            <div class="hud-info">🐈 Kloßi <span class="wall-count" id="walls-p2">10</span></div>
+            <div class="drag-walls" id="drag-zone-p2">
+                <div class="drag-item drag-h p2" data-dir="h" data-player="2" onclick="selectWallType('h', 2)"></div>
+                <div class="drag-item drag-v p2" data-dir="v" data-player="2" onclick="selectWallType('v', 2)"></div>
+            </div>
+        </div>
+
+        <div id="status-msg">Lilly beginnt!</div>
+
+        <div id="board"></div>
+
+        <!-- Spieler 1 (Unten) -->
+        <div class="player-hud hud-p1" id="hud-p1">
+            <div class="hud-info">🐈‍⬛ Lilly <span class="wall-count" id="walls-p1">10</span></div>
+            <div class="drag-walls" id="drag-zone-p1">
+                <div class="drag-item drag-h p1" data-dir="h" data-player="1" onclick="selectWallType('h', 1)"></div>
+                <div class="drag-item drag-v p1" data-dir="v" data-player="1" onclick="selectWallType('v', 1)"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drag-ghost"></div>
+
+    <script>
+        const BOARD_SIZE = 9;
+        const CELL_SIZE = 30;
+        const WALL_THICK = 8;
+        const GAP = WALL_THICK;
+        
+        let boardEl = document.getElementById('board');
+        let ghost = document.getElementById('drag-ghost');
+        
+        let state = {
+            mode: 'human',
+            turn: 1,
+            p1: { r: 8, c: 4, walls: 10, icon: '🐈‍⬛' },
+            p2: { r: 0, c: 4, walls: 10, icon: '🐈' },
+            h_walls: Array(8).fill(0).map(() => Array(8).fill(false)),
+            v_walls: Array(8).fill(0).map(() => Array(8).fill(false)),
+            gameOver: false,
+            selectedWallDir: null
+        };
+
+        // --- RENDER BOARD ---
+        function createBoard() {
+            boardEl.innerHTML = '';
+            for(let r=0; r<BOARD_SIZE; r++) {
+                for(let c=0; c<BOARD_SIZE; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${r}-${c}`;
+                    cell.style.width = CELL_SIZE + 'px';
+                    cell.style.height = CELL_SIZE + 'px';
+                    cell.style.left = (c * (CELL_SIZE + GAP)) + 'px';
+                    cell.style.top = (r * (CELL_SIZE + GAP)) + 'px';
+                    // Sicherer Click-Listener
+                    cell.onclick = (e) => { e.stopPropagation(); handleCellClick(r, c); };
+                    boardEl.appendChild(cell);
+                }
+            }
+            
+            for(let r=0; r<BOARD_SIZE-1; r++) {
+                for(let c=0; c<BOARD_SIZE-1; c++) {
+                    // Horizontal slot
+                    let wh = document.createElement('div');
+                    wh.className = `wall-slot h`;
+                    wh.id = `slot-h-${r}-${c}`;
+                    wh.dataset.r = r; wh.dataset.c = c; wh.dataset.dir = 'h';
+                    wh.style.width = (CELL_SIZE * 2 + GAP) + 'px';
+                    wh.style.left = (c * (CELL_SIZE + GAP)) + 'px';
+                    wh.style.top = (r * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
+                    wh.onclick = (e) => { e.stopPropagation(); handleSlotClick(r, c, 'h'); };
+                    boardEl.appendChild(wh);
+
+                    // Vertical slot
+                    let wv = document.createElement('div');
+                    wv.className = `wall-slot v`;
+                    wv.id = `slot-v-${r}-${c}`;
+                    wv.dataset.r = r; wv.dataset.c = c; wv.dataset.dir = 'v';
+                    wv.style.height = (CELL_SIZE * 2 + GAP) + 'px';
+                    wv.style.left = (c * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
+                    wv.style.top = (r * (CELL_SIZE + GAP)) + 'px';
+                    wv.onclick = (e) => { e.stopPropagation(); handleSlotClick(r, c, 'v'); };
+                    boardEl.appendChild(wv);
+                }
+            }
+        }
+
+        function selectWallType(dir, pNum) {
+            if(state.turn !== pNum || state.gameOver || (state.turn === 2 && state.mode !== 'human')) return;
+            if(pNum === 1 && state.p1.walls <= 0) return;
+            if(pNum === 2 && state.p2.walls <= 0) return;
+
+            if(state.selectedWallDir === dir) {
+                state.selectedWallDir = null; 
+            } else {
+                state.selectedWallDir = dir; 
+            }
+            updateView();
+        }
+
+        function handleSlotClick(r, c, dir) {
+            if(!state.selectedWallDir || state.selectedWallDir !== dir) return;
+            if(isValidWall(dir, r, c)) {
+                placeWall(state.turn, dir, r, c);
+                state.selectedWallDir = null; 
+            } else {
+                showMsg("Ungültige Position!", "#ef4444");
+            }
+        }
+
+        function updateView() {
+            for(let r=0; r<BOARD_SIZE; r++) {
+                for(let c=0; c<BOARD_SIZE; c++) {
+                    let cell = document.getElementById(`cell-${r}-${c}`);
+                    cell.innerText = '';
+                    cell.classList.remove('highlight');
+                }
+            }
+            
+            document.getElementById(`cell-${state.p1.r}-${state.p1.c}`).innerText = state.p1.icon;
+            document.getElementById(`cell-${state.p2.r}-${state.p2.c}`).innerText = state.p2.icon;
+
+            if(!state.gameOver && (state.mode === 'human' || state.turn === 1)) {
+                let moves = getValidMoves(state.turn);
+                moves.forEach(m => {
+                    document.getElementById(`cell-${m.r}-${m.c}`).classList.add('highlight');
+                });
+            }
+
+            document.getElementById('walls-p1').innerText = state.p1.walls;
+            document.getElementById('walls-p2').innerText = state.p2.walls;
+            
+            let p1Active = state.turn === 1 && !state.gameOver;
+            let p2Active = state.turn === 2 && !state.gameOver && state.mode === 'human';
+
+            document.getElementById('hud-p1').classList.toggle('active-hud', p1Active);
+            document.getElementById('hud-p2').classList.toggle('active-hud', p2Active);
+
+            document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.wall-slot').forEach(el => el.classList.remove('highlight-slot'));
+
+            if(state.selectedWallDir) {
+                let activeP = state.turn === 1 ? 'p1' : 'p2';
+                let selectedItem = document.querySelector(`.drag-item.drag-${state.selectedWallDir}.${activeP}`);
+                if(selectedItem) selectedItem.classList.add('selected');
+                document.querySelectorAll(`.wall-slot.${state.selectedWallDir}`).forEach(el => el.classList.add('highlight-slot'));
+            }
+
+            if(!state.gameOver && !state.selectedWallDir) {
+                let name = state.turn === 1 ? "Lilly ist dran!" : "Kloßi ist dran!";
+                let color = state.turn === 1 ? "#ec4899" : "#9333ea";
+                if(state.turn === 2 && state.mode !== 'human') name = "Kloßi denkt nach...";
+                showMsg(name, color);
+            } else if (state.selectedWallDir) {
+                showMsg("Tippe aufs Spielfeld zum Bauen", "#facc15");
+            }
+        }
+
+        function showMsg(txt, color) {
+            let msg = document.getElementById('status-msg');
+            msg.innerText = txt; msg.style.color = color;
+        }
+
+        function renderWall(r, c, dir, player) {
+            let w = document.createElement('div');
+            w.className = `wall-placed p${player}`;
+            if(dir === 'h') {
+                w.style.width = (CELL_SIZE * 2 + GAP) + 'px'; w.style.height = GAP + 'px';
+                w.style.left = (c * (CELL_SIZE + GAP)) + 'px'; w.style.top = (r * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
+            } else {
+                w.style.height = (CELL_SIZE * 2 + GAP) + 'px'; w.style.width = GAP + 'px';
+                w.style.left = (c * (CELL_SIZE + GAP) + CELL_SIZE) + 'px'; w.style.top = (r * (CELL_SIZE + GAP)) + 'px';
+            }
+            boardEl.appendChild(w);
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            let select = document.getElementById('mode-select').value;
+            if(select === 'random') {
+                let ais = ['sprinter', 'builder', 'trapper', 'shadow'];
+                state.mode = ais[Math.floor(Math.random()*ais.length)];
+            } else {
+                state.mode = select;
+            }
+            
+            state.p1 = { r: 8, c: 4, walls: 10, icon: '🐈‍⬛' };
+            state.p2 = { r: 0, c: 4, walls: 10, icon: '🐈' };
+            state.h_walls = Array(8).fill(0).map(() => Array(8).fill(false));
+            state.v_walls = Array(8).fill(0).map(() => Array(8).fill(false));
+            state.turn = 1; state.gameOver = false; state.selectedWallDir = null;
+            
+            document.querySelectorAll('.wall-placed').forEach(e => e.remove());
+            document.getElementById('main-menu').style.display = 'none';
+            
+            createBoard(); updateView(); initDragAndDrop();
+        }
+
+        function handleCellClick(r, c) {
+            if(state.gameOver || state.selectedWallDir) return; 
+            if(state.turn === 2 && state.mode !== 'human') return; 
+
+            let moves = getValidMoves(state.turn);
+            if(moves.some(m => m.r === r && m.c === c)) {
+                executeMove(state.turn, r, c);
+            }
+        }
+
+        function executeMove(playerNum, r, c) {
+            let p = playerNum === 1 ? state.p1 : state.p2;
+            p.r = r; p.c = c;
+            
+            checkWin();
+            if(!state.gameOver) {
+                state.turn = state.turn === 1 ? 2 : 1;
+                updateView();
+                if(state.turn === 2 && state.mode !== 'human') setTimeout(doAITurn, 800);
+            }
+        }
+
+        function placeWall(playerNum, dir, r, c) {
+            if(dir === 'h') state.h_walls[r][c] = true;
+            if(dir === 'v') state.v_walls[r][c] = true;
+            
+            let p = playerNum === 1 ? state.p1 : state.p2;
+            p.walls--;
+            renderWall(r, c, dir, playerNum);
+            
+            checkWin();
+            if(!state.gameOver) {
+                state.turn = state.turn === 1 ? 2 : 1;
+                updateView();
+                if(state.turn === 2 && state.mode !== 'human') setTimeout(doAITurn, 800);
+            }
+        }
+
+        function checkWin() {
+            if(state.p1.r === 0) {
+                state.gameOver = true; showMsg("🎉 Lilly gewinnt! 🎉", "#ec4899"); showMenuLater();
+            } else if(state.p2.r === 8) {
+                state.gameOver = true; showMsg("🎉 Kloßi gewinnt! 🎉", "#9333ea"); showMenuLater();
+            }
+        }
+
+        function showMenuLater() {
+            setTimeout(() => { document.getElementById('main-menu').style.display = 'flex'; }, 3500);
+        }
+
+        // --- BUGFIX: Sichere Wand-Abfrage ---
+        function hasHWall(r, c) {
+            if(r < 0 || r >= 8 || c < 0 || c >= 8) return false;
+            return state.h_walls[r][c];
+        }
+        function hasVWall(r, c) {
+            if(r < 0 || r >= 8 || c < 0 || c >= 8) return false;
+            return state.v_walls[r][c];
+        }
+
+        function hasWall(r, c, dR, dC) {
+            if(dR === -1) return hasHWall(r-1, c) || hasHWall(r-1, c-1); 
+            if(dR === 1)  return hasHWall(r, c)   || hasHWall(r, c-1); 
+            if(dC === -1) return hasVWall(r, c-1) || hasVWall(r-1, c-1); 
+            if(dC === 1)  return hasVWall(r, c)   || hasVWall(r-1, c); 
+            return false;
+        }
+
+        function getValidMoves(playerNum) {
+            let p = playerNum === 1 ? state.p1 : state.p2;
+            let opp = playerNum === 1 ? state.p2 : state.p1;
+            let moves = [];
+            let dirs = [[-1,0], [1,0], [0,-1], [0,1]];
+
+            dirs.forEach(d => {
+                let nr = p.r + d[0], nc = p.c + d[1];
+                if(nr>=0 && nr<9 && nc>=0 && nc<9 && !hasWall(p.r, p.c, d[0], d[1])) {
+                    if(nr === opp.r && nc === opp.c) {
+                        let nnr = nr + d[0], nnc = nc + d[1];
+                        if(nnr>=0 && nnr<9 && nnc>=0 && nnc<9 && !hasWall(nr, nc, d[0], d[1])) {
+                            moves.push({r: nnr, c: nnc});
+                        }
+                    } else {
+                        moves.push({r: nr, c: nc});
+                    }
+                }
+            });
+            return moves;
+        }
+
+        function isValidWall(dir, r, c) {
+            if(r<0 || r>=8 || c<0 || c>=8) return false;
+            if(state.h_walls[r][c] || state.v_walls[r][c]) return false; 
+            if(dir === 'h' && ((c>0 && state.h_walls[r][c-1]) || (c<7 && state.h_walls[r][c+1]))) return false; 
+            if(dir === 'v' && ((r>0 && state.v_walls[r-1][c]) || (r<7 && state.v_walls[r+1][c]))) return false; 
+
+            if(dir==='h') state.h_walls[r][c] = true; else state.v_walls[r][c] = true;
+            let p1Path = getShortestPath(1);
+            let p2Path = getShortestPath(2);
+            if(dir==='h') state.h_walls[r][c] = false; else state.v_walls[r][c] = false;
+
+            return p1Path !== -1 && p2Path !== -1;
+        }
+
+        function getShortestPath(playerNum) {
+            let start = playerNum === 1 ? state.p1 : state.p2;
+            let targetRow = playerNum === 1 ? 0 : 8; 
+            
+            let queue = [{r: start.r, c: start.c, dist: 0}];
+            let visited = Array(9).fill(0).map(() => Array(9).fill(false));
+            visited[start.r][start.c] = true;
+            let dirs = [[-1,0], [1,0], [0,-1], [0,1]];
+
+            while(queue.length > 0) {
+                let curr = queue.shift();
+                if(curr.r === targetRow) return curr.dist;
+
+                dirs.forEach(d => {
+                    let nr = curr.r + d[0], nc = curr.c + d[1];
+                    if(nr>=0 && nr<9 && nc>=0 && nc<9 && !visited[nr][nc] && !hasWall(curr.r, curr.c, d[0], d[1])) {
+                        visited[nr][nc] = true;
+                        queue.push({r: nr, c: nc, dist: curr.dist + 1});
+                    }
+                });
+            }
+            return -1; 
+        }
+
+        // --- BACKUP DRAG & DROP ---
+        let dragging = null;
+        let currentDropSlot = null;
+
+        function initDragAndDrop() {
+            document.querySelectorAll('.drag-item').forEach(item => {
+                item.onpointerdown = (e) => {
+                    let pNum = parseInt(item.dataset.player);
+                    if(state.turn !== pNum || state.gameOver) return;
+                    if((pNum===1 && state.p1.walls<=0) || (pNum===2 && state.p2.walls<=0)) return;
+                    
+                    dragging = { dir: item.dataset.dir, player: pNum };
+                    ghost.style.display = 'block';
+                    ghost.style.width = item.offsetWidth + 'px'; ghost.style.height = item.offsetHeight + 'px';
+                    ghost.style.background = pNum === 1 ? '#ec4899' : '#9333ea';
+                    moveGhost(e.clientX, e.clientY);
+                };
+            });
+
+            document.addEventListener('pointermove', (e) => {
+                if(!dragging) return;
+                moveGhost(e.clientX, e.clientY);
+                
+                let elements = document.elementsFromPoint(e.clientX, e.clientY);
+                let slot = elements.find(el => el.classList.contains('wall-slot') && el.dataset.dir === dragging.dir);
+                
+                document.querySelectorAll('.wall-slot').forEach(s => s.classList.remove('hover'));
+                currentDropSlot = null;
+
+                if(slot) {
+                    let r = parseInt(slot.dataset.r), c = parseInt(slot.dataset.c);
+                    if(isValidWall(dragging.dir, r, c)) {
+                        slot.classList.add('hover');
+                        currentDropSlot = {r, c, dir: dragging.dir};
+                    }
+                }
+            });
+
+            document.addEventListener('pointerup', () => stopDrag());
+            document.addEventListener('pointercancel', () => stopDrag());
+        }
+        
+        function stopDrag() {
+            if(!dragging) return;
+            document.querySelectorAll('.wall-slot').forEach(s => s.classList.remove('hover'));
+            ghost.style.display = 'none';
+
+            if(currentDropSlot && state.selectedWallDir === null) {
+                placeWall(dragging.player, currentDropSlot.dir, currentDropSlot.r, currentDropSlot.c);
+            }
+            dragging = null; currentDropSlot = null;
+        }
+
+        function moveGhost(x, y) {
+            ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
+            ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
+        }
+
+        // --- KI (Kloßi - 4 Styles) ---
+        function doAITurn() {
+            if(state.gameOver) return;
+            
+            let possibleMoves = getValidMoves(2); 
+            let possibleWalls = [];
+            if(state.p2.walls > 0) {
+                for(let r=0; r<8; r++) {
+                    for(let c=0; c<8; c++) {
+                        if(isValidWall('h', r, c)) possibleWalls.push({type: 'wall', dir: 'h', r, c});
+                        if(isValidWall('v', r, c)) possibleWalls.push({type: 'wall', dir: 'v', r, c});
+                    }
+                }
+            }
+
+            let p1DistBefore = getShortestPath(1);
+            let p2DistBefore = getShortestPath(2);
+            
+            let bestAction = null;
+            let bestScore = -9999;
+
+            // 1. Bewerte Laufen
+            possibleMoves.forEach(m => {
+                let oldR = state.p2.r, oldC = state.p2.c;
+                state.p2.r = m.r; state.p2.c = m.c;
+                let newDist = getShortestPath(2);
+                state.p2.r = oldR; state.p2.c = oldC; 
+                
+                let score = (p2DistBefore - newDist) * 10; 
+                if(state.mode === 'sprinter') score += 50; 
+                
+                if(score > bestScore) { bestScore = score; bestAction = {type: 'move', m}; }
+            });
+
+            // 2. Bewerte Bauen (Mit KI-Styles)
+            let sampleWalls = possibleWalls.sort(() => 0.5 - Math.random()).slice(0, 30);
+            
+            sampleWalls.forEach(w => {
+                if(w.dir==='h') state.h_walls[w.r][w.c] = true; else state.v_walls[w.r][w.c] = true;
+                let p1DistAfter = getShortestPath(1);
+                let p2DistAfter = getShortestPath(2);
+                if(w.dir==='h') state.h_walls[w.r][w.c] = false; else state.v_walls[w.r][w.c] = false;
+                
+                let score = 0;
+                let deltaP1 = p1DistAfter - p1DistBefore; 
+                let deltaP2 = p2DistAfter - p2DistBefore; 
+                
+                if (state.mode === 'sprinter') {
+                    score = deltaP1 * 2 - deltaP2 * 5; 
+                } else if (state.mode === 'builder') {
+                    score = deltaP1 * 15 - deltaP2 * 5 + 20; 
+                } else if (state.mode === 'trapper') {
+                    if (p1DistBefore <= 4) { 
+                        score = deltaP1 * 50 - deltaP2 * 2; 
+                    } else {
+                        score = deltaP1 * 2 - deltaP2 * 5; 
+                    }
+                } else if (state.mode === 'shadow') {
+                    if (state.p2.walls > state.p1.walls) { 
+                        score = deltaP1 * 15 - deltaP2 * 5 + 30; 
+                    } else {
+                        score = deltaP1 * 2 - deltaP2 * 5;
+                    }
+                }
+
+                if(score > bestScore && score > 0) { 
+                    bestScore = score; bestAction = w;
+                }
+            });
+
+            if(bestAction && bestAction.type === 'move') {
+                executeMove(2, bestAction.m.r, bestAction.m.c);
+            } else if (bestAction && (bestAction.dir === 'h' || bestAction.dir === 'v')) {
+                placeWall(2, bestAction.dir, bestAction.r, bestAction.c);
+            } else if(possibleMoves.length > 0) {
+                executeMove(2, possibleMoves[0].r, possibleMoves[0].c);
+            }
+        }
+    </script>
+</body>
+</html>
