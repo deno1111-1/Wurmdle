@@ -124,6 +124,7 @@
                 <option value="builder">🧱 KI: Baumeister</option>
                 <option value="trapper">🪤 KI: Fallenleger</option>
                 <option value="shadow">👤 KI: Schatten</option>
+                <option value="super">👑 KI: Super Kloßi</option>
             </select>
             
             <button onclick="startGame()">Spiel Starten</button>
@@ -145,7 +146,7 @@
             </div>
         </div>
 
-        <div id="status-msg">Lilly beginnt!</div>
+        <div id="status-msg">Spiel startet...</div>
 
         <div id="board"></div>
 
@@ -319,7 +320,7 @@
         function startGame() {
             let select = document.getElementById('mode-select').value;
             if(select === 'random') {
-                let ais = ['sprinter', 'builder', 'trapper', 'shadow'];
+                let ais = ['sprinter', 'builder', 'trapper', 'shadow', 'super'];
                 state.mode = ais[Math.floor(Math.random()*ais.length)];
             } else {
                 state.mode = select;
@@ -329,12 +330,24 @@
             state.p2 = { r: 0, c: 4, walls: 10, icon: '🐈' };
             state.h_walls = Array(8).fill(0).map(() => Array(8).fill(false));
             state.v_walls = Array(8).fill(0).map(() => Array(8).fill(false));
-            state.turn = 1; state.gameOver = false; state.selectedWallDir = null;
+            
+            // 🎲 50/50 Chance, wer beginnt
+            state.turn = Math.random() < 0.5 ? 1 : 2; 
+            
+            state.gameOver = false; 
+            state.selectedWallDir = null;
             
             document.querySelectorAll('.wall-placed').forEach(e => e.remove());
             document.getElementById('main-menu').style.display = 'none';
             
-            createBoard(); updateView(); initDragAndDrop();
+            createBoard(); 
+            updateView(); 
+            initDragAndDrop();
+
+            // Wenn Kloßi (KI) das Los gewinnt, startet er nach einer kurzen Pause
+            if(state.turn === 2 && state.mode !== 'human') {
+                setTimeout(doAITurn, 800);
+            }
         }
 
         function handleCellClick(r, c) {
@@ -523,7 +536,7 @@
             ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
         }
 
-        // --- KI (Kloßi - 4 Styles) ---
+        // --- KI (Kloßi - 5 Styles) ---
         function doAITurn() {
             if(state.gameOver) return;
             
@@ -553,12 +566,17 @@
                 
                 let score = (p2DistBefore - newDist) * 10; 
                 if(state.mode === 'sprinter') score += 50; 
+                if(state.mode === 'super') score = (p2DistBefore - newDist) * 30; // Super Kloßi schätzt Bewegung sehr
                 
                 if(score > bestScore) { bestScore = score; bestAction = {type: 'move', m}; }
             });
 
             // 2. Bewerte Bauen (Mit KI-Styles)
-            let sampleWalls = possibleWalls.sort(() => 0.5 - Math.random()).slice(0, 30);
+            let sampleWalls = possibleWalls;
+            if (state.mode !== 'super') {
+                // Nur Super Kloßi scant das ganze Feld, die anderen testen blind 30 Wände
+                sampleWalls = possibleWalls.sort(() => 0.5 - Math.random()).slice(0, 30);
+            }
             
             sampleWalls.forEach(w => {
                 if(w.dir==='h') state.h_walls[w.r][w.c] = true; else state.v_walls[w.r][w.c] = true;
@@ -585,6 +603,29 @@
                         score = deltaP1 * 15 - deltaP2 * 5 + 30; 
                     } else {
                         score = deltaP1 * 2 - deltaP2 * 5;
+                    }
+                } else if (state.mode === 'super') {
+                    // --- SUPER KLOßI HEURISTIK ---
+                    if (p1DistBefore <= 2 && deltaP1 > 0) {
+                        // Notfall: Lilly ist fast am Ziel! Alles blockieren!
+                        score = deltaP1 * 100 - deltaP2 * 20;
+                    } else if (p2DistBefore <= 2) {
+                        // Kloßi ist fast am Ziel: Lieber schnell laufen, Wände nur bauen wenn sie mega gut sind
+                        score = deltaP1 * 10 - deltaP2 * 50; 
+                    } else {
+                        // Wand-Ökonomie: Eine Wand muss Lilly signifikant aufhalten
+                        if (deltaP1 >= 2) {
+                            score = (deltaP1 * 35) - (deltaP2 * 30); // Starker Fokus auf Delta, sich selbst blockieren wird hart bestraft
+                            
+                            // Zentrumskontrolle: Wände in der Mitte des Spielfelds geben extra Punkte
+                            let centerBonus = (4 - Math.abs(3.5 - w.r)) + (4 - Math.abs(3.5 - w.c));
+                            score += centerBonus * 1.5;
+                            
+                            // Geizig sein: Wenn wir weniger Wände haben als Lilly, bauen wir seltener
+                            if (state.p2.walls < state.p1.walls) score -= 15;
+                        } else {
+                            score = -50; // Nutzloses Mauern vermeiden
+                        }
                     }
                 }
 
