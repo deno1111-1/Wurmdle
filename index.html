@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -8,42 +7,84 @@
     <style>
         /* --- GLOBAL --- */
         body {
-            background-color: #121213; color: white;
+            background-color: #121213; 
+            color: white;
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            margin: 0; display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden; user-select: none;
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            height: 100vh; 
+            overflow: hidden; 
+            user-select: none;
             touch-action: none;
         }
 
         /* HEADER */
         header {
-            display: flex; align-items: center; justify-content: center;
-            width: 100%; padding: 15px; background: #121213; box-sizing: border-box;
-            border-bottom: 1px solid #333; height: 60px; z-index: 10;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 100%; 
+            padding: 15px; 
+            background: #121213; 
+            box-sizing: border-box;
+            border-bottom: 1px solid #333; 
+            height: 60px; 
+            z-index: 10;
         }
-        h1 { margin: 0; font-size: 1.2rem; color: #538d4e; text-shadow: 1px 1px 0 #000; }
+        h1 { 
+            margin: 0; 
+            font-size: 1.2rem; 
+            color: #538d4e; 
+            text-shadow: 1px 1px 0 #000; 
+        }
 
         /* --- HAUPTMENÜ --- */
         #main-menu {
-            position: absolute; top: 60px; left: 0; width: 100%; height: calc(100% - 60px);
-            background: #121213; z-index: 200;
-            display: flex; flex-direction: column; align-items: center;
-            overflow-y: auto; padding: 20px 0 40px 0; box-sizing: border-box;
+            position: absolute; 
+            top: 60px; 
+            left: 0; 
+            width: 100%; 
+            height: calc(100% - 60px);
+            background: #121213; 
+            z-index: 200;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            overflow-y: auto; 
+            padding: 20px 0 40px 0; 
+            box-sizing: border-box;
             scroll-behavior: smooth;
         }
 
         /* GRUPPEN CONTAINER */
         .game-group {
-            display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 15px; 
+            width: 100%;
             margin-bottom: 35px;
         }
         
         /* CARD BASIS DESIGN */
         .mode-card {
-            background: #1e1e1f; border: 2px solid; border-radius: 20px;
-            padding: 15px 20px; width: 85%; max-width: 320px; text-align: left;
-            cursor: pointer; transition: transform 0.1s; text-decoration: none; color: inherit;
-            display: flex; flex-direction: row; align-items: center; gap: 15px;
+            background: #1e1e1f; 
+            border: 2px solid; 
+            border-radius: 20px;
+            padding: 15px 20px; 
+            width: 85%; 
+            max-width: 320px; 
+            text-align: left;
+            cursor: pointer; 
+            transition: transform 0.1s; 
+            text-decoration: none; 
+            color: inherit;
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            gap: 15px;
             flex-shrink: 0;
         }
         .mode-card:hover { border-color: #fff !important; }
@@ -69,7 +110,6 @@
         /* --- FARBSCHEMA GRUPPE 4 (ROT) --- */
         .group-4-card { border-color: #ef4444; box-shadow: 0 5px 15px rgba(239, 68, 68, 0.15); }
         .group-4-card .mode-title { color: #ef4444; }
-
     </style>
 </head>
 <body>
@@ -80,95 +120,173 @@
 
     <div id="main-menu">
         
+        <!-- GRUPPE 1 -->
         <div class="game-group">
             <a href="wurmdle.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐛</div>
-                <div class="mode-info"><div class="mode-title">Wurmdle</div><div class="mode-desc">Errate das Wort! (DE/EN)</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Wurmdle</div>
+                    <div class="mode-desc">Errate das Wort! (DE/EN)</div>
+                </div>
             </a>
             <a href="lilly.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐱</div>
-                <div class="mode-info"><div class="mode-title">Lillys Spelling Game</div><div class="mode-desc">Finde die Wörter (DE/EN)</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Lillys Spelling Game</div>
+                    <div class="mode-desc">Finde die Wörter (DE/EN)</div>
+                </div>
             </a>
             <a href="schnecki.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐌</div>
-                <div class="mode-info"><div class="mode-title">Schneckis Wörter Box</div><div class="mode-desc">Verbinde die Buchstaben!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Schneckis Wörter Box</div>
+                    <div class="mode-desc">Verbinde die Buchstaben!</div>
+                </div>
             </a>
             <a href="klossi.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐈</div>
-                <div class="mode-info"><div class="mode-title">Kloßis Leckerlijagd</div><div class="mode-desc">Käsekästchen vs Kloßi</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Kloßis Leckerlijagd</div>
+                    <div class="mode-desc">Käsekästchen vs Kloßi</div>
+                </div>
             </a>
             <a href="krokel.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐢🔥</div>
-                <div class="mode-info"><div class="mode-title">Krokels Wörterbox</div><div class="mode-desc">Löse das Gitter!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Krokels Wörterbox</div>
+                    <div class="mode-desc">Löse das Gitter!</div>
+                </div>
             </a>
             <a href="schneckerich.html" class="mode-card group-1-card">
                 <div class="mode-icon">🐌🧩</div>
-                <div class="mode-info"><div class="mode-title">Schneckerichs Sortierspaß</div><div class="mode-desc">Finde 4 Gruppen!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Schneckerichs Sortierspaß</div>
+                    <div class="mode-desc">Finde 4 Gruppen!</div>
+                </div>
             </a>
         </div>
 
+        <!-- GRUPPE 2 -->
         <div class="game-group">
             <a href="betweenle.html" class="mode-card group-2-card">
                 <div class="mode-icon">🪱</div>
-                <div class="mode-info"><div class="mode-title">Betwurmdle</div><div class="mode-desc">Wurmdle, nur anders</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Betwurmdle</div>
+                    <div class="mode-desc">Wurmdle, nur anders</div>
+                </div>
             </a>
             <a href="galaxys.html" class="mode-card group-2-card">
                 <div class="mode-icon">👁️</div>
-                <div class="mode-info"><div class="mode-title">Glubschgalaxien</div><div class="mode-desc">Male die Felder an!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Glubschgalaxien</div>
+                    <div class="mode-desc">Male die Felder an!</div>
+                </div>
             </a>
             <a href="domino.html" class="mode-card group-2-card">
                 <div class="mode-icon">🫟</div>
-                <div class="mode-info"><div class="mode-title">Dittos Dominos</div><div class="mode-desc">Dominos mit Dittos!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Dittos Dominos</div>
+                    <div class="mode-desc">Dominos mit Dittos!</div>
+                </div>
             </a>
             <a href="knofensa.html" class="mode-card group-2-card">
                 <div class="mode-icon">🪴</div>
-                <div class="mode-info"><div class="mode-title">Knofensas Cooler Garten</div><div class="mode-desc">Pflanze perfekte Beete!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Knofensas Cooler Garten</div>
+                    <div class="mode-desc">Pflanze perfekte Beete!</div>
+                </div>
             </a>
             <a href="mathestunde.html" class="mode-card group-2-card">
                 <div class="mode-icon">🐔🧮</div>
-                <div class="mode-info"><div class="mode-title">Frau Huhns Mathestunde</div><div class="mode-desc">Rechne dich zum Sieg!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Frau Huhns Mathestunde</div>
+                    <div class="mode-desc">Rechne dich zum Sieg!</div>
+                </div>
             </a>
             <a href="quaki_pipes.html" class="mode-card group-2-card">
                 <div class="mode-icon">🐥</div>
-                <div class="mode-info"><div class="mode-title">Quakis Pipes</div><div class="mode-desc">Leite das Wasser um!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Quakis Pipes</div>
+                    <div class="mode-desc">Leite das Wasser um!</div>
+                </div>
             </a>
         </div>
 
+        <!-- GRUPPE 3 -->
         <div class="game-group">
             <a href="dontwurmdle.html" class="mode-card group-3-card">
                 <div class="mode-icon">⛔</div>
-                <div class="mode-info"><div class="mode-title">Don't Wurmdle</div><div class="mode-desc">Tippe NICHT das Wort!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Don't Wurmdle</div>
+                    <div class="mode-desc">Tippe NICHT das Wort!</div>
+                </div>
             </a>
             <a href="kokowei.html" class="mode-card group-3-card">
                 <div class="mode-icon">🌴</div>
-                <div class="mode-info"><div class="mode-title">Kokoweis Kopf-Chaos</div><div class="mode-desc">Stapel die Palmen!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Kokoweis Kopf-Chaos</div>
+                    <div class="mode-desc">Stapel die Palmen!</div>
+                </div>
             </a>
             <a href="lillyleiter.html" class="mode-card group-3-card">
                 <div class="mode-icon">🐾</div>
-                <div class="mode-info"><div class="mode-title">Lilly's Leiterspaß</div><div class="mode-desc">Verbinde die Wörter!</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Lilly's Leiterspaß</div>
+                    <div class="mode-desc">Verbinde die Wörter!</div>
+                </div>
             </a>
             <a href="flaggle.html" class="mode-card group-3-card">
                 <div class="mode-icon">🏳️</div>
-                <div class="mode-info"><div class="mode-title">Flaggen Flubbern</div><div class="mode-desc">Spaß mit Flaggen</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Flaggen Flubbern</div>
+                    <div class="mode-desc">Spaß mit Flaggen</div>
+                </div>
             </a>
             <a href="dinodle.html" class="mode-card group-3-card">
-                <div class="mode-icon">🦖</div>
-                <div class="mode-info"><div class="mode-title">Dinodle</div><div class="mode-desc">Errate den Dino</div></div>
+                <div class="mode-icon">Rex🦖</div>
+                <div class="mode-info">
+                    <div class="mode-title">Dinodle</div>
+                    <div class="mode-desc">Errate den Dino</div>
+                </div>
             </a>
             <a href="trumpf.html" class="mode-card group-3-card">
                 <div class="mode-icon">🦕</div>
-                <div class="mode-info"><div class="mode-title">Dino Card Game Pocket</div><div class="mode-desc">Dino Kartenspiel</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Dino Card Game Pocket</div>
+                    <div class="mode-desc">Dino Kartenspiel</div>
+                </div>
             </a>
         </div>
 
+        <!-- GRUPPE 4 -->
         <div class="game-group">
             <a href="miauern.html" class="mode-card group-4-card">
                 <div class="mode-icon">🧱</div>
-                <div class="mode-info"><div class="mode-title">Miauern</div><div class="mode-desc">Lilly vs Kloßi</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Miauern</div>
+                    <div class="mode-desc">Lilly vs Kloßi</div>
+                </div>
             </a>
             <a href="numble.html" class="mode-card group-4-card">
                 <div class="mode-icon">🔢</div>
-                <div class="mode-info"><div class="mode-title">Numble</div><div class="mode-desc">Wordle ohne Worte</div></div>
+                <div class="mode-info">
+                    <div class="mode-title">Numble</div>
+                    <div class="mode-desc">Wordle ohne Worte</div>
+                </div>
+            </a>
+            <a href="miaumultiplikation.html" class="mode-card group-4-card">
+                <div class="mode-icon">😼</div>
+                <div class="mode-info">
+                    <div class="mode-title">Miau Multiplikation</div>
+                    <div class="mode-desc">Rate falsch, rate mehr!</div>
+                </div>
+            </a>
+            <a href="miaucode.html" class="mode-card group-4-card">
+                <div class="mode-icon">🙀</div>
+                <div class="mode-info">
+                    <div class="mode-title">Miau Code</div>
+                    <div class="mode-desc">Entziffere den Miau Code</div>
+                </div>
             </a>
         </div>
 
