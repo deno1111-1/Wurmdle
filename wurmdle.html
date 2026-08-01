@@ -113,7 +113,13 @@
         let gameWords=[], games=[], wordLength=5, maxGuesses=6, currentGuess="", totalGames=4, isGameActive=false;
 
         window.onload=()=>{
-            setTimeout(()=>loadWords('de'),100);
+            // Einstellungen aus dem LocalStorage laden (falls vorhanden)
+            if(localStorage.getItem('w_boards')) document.getElementById('board-count').value = localStorage.getItem('w_boards');
+            if(localStorage.getItem('w_letters')) document.getElementById('letter-count').value = localStorage.getItem('w_letters');
+            if(localStorage.getItem('w_extra')) document.getElementById('extra-guesses').value = localStorage.getItem('w_extra');
+            const savedLang = localStorage.getItem('w_lang') || 'de';
+            
+            setTimeout(()=>loadWords(savedLang),100);
             document.addEventListener('keydown', handleGlobalKey);
         };
 
@@ -151,6 +157,12 @@
         }
 
         function startWurmdle(){
+            // Einstellungen für die nächste Runde speichern
+            localStorage.setItem('w_boards', document.getElementById('board-count').value);
+            localStorage.setItem('w_letters', document.getElementById('letter-count').value);
+            localStorage.setItem('w_extra', document.getElementById('extra-guesses').value);
+            localStorage.setItem('w_lang', currentLang);
+            
             isGameActive=true;
             totalGames=parseInt(document.getElementById('board-count').value);
             wordLength=parseInt(document.getElementById('letter-count').value);
