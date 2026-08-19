@@ -137,6 +137,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let countryDB = []; 
         let targetCountry = null;
@@ -229,6 +232,7 @@
                 targetCtx.clearRect(0,0, C_WIDTH, C_HEIGHT);
                 targetCtx.drawImage(img, 0, 0, C_WIDTH, C_HEIGHT);
                 isGameActive = true;
+                startGameTimer();
             } catch(e) {
                 console.error(e);
                 showToast("Fehler beim Laden der Flagge: " + targetCountry.code);
@@ -360,6 +364,7 @@
 
         function triggerEnd(won) {
             isGameActive = false;
+            recordGameResult('flaggle', {won: won, guesses: guesses.length || 1, maxGuesses: Math.max(guesses.length, 8)});
             document.getElementById('win-name').innerText = targetCountry.name;
             document.getElementById('win-flag').src = `SVG/${targetCountry.code}.svg`;
             
@@ -367,9 +372,9 @@
             const desc = document.getElementById('modal-desc');
             
             if (won) {
-                title.innerText = "🎉 Richtig! 🎉";
+                title.innerText = "🎉 Super Leni! 🎉";
                 title.style.color = "#4ade80";
-                desc.innerText = "Du hast die Flagge perfekt vervollständigt.";
+                desc.innerText = "Leni hat die Flagge perfekt vervollständigt.";
                 document.querySelector('.modal-content').style.borderColor = "#4ade80";
             } else {
                 title.innerText = "Schade! 🏳️";

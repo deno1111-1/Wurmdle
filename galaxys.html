@@ -109,6 +109,9 @@ body{
  </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="stats.js"></script>
 <script>
 
 const boardEl = document.getElementById("board");
@@ -130,6 +133,8 @@ let eraserMode = false;
 
 let lastR = null;
 let lastC = null;
+let galaxysUndoCount = 0;
+let galaxysLevel = 1;
 
 function randomColor(){
   return `hsl(${Math.random()*360}, 65%, 70%)`;
@@ -157,6 +162,7 @@ solveBtn.onclick = () => {
 undoBtn.onclick = () => {
   if (history.length > 0) {
     player = history.pop(); 
+    galaxysUndoCount++;
     updateBoard();
   }
 };
@@ -179,6 +185,8 @@ eraserBtn.onclick = () => {
 function startGame(){
   size = parseInt(sizeInput.value);
   document.getElementById("winOverlay").style.display = "none";
+  galaxysUndoCount = 0;
+  startGameTimer();
   
   eraserMode = false;
   eraserBtn.innerText = "Radierer: Aus";
@@ -597,6 +605,7 @@ function checkWin() {
   }
   
   document.getElementById("winOverlay").style.display = "flex";
+  recordGameResult('galaxys', {won: true, guesses: 1, maxGuesses: 1, extra: {undo_sum: galaxysUndoCount, levels_completed: 1}});
 }
 
 startGame();

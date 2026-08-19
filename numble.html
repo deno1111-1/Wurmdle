@@ -155,6 +155,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         const ROWS = 6;
         const COLS = 8;
@@ -163,6 +166,7 @@
         let currentCol = 0;
         let secretEquation = "";
         let targetNumber = 0;
+        let numbleInvalidCount = 0;
         let gameOver = false;
 
         // Generator für eine gültige 8-Zeichen Rechnung (Ergebnis max 200)
@@ -212,6 +216,8 @@
             const secret = generateSecret();
             secretEquation = secret.expr;
             targetNumber = secret.target;
+            numbleInvalidCount = 0;
+            startGameTimer();
             
             document.getElementById('target-number').innerText = `Zielzahl: ${targetNumber}`;
 
@@ -304,6 +310,7 @@
 
             let validation = checkMathRules(guess);
             if (!validation.valid) {
+                numbleInvalidCount++;
                 showToast(validation.msg);
                 const rowEl = board[currentRow][0].parentElement;
                 rowEl.style.transform = 'translateX(-5px)';
@@ -349,9 +356,11 @@
                 if (guess === secretEquation) {
                     showToast("🎉 Perfekt gelöst!");
                     gameOver = true;
+                    recordGameResult('numble', {won: true, guesses: currentRow + 1, maxGuesses: ROWS, extra: {invalid_count: numbleInvalidCount}});
                 } else if (currentRow === ROWS - 1) {
                     showToast(`Schade! Die Lösung war: ${secretEquation}`);
                     gameOver = true;
+                    recordGameResult('numble', {won: false, guesses: currentRow + 1, maxGuesses: ROWS, extra: {invalid_count: numbleInvalidCount}});
                 } else {
                     currentRow++;
                     currentCol = 0;

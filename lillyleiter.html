@@ -124,11 +124,11 @@
 
     <div id="win-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="color: var(--accent); margin-top: 0;">🎉 Gewonnen! 🎉</h2>
+            <h2 style="color: var(--accent); margin-top: 0;">🎉 Super Leni hat gewonnen! 🎉</h2>
             <div class="stat-grid">
                 <div class="stat-box">
                     <span class="stat-val" id="user-steps">0</span>
-                    <span class="stat-label">Deine Schritte</span>
+                    <span class="stat-label">Lenis Schritte</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-val" id="opt-steps">0</span>
@@ -148,6 +148,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let dictionary = [], filteredDict = [], currentLang = 'de';
         let wordLength = 4, startWord = "", targetWord = "";
@@ -204,6 +207,7 @@
                 ladder = [startWord];
                 currentInput = "";
                 isGameActive = true;
+                startGameTimer();
 
                 document.getElementById('setup-area').style.display = 'none';
                 document.getElementById('win-modal').style.display = 'none';
@@ -331,6 +335,7 @@
             document.getElementById('user-steps').innerText = ladder.length - 1;
             document.getElementById('opt-steps').innerText = optPath.length - 1;
             document.getElementById('optimal-path-box').innerText = optPath.join(" ➔ ");
+            recordGameResult('lillyleiter', {won: true, guesses: ladder.length - 1, maxGuesses: (optPath.length - 1) + 5});
             setTimeout(() => document.getElementById('win-modal').style.display = 'flex', 600);
         }
 

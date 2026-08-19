@@ -98,10 +98,14 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let tCurrentPuzzle = null;
         let tSelectedIndices = [];
         let tFoundWords = [];
+        let krokelHintCount = 0;
         let tIsDragging = false;
         let tStrandsData = []; 
         let tSolutionMap = {}; 
@@ -138,6 +142,8 @@
                 tSolutionMap = tCurrentPuzzle.solutionMap; 
                 tSelectedIndices = [];
                 tFoundWords = [];
+                krokelHintCount = 0;
+                startGameTimer();
                 document.getElementById('tangela-hint').innerText = "Thema: " + tCurrentPuzzle.theme;
                 renderTangelaBoard();
             } else {
@@ -387,11 +393,13 @@
         function checkTangelaWin() {
             if (tFoundWords.length >= tCurrentPuzzle.words.length + 1) {
                 showToast("🎉 Krokels Tangela gelöst! 🎉");
+                recordGameResult('krokel', {won: true, guesses: 1, maxGuesses: 1, extra: {hint_sum: krokelHintCount}});
             }
         }
 
         function giveTangelaHint() {
             if (!tCurrentPuzzle || !tSolutionMap) { showToast("Kann keinen Tipp geben!"); return; }
+            krokelHintCount++;
             let candidates = [...tCurrentPuzzle.words];
             if (!tFoundWords.includes(tCurrentPuzzle.spangram)) candidates.push(tCurrentPuzzle.spangram);
             candidates = candidates.filter(w => !tFoundWords.includes(w));

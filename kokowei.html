@@ -182,8 +182,8 @@
 
     <div id="win-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2>🎉 GEWONNEN! 🎉</h2>
-            <p>Kokowei ist unfassbar stolz auf dich!</p>
+            <h2>🎉 SUPER LENI HAT GEWONNEN! 🎉</h2>
+            <p>Kokowei ist unfassbar stolz auf Leni!</p>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <button class="tool-btn" onclick="goToMenuFromWin()">🏠 Menü</button>
                 <button class="tool-btn active-tool" onclick="restartFromWin()">🔄 Neues Spiel</button>
@@ -191,8 +191,12 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let N = 4;
+        let kokoweiHintCount = 0; let kokoweiUndoCount = 0;
         let solution = [];
         let state = []; // Speichert die gesetzten Zahlen
         let notes = []; // Speichert die Notizen (Arrays)
@@ -242,6 +246,8 @@
             
             generatePuzzle();
             buildUI();
+            kokoweiHintCount = 0; kokoweiUndoCount = 0;
+            startGameTimer();
             
             // Initialen State speichern
             history = [];
@@ -496,6 +502,7 @@
             resetHintAnimation(); 
             if (historyPtr > 0) {
                 historyPtr--;
+                kokoweiUndoCount++;
                 state = JSON.parse(JSON.stringify(history[historyPtr].state));
                 notes = JSON.parse(JSON.stringify(history[historyPtr].notes));
                 updateBoardVisuals();
@@ -524,6 +531,7 @@
         function giveHint() {
             if(!isGameActive) return;
             resetHintAnimation(); 
+            kokoweiHintCount++;
 
             let wrongCells = [];
             let emptyCells = [];
@@ -635,6 +643,7 @@
             activeCell = null;
             document.querySelectorAll('.playable').forEach(el => el.classList.remove('selected'));
             isGameActive = false;
+            recordGameResult('kokowei', {won: true, guesses: 1, maxGuesses: 1, extra: {hint_sum: kokoweiHintCount, undo_sum: kokoweiUndoCount}});
             
             setTimeout(() => {
                 document.getElementById('win-modal').style.display = 'flex';

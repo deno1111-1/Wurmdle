@@ -106,6 +106,9 @@
     <div id="game-scroll-area"><div id="game-container"></div></div>
     <div id="keyboard-container"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let currentLang='de', cleanWordList=[], activeMode='wurmdle';
         const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
@@ -164,6 +167,7 @@
             localStorage.setItem('w_lang', currentLang);
             
             isGameActive=true;
+            startGameTimer();
             totalGames=parseInt(document.getElementById('board-count').value);
             wordLength=parseInt(document.getElementById('letter-count').value);
             const extra=parseInt(document.getElementById('extra-guesses').value)||0;
@@ -278,9 +282,11 @@
             });
             updateKeyboardColors();currentGuess="";updateHUD();
             if(games.every(g=>g.solved||g.guesses.length>=maxGuesses)){
-                if(games.every(g=>g.solved))showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
+                const allSolved=games.every(g=>g.solved);
+                if(allSolved)showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
                 else{showToast("Vorbei!");games.forEach(g=>{if(!g.solved){const el=document.getElementById(`sol-${g.id}`);el.innerText=g.word;el.style.display="block";}});}
                 isGameActive=false;
+                recordGameResult('wurmdle', {won: allSolved, guesses: games[0].guesses.length, maxGuesses: maxGuesses});
             }
         }
 

@@ -249,6 +249,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let dictionary = [];
         let secretWord = "";
@@ -262,6 +265,8 @@
         let isAnimating = false;
 
         let inputLetters = [];
+        let isBabybubuActive = false;
+        let babybubuExtra = 0;
 
         // NEU: Einstellungen laden und speichern
         function saveSettings() {
@@ -364,6 +369,9 @@
             }
 
             document.getElementById('start-screen').style.display = 'none';
+            isBabybubuActive = isBabybubu;
+            babybubuExtra = isBabybubu ? (MAX_GUESSES - 14) : 0;
+            startGameTimer();
             startRound();
         }
 
@@ -427,6 +435,12 @@
             
             endScreen.style.display = 'flex';
             endWord.innerText = `Das gesuchte Wort war: ${secretWord}`;
+
+            const extra = {};
+            extra[isBabybubuActive ? 'babybubu_played' : 'normal_played'] = 1;
+            if (won) extra[isBabybubuActive ? 'babybubu_won' : 'normal_won'] = 1;
+            if (isBabybubuActive) extra.babybubu_extra_sum = babybubuExtra;
+            recordGameResult('betweenle', {won: won, guesses: guesses || 1, maxGuesses: MAX_GUESSES, extra: extra});
 
             if(won) {
                 endTitle.innerText = "super Leni hat gewonnen";

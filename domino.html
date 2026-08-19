@@ -251,6 +251,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let currentScale = 1;
         function fitToScreen() {
@@ -271,6 +274,7 @@
 
         let layout = []; let regionMap = []; let regions = {}; let boardState = []; let dominos = []; let solutionPlacements = []; 
         let bonusMap = []; 
+        let dominoRoundSolved = false; let dominoUsedBonusRule = false;
         const boardEl = document.getElementById('game-board');
         const trayEl = document.getElementById('tray');
         const statusEl = document.getElementById('status-bar');
@@ -306,6 +310,9 @@
         function generateAndStartGame() {
             clearHints(); boardEl.innerHTML = ''; trayEl.innerHTML = '';
             statusEl.innerText = 'Ordne alle Dittos richtig an!'; statusEl.className = '';
+            dominoRoundSolved = false;
+            dominoUsedBonusRule = document.getElementById('rule-bonus').checked;
+            startGameTimer();
             layout = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(false));
             regionMap = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
             boardState = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
@@ -675,7 +682,15 @@
 
             if (mirrorSums.length > 0 && new Set(mirrorSums).size !== 1) allV = false;
 
-            if (allV) { statusEl.innerText = "Alle Dittos haben sich perfekt verwandelt! 🫟✨"; statusEl.className = "status-win"; }
+            if (allV) {
+                statusEl.innerText = "Juppie Leni! Alle Dittos haben sich perfekt verwandelt! 🫟✨"; statusEl.className = "status-win";
+                if (!dominoRoundSolved) {
+                    dominoRoundSolved = true;
+                    const extra = {};
+                    if (dominoUsedBonusRule) extra.bonus_rule_used = 1;
+                    recordGameResult('domino', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
+                }
+            }
             else { statusEl.innerText = "Falsch! Suche den Fehler..."; statusEl.className = "status-error"; }
         }
         

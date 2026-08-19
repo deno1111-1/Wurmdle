@@ -403,6 +403,9 @@
         </div>
     </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="stats.js"></script>
 <script>
     // --- DICTIONARY FALLBACKS ---
     const FALLBACK_DE = [
@@ -541,6 +544,7 @@
         currentGuess = "";
         hasWon = false;
         usedLetters.clear(); // Leert die gemerkten Buchstaben
+        startGameTimer();
         
         generateSymbols();
         buildKeyboard();
@@ -842,8 +846,10 @@
         const title = document.getElementById('end-title');
         const wordDisp = document.getElementById('end-word');
         
+        recordGameResult('miaucode', {won: win, guesses: history.length || 1, maxGuesses: maxGuesses});
+        
         if (win) {
-            title.innerText = currentLanguage === 'de' ? "Gewonnen!" : "You Won!";
+            title.innerText = currentLanguage === 'de' ? "Super Leni hat gewonnen!" : "You Won!";
             title.style.color = "var(--primary)";
         } else {
             title.innerText = "Game Over";

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Wurmdle Stats</title>
+<style>
+    body {
+        background-color: #121213; color: white;
+        font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+        margin: 0; padding: 0 10px 40px;
+    }
+    header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 15px 5px; border-bottom: 1px solid #333; margin-bottom: 15px;
+        position: sticky; top: 0; background: #121213; z-index: 10;
+    }
+    h1 { margin: 0; font-size: 1.3rem; color: #538d4e; }
+    .menu-btn {
+        background: #333; color: white; border: 1px solid #555; text-decoration: none;
+        padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 0.8rem;
+    }
+    #player-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        background: #1e1e1f; border: 1px solid #444; border-radius: 10px;
+        padding: 10px 15px; margin-bottom: 15px;
+    }
+    #player-name-display { font-weight: bold; color: #ffd700; }
+    .small-btn {
+        background: transparent; border: 1px solid #666; color: #aaa;
+        padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+    }
+    .summary-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;
+    }
+    .summary-card {
+        background: #1e1e1f; border: 1px solid #444; border-radius: 10px;
+        padding: 12px; text-align: center;
+    }
+    .summary-card .val { font-size: 1.4rem; font-weight: bold; color: #538d4e; }
+    .summary-card .lbl { font-size: 0.7rem; color: #aaa; margin-top: 3px; }
+
+    #calendar {
+        display: grid; grid-template-columns: repeat(auto-fill, 12px); gap: 3px;
+        background: #1e1e1f; border: 1px solid #444; border-radius: 10px; padding: 12px;
+        margin-bottom: 20px;
+    }
+    .cal-day { width: 12px; height: 12px; border-radius: 3px; background: #2d2d2d; }
+
+    .game-card {
+        background: #1e1e1f; border: 1px solid #444; border-radius: 10px;
+        margin-bottom: 12px; overflow: hidden;
+    }
+    .game-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 15px; cursor: pointer; background: #232324;
+    }
+    .game-header .title { font-weight: bold; }
+    .game-header .played-count { font-size: 0.75rem; color: #888; }
+    .game-body { padding: 12px 15px; display: none; }
+    .game-body.open { display: block; }
+    .stat-row {
+        display: flex; justify-content: space-between; padding: 5px 0;
+        border-bottom: 1px solid #2d2d2d; font-size: 0.85rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .stat-val { color: #538d4e; font-weight: bold; }
+    .bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.75rem; }
+    .bar-track { flex-grow: 1; background: #2d2d2d; border-radius: 4px; height: 14px; overflow: hidden; }
+    .bar-fill { background: #538d4e; height: 100%; }
+    #empty-msg { text-align: center; color: #888; margin-top: 40px; padding: 0 20px; }
+    #loading-msg { text-align: center; color: #888; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>📊 Wurmdle Stats</h1>
+    <a href="index.html" class="menu-btn">🏠 Menü</a>
+</header>
+
+<div id="player-bar">
+    <div>Spieler: <span id="player-name-display">...</span></div>
+    <button class="small-btn" onclick="changePlayer()">Name ändern</button>
+</div>
+
+<div id="loading-msg">Lade Stats...</div>
+<div id="empty-msg" style="display:none;">Noch keine Spiele gespeichert. Spiel eine Runde und komm wieder! 🎮</div>
+
+<div id="content" style="display:none;">
+    <div class="summary-grid" id="summary-grid"></div>
+    <div style="font-size:0.8rem; color:#aaa; margin-bottom:6px;">Spielverlauf (letzte Wochen)</div>
+    <div id="calendar"></div>
+    <div id="games-list"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="stats.js"></script>
+<script>
+
+const GAME_LABELS = {
+    wurmdle: "🐛 Wurmdle", dontwurmdle: "🚫 Dontwurmdle", lillyleiter: "🪜 Lillyleiter",
+    dinodle: "🦖 Dinodle", flaggle: "🏳️ Flaggle", miaucode: "🔢 Miaucode",
+    betweenle: "↕️ Betweenle", domino: "🫟 Dittos Dominos", galaxys: "🌌 Galaxys",
+    klossi: "🐈 Kloßis Leckerlijagd", knofensa: "🌻 Knofensas Garten", kokowei: "🧩 Kokoweis Kopf-Chaos",
+    krokel: "🐌 Krokels Tangela", lilly: "🐝 Lillys Spelling Game", mathestunde: "🐔 Frau Huhns Mathestunde",
+    miauern: "🧱 Miauern", miaumultiplikation: "🦊 FoxiMax", numble: "🔢 Numble",
+    quaki_pipes: "🐥 Quakis Rohrrettung", schneckerich: "🐌 Schneckerichs Sortierspaß",
+    schnecki: "📦 Schneckis Wörter Box", trumpf: "🦖 Dino Card Game"
+};
+
+function fmtTime(seconds) {
+    if (!seconds) return "0 min";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.round((seconds % 3600) / 60);
+    if (h > 0) return `${h} Std ${m} min`;
+    return `${m} min`;
+}
+
+function pct(a, b) {
+    if (!b) return "0%";
+    return Math.round((a / b) * 100) + "%";
+}
+
+function renderCalendar(playHistory) {
+    const cal = document.getElementById('calendar');
+    cal.innerHTML = '';
+    const days = 84; // 12 Wochen
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const count = (playHistory && playHistory[key]) || 0;
+        const div = document.createElement('div');
+        div.className = 'cal-day';
+        div.title = `${key}: ${count} Spiele`;
+        if (count > 0) {
+            const intensity = Math.min(count, 5);
+            const shades = ['#2d2d2d', '#1a3d1a', '#255f25', '#358a35', '#45b545', '#538d4e'];
+            div.style.background = shades[intensity] || '#538d4e';
+        }
+        cal.appendChild(div);
+    }
+}
+
+function renderGameCard(key, g) {
+    const label = GAME_LABELS[key] || key;
+    const winRate = pct(g.won || 0, g.played || 0);
+    const avgGuesses = (g.won && g.totalGuessesOnWins) ? (g.totalGuessesOnWins / g.won).toFixed(1) : '–';
+
+    let extraHtml = '';
+    if (g.extra && Object.keys(g.extra).length > 0) {
+        const entries = Object.entries(g.extra).sort((a, b) => a[0].localeCompare(b[0]));
+        extraHtml = entries.map(([k, v]) => {
+            const niceKey = k.replace(/_/g, ' ');
+            return `<div class="stat-row"><span>${niceKey}</span><span class="stat-val">${v}</span></div>`;
+        }).join('');
+    }
+
+    let distHtml = '';
+    if (g.guessDistribution && g.guessDistribution.some(v => v > 0)) {
+        const max = Math.max(...g.guessDistribution, 1);
+        distHtml = '<div style="margin-top:8px; font-size:0.75rem; color:#aaa;">Guess-Verteilung</div>';
+        g.guessDistribution.forEach((v, i) => {
+            if (v === 0 && i >= g.guessDistribution.length - 2) return;
+            const w = Math.round((v / max) * 100);
+            distHtml += `<div class="bar-row"><span style="width:14px;">${i+1}</span><div class="bar-track"><div class="bar-fill" style="width:${w}%;"></div></div><span style="width:20px; text-align:right;">${v}</span></div>`;
+        });
+    }
+
+    return `
+    <div class="game-card">
+        <div class="game-header" onclick="toggleGame('${key}')">
+            <span class="title">${label}</span>
+            <span class="played-count">${g.played || 0}x gespielt</span>
+        </div>
+        <div class="game-body" id="body-${key}">
+            <div class="stat-row"><span>Win Rate</span><span class="stat-val">${winRate}</span></div>
+            <div class="stat-row"><span>Aktuelle Streak</span><span class="stat-val">${g.currentStreak || 0}</span></div>
+            <div class="stat-row"><span>Beste Streak</span><span class="stat-val">${g.bestStreak || 0}</span></div>
+            <div class="stat-row"><span>Schnellster Sieg</span><span class="stat-val">${g.fastestWinGuesses ?? '–'}</span></div>
+            <div class="stat-row"><span>Ø Versuche (Siege)</span><span class="stat-val">${avgGuesses}</span></div>
+            <div class="stat-row"><span>Spielzeit gesamt</span><span class="stat-val">${fmtTime(g.playtimeSeconds)}</span></div>
+            ${extraHtml}
+            ${distHtml}
+        </div>
+    </div>`;
+}
+
+function toggleGame(key) {
+    const body = document.getElementById('body-' + key);
+    body.classList.toggle('open');
+}
+
+function changePlayer() {
+    resetPlayerName();
+    loadStats();
+}
+
+async function loadStats() {
+    const name = getPlayerName();
+    document.getElementById('player-name-display').innerText = name;
+    document.getElementById('loading-msg').style.display = 'block';
+    document.getElementById('content').style.display = 'none';
+    document.getElementById('empty-msg').style.display = 'none';
+
+    try {
+        const doc = await db.collection('players').doc(name).get();
+        document.getElementById('loading-msg').style.display = 'none';
+
+        if (!doc.exists) {
+            document.getElementById('empty-msg').style.display = 'block';
+            return;
+        }
+
+        const data = doc.data();
+        const games = data.games || {};
+        const gameKeys = Object.keys(games).sort((a, b) => (games[b].played||0) - (games[a].played||0));
+
+        if (gameKeys.length === 0) {
+            document.getElementById('empty-msg').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('content').style.display = 'block';
+
+        // Zusammenfassung
+        let totalPlayed = 0, totalWon = 0;
+        gameKeys.forEach(k => { totalPlayed += games[k].played || 0; totalWon += games[k].won || 0; });
+        const favGame = gameKeys[0];
+        const favLabel = GAME_LABELS[favGame] || favGame;
+
+        document.getElementById('summary-grid').innerHTML = `
+            <div class="summary-card"><div class="val">${totalPlayed}</div><div class="lbl">Spiele insgesamt</div></div>
+            <div class="summary-card"><div class="val">${pct(totalWon, totalPlayed)}</div><div class="lbl">Gesamt-Win-Rate</div></div>
+            <div class="summary-card"><div class="val">${fmtTime(data.totalPlaytimeSeconds)}</div><div class="lbl">Gesamt-Spielzeit</div></div>
+            <div class="summary-card"><div class="val" style="font-size:1rem;">${favLabel}</div><div class="lbl">Lieblingsspiel</div></div>
+        `;
+
+        renderCalendar(data.playHistory);
+
+        document.getElementById('games-list').innerHTML = gameKeys.map(k => renderGameCard(k, games[k])).join('');
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('loading-msg').innerText = "Fehler beim Laden der Stats.";
+    }
+}
+
+loadStats();
+
+</script>
+</body>
+</html>

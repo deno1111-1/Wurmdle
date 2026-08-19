@@ -402,6 +402,9 @@
 
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         // --- Fallback Data ---
         const fallbacks = {
@@ -449,6 +452,7 @@
             mistakes = 0;
             activeWords = [];
             guessedLetters.clear();
+            startGameTimer();
 
             await loadWords();
             addWordToPool();
@@ -544,8 +548,9 @@
 
         function endGame(isWin) {
             const title = document.getElementById('result-title');
+            recordGameResult('miaumultiplikation', {won: isWin, guesses: 1, maxGuesses: 1, extra: {mistake_sum: mistakes, words_solved: activeWords.length}});
             if (isWin) {
-                title.textContent = currentLang === 'de' ? "GEWONNEN!" : "YOU WIN!";
+                title.textContent = currentLang === 'de' ? "SUPER LENI HAT GEWONNEN!" : "YOU WIN!";
                 title.className = "result-title win-text";
             } else {
                 title.textContent = "GAME OVER";

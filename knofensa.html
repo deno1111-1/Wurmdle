@@ -236,6 +236,9 @@
         <div id="message"></div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let size = 10;
         let puzzleGrid = []; 
@@ -257,6 +260,8 @@
         const sizeInput = document.getElementById('size-input');
         const dragInfoDiv = document.getElementById('drag-info');
         const obstacleToggle = document.getElementById('obstacle-toggle');
+        let knofensaSolved = false;
+        let knofensaObstaclesUsed = false;
 
         function showMenu() {
             gameDiv.style.display = 'none';
@@ -298,6 +303,9 @@
             
             generatePuzzle();
             renderGrid();
+            knofensaSolved = false;
+            knofensaObstaclesUsed = obstacleToggle.checked;
+            startGameTimer();
         }
 
         function generatePuzzle() {
@@ -631,8 +639,15 @@
             }
 
             if (isValid && totalAreaCovered === targetWinArea) {
-                messageDiv.innerText = "🎉 Perfekt! Knofensas Garten blüht in voller Pracht!";
+                messageDiv.innerText = "🎉 Perfekt! Leni hat Knofensas Garten zum Blühen gebracht!";
                 messageDiv.style.color = "#1b5e20";
+                if (!knofensaSolved) {
+                    knofensaSolved = true;
+                    const extra = {};
+                    extra[knofensaObstaclesUsed ? 'obstacle_played' : 'no_obstacle_played'] = 1;
+                    extra[knofensaObstaclesUsed ? 'obstacle_won' : 'no_obstacle_won'] = 1;
+                    recordGameResult('knofensa', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
+                }
             } else {
                 messageDiv.innerText = "Teile den Garten in Beete auf.";
                 messageDiv.style.color = "#2e7d32";

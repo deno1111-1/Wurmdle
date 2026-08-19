@@ -121,9 +121,13 @@
         <a href="index.html" class="close-res-btn" style="background:#555; display:inline-block;">ZURÜCK ZUM MENÜ</a>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let currentLang='de', cleanWordList=[], activeMode='';
         let lillyLetters=[], lillyCenter="", lillyFound=[], lillyScore=0, validLillyWords=[], maxLillyPoints=0;
+        let lillyPangramCount=0;
 
         window.onload=()=>{
             document.addEventListener('keydown', handleGlobalKey);
@@ -173,6 +177,8 @@
             for(let i=u.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[u[i],u[j]]=[u[j],u[i]];}
             
             lillyCenter=u[0]; lillyLetters=u; lillyFound=[]; lillyScore=0; maxLillyPoints=0;
+            lillyPangramCount=0;
+            startGameTimer();
             
             validLillyWords=cleanWordList.filter(w=>{
                 if(w.length<4||!w.includes(lillyCenter))return false; 
@@ -209,7 +215,7 @@
             if(validLillyWords.includes(w)){
                 const p=calcWordScore(w); lillyFound.push(w); lillyScore+=p; updateLillyScore();
                 const isP=new Set(w.split('')).size===7;
-                if(isP) showToast(`🦄 PANGRAMM! +${p} 🦄`); else showToast(`Super! +${p}`);
+                if(isP){ lillyPangramCount++; showToast(`🦄 PANGRAMM! +${p} 🦄`); } else showToast(`Super! +${p}`);
                 const s=document.createElement('span');s.className='found-word';s.innerText=w + (isP?" 🌟":"");
                 document.getElementById('lilly-words').prepend(s); t.innerText="";
                 if(lillyFound.length===validLillyWords.length){showToast("👑 ALLES GEFUNDEN! 👑");setTimeout(()=>finishLillyGame(true),1500);}
@@ -224,6 +230,7 @@
 
         function finishLillyGame(win=false){
             activeMode = ''; // Block keyboard input
+            recordGameResult('lilly', {won: win, guesses: 1, maxGuesses: 1, extra: {score_sum: lillyScore, pangram_count: lillyPangramCount}});
             const m=document.getElementById('results-modal');
             document.getElementById('res-header-text').innerText=win?"SUPER LENI HAT GEWONNEN!":"SPIEL BEENDET";
             document.getElementById('res-header-text').style.color=win?"#538d4e":"#ffd700";

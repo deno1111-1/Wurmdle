@@ -162,6 +162,9 @@
 
     <div id="drag-ghost"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         const BOARD_SIZE = 9;
         const CELL_SIZE = 30;
@@ -325,6 +328,7 @@
             } else {
                 state.mode = select;
             }
+            startGameTimer();
             
             state.p1 = { r: 8, c: 4, walls: 10, icon: '🐈‍⬛' };
             state.p2 = { r: 0, c: 4, walls: 10, icon: '🐈' };
@@ -388,11 +392,22 @@
             }
         }
 
+        const aiNames = { sprinter: 'Sprinter 🏃', builder: 'Baumeister 🧱', trapper: 'Fallenleger 🪤', shadow: 'Schatten 👤', super: 'Super Kloßi 👑', human: 'Pass & Play 🤜🤛' };
+
         function checkWin() {
+            const aiLabel = aiNames[state.mode] || state.mode;
             if(state.p1.r === 0) {
-                state.gameOver = true; showMsg("🎉 Lilly gewinnt! 🎉", "#ec4899"); showMenuLater();
+                state.gameOver = true; showMsg(`🎉 Lilly gewinnt! (Gegner: ${aiLabel}) 🎉`, "#ec4899"); showMenuLater();
+                const extra = { as_lilly_played: 1, as_lilly_won: 1 };
+                extra['ai_' + state.mode + '_played'] = 1;
+                extra['ai_' + state.mode + '_lilly_won'] = 1;
+                recordGameResult('miauern', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
             } else if(state.p2.r === 8) {
-                state.gameOver = true; showMsg("🎉 Kloßi gewinnt! 🎉", "#9333ea"); showMenuLater();
+                state.gameOver = true; showMsg(`🎉 Kloßi gewinnt! (Gegner: ${aiLabel}) 🎉`, "#9333ea"); showMenuLater();
+                const extra = { as_klossi_played: 1, as_klossi_won: 1 };
+                extra['ai_' + state.mode + '_played'] = 1;
+                extra['ai_' + state.mode + '_klossi_won'] = 1;
+                recordGameResult('miauern', {won: false, guesses: 1, maxGuesses: 1, extra: extra});
             }
         }
 

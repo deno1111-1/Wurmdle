@@ -113,6 +113,9 @@
         <a href="index.html" class="close-res-btn" style="background:#555;">ZURÜCK ZUM MENÜ</a>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let sGroups=[], sGridItems=[], sSelection=[], sMistakes=0, sSolvedCats=0;
         
@@ -145,6 +148,7 @@
             }
             
             sSelection = []; sMistakes = 0; sSolvedCats = 0;
+            startGameTimer();
             sGridItems = [];
             
             sGroups.forEach((g, gIdx) => {
@@ -207,6 +211,7 @@
         }
 
         function finishSchnGame(won) {
+            recordGameResult('schneckerich', {won: won, guesses: 1, maxGuesses: 1, extra: {mistake_sum: sMistakes, perfect_count: (sMistakes === 0 && won) ? 1 : 0}});
             const m = document.getElementById('results-modal');
             const h = document.getElementById('res-header-text');
             const circle = document.getElementById('res-final-score');

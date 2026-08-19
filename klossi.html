@@ -69,6 +69,9 @@
         <button class="action-btn" style="margin-top:20px;" onclick="startKlossiGame()">NEUES SPIELFELD 🎲</button>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let kDots=8, kH_lines=[], kV_lines=[], kBoxes=[], kTurn=1, kScoreP=0, kScoreB=0, kCanvas=null, kCtx=null, kScale=1;
         const K_SIZE=50;
@@ -80,6 +83,7 @@
 
         function startKlossiGame(){
             isGameActive = true;
+            startGameTimer();
             generateRandomBoard(); 
             
             kTurn=1; kScoreP=0; kScoreB=0;
@@ -234,9 +238,12 @@
             
             if(open===0){
                 isGameActive = false;
-                if(kScoreP>kScoreB) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉"); 
+                const won = kScoreP > kScoreB;
+                const diff = Math.abs(kScoreP - kScoreB);
+                if(won) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉"); 
                 else if(kScoreB>kScoreP) showToast("KLOẞI HAT GEWONNEN! Er kriegt ein Leckerli!"); 
                 else showToast("UNENTSCHIEDEN!"); 
+                recordGameResult('klossi', {won: won, guesses: 1, maxGuesses: 1, extra: {point_diff_sum: diff}});
                 return;
             }
             

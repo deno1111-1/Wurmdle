@@ -171,6 +171,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         // --- STATE VARIABLES ---
         let currentLang='de', dictionary=[], validWords=[];
@@ -221,6 +224,7 @@
             
             guesses = []; currentGuess = ""; historyStack = [];
             isGameActive = true; isBonusPhase = false; bonusGuesses = [];
+            startGameTimer();
 
             document.getElementById('setup-area').style.display='none';
             document.getElementById('game-view').style.display='flex';
@@ -382,6 +386,7 @@
             if(currentGuess === secretWord){
                 showToast("GAME OVER! Du hast das gesuchte Wort getippt!");
                 isGameActive = false;
+                recordGameResult('dontwurmdle', {won: false, guesses: guesses.length, maxGuesses: maxRows});
                 setTimeout(()=> triggerEndScreen(false), 1500);
                 return;
             }
@@ -405,6 +410,7 @@
                 } else {
                     showToast("🎉 DU HAST ÜBERLEBT! 🎉");
                     isGameActive = false;
+                    recordGameResult('dontwurmdle', {won: true, guesses: maxRows, maxGuesses: maxRows});
                 }
             }
         }
@@ -505,9 +511,9 @@
             bonusGuesses.push(currentGuess);
 
             if(currentGuess === secretWord) {
-                document.getElementById('end-title').innerText = "🎉 GEWONNEN! 🎉";
+                document.getElementById('end-title').innerText = "🎉 SUPER LENI HAT GEWONNEN! 🎉";
                 document.getElementById('end-title').style.color = "#4ade80";
-                document.getElementById('end-desc').innerText = "Du bist ein wahres Genie!";
+                document.getElementById('end-desc').innerText = "Leni ist ein wahres Genie!";
                 
                 // Tastatur verstecken, Neues-Spiel Button anzeigen
                 document.getElementById('bonus-keyboard-area').style.display = 'none';
@@ -515,6 +521,7 @@
                 
                 isGameActive = false;
                 spawnConfetti();
+                recordGameResult('dontwurmdle', {won: true, guesses: maxRows + bonusGuesses.length, maxGuesses: maxRows + maxBonusGuesses});
             } else if(bonusGuesses.length === maxBonusGuesses) {
                 document.getElementById('end-title').innerText = "Schade!";
                 document.getElementById('end-title').style.color = "#ef4444";
@@ -525,6 +532,7 @@
                 document.getElementById('end-restart-btn').style.display = 'block';
                 
                 isGameActive = false;
+                recordGameResult('dontwurmdle', {won: false, guesses: maxRows + bonusGuesses.length, maxGuesses: maxRows + maxBonusGuesses});
             }
             
             currentGuess = "";
@@ -535,7 +543,7 @@
             const modal = document.getElementById('end-modal');
             const board = document.getElementById('bonus-board');
             board.innerHTML = "";
-            document.getElementById('end-title').innerText = won ? "🎉 SIEG! 🎉" : "VERLOREN!";
+            document.getElementById('end-title').innerText = won ? "🎉 SUPER LENI HAT GEWONNEN! 🎉" : "VERLOREN!";
             document.getElementById('end-title').style.color = won ? "#4ade80" : "#ef4444";
             document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
             

@@ -169,6 +169,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let fullDeck = [];
         let playerDeck = [];
@@ -177,6 +180,7 @@
         
         let playerTurn = true; // True = Spieler, False = CPU
         let roundActive = false; // Verhindert Klicks während Animationen
+        let trumpfRoundCount = 0;
 
         // Max-Werte für die schlaue Computer-KI
         const MAX_STATS = {
@@ -211,13 +215,16 @@
             cpuDeck = fullDeck.slice(Math.floor(fullDeck.length / 2));
             
             playerTurn = true;
+            trumpfRoundCount = 0;
+            startGameTimer();
             updateScore();
             prepareRound();
         }
 
         function prepareRound() {
             if(playerDeck.length === 0) return endGame("Computer");
-            if(cpuDeck.length === 0) return endGame("Du");
+            if(cpuDeck.length === 0) return endGame("Leni");
+            trumpfRoundCount++;
 
             roundActive = true;
             resetCardStyles();
@@ -381,6 +388,8 @@
         }
 
         function endGame(winnerName) {
+            const won = winnerName === "Leni";
+            recordGameResult('trumpf', {won: won, guesses: trumpfRoundCount, maxGuesses: trumpfRoundCount});
             document.getElementById('arena').innerHTML = `
                 <h1 style="font-size: 3rem; color: #facc15; margin-bottom: 20px;">${winnerName} hat gewonnen!</h1>
                 <button class="next-btn" style="display:block;" onclick="location.reload()">Neues Spiel</button>

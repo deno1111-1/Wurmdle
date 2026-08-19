@@ -101,9 +101,13 @@
         <div class="schnecki-history" id="schnecki-history-list"></div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let currentLang='de', cleanWordList=[], activeMode='';
         let schnLetters=[], schnUsed=new Set(), schnCurrent="", schnHistory=[], schnLastIdx=-1;
+        let schnFinished = false;
 
         window.onload=()=>{
             document.addEventListener('keydown', handleGlobalKey);
@@ -171,6 +175,8 @@
             schnCurrent=""; 
             schnHistory=[]; 
             schnLastIdx=-1; 
+            schnFinished = false;
+            startGameTimer();
             renderSchneckiBoard(); 
             updateSchneckiUI(); 
         }
@@ -256,7 +262,13 @@
             
             updateSchneckiUI(); 
             
-            if(schnUsed.size===12) showToast("👑 SUPER LENI HAT GEWONNEN! 👑");
+            if(schnUsed.size===12){
+                showToast("👑 SUPER LENI HAT GEWONNEN! 👑");
+                if(!schnFinished){
+                    schnFinished = true;
+                    recordGameResult('schnecki', {won: true, guesses: schnHistory.length, maxGuesses: schnHistory.length + 5});
+                }
+            }
             else showToast("Wort akzeptiert!");
         }
 

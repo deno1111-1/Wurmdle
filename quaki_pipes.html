@@ -161,7 +161,7 @@
 <div id="win-modal">
     <div class="win-content">
         <h2>Geschafft!</h2>
-        <p id="win-message">jippie du hast Quaki gerettet</p>
+        <p id="win-message">jippie Leni hat Quaki gerettet</p>
         
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" style="background: var(--target); color: white;" onclick="location.reload()">Nächstes Level</button>
@@ -170,6 +170,9 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="stats.js"></script>
 <script>
     let GRID_W, GRID_H;
     let cells = [];
@@ -230,6 +233,7 @@
         quakiFound = false;
         lillyFound = false;
         gameWon = false;
+        startGameTimer();
         
         const boostSpawns = document.getElementById('boost-spawns').checked;
         lillySpawned = boostSpawns ? true : (Math.random() < 0.05);
@@ -467,9 +471,10 @@
 
                 let nameString = rescuedNames.length === 1 ? "Quaki" : rescuedNames.slice(0, -1).join(', ') + ' und ' + rescuedNames[rescuedNames.length - 1];
                 
-                winMsg.innerText = `jippie du hast ${nameString} gerettet ${rescuedEmojis}`;
+                winMsg.innerText = `jippie Leni hat ${nameString} gerettet ${rescuedEmojis}`;
                 
                 modal.style.display = 'flex';
+                recordGameResult('quaki_pipes', {won: true, guesses: 1, maxGuesses: 1, extra: {rescued_sum: rescuedNames.length}});
             }, 400);
         }
     }

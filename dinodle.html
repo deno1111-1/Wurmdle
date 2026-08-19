@@ -153,6 +153,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
     <script>
         let dinoDB = []; 
         let targetDino = null;
@@ -215,6 +218,7 @@
         function startNewGame() {
             targetDino = dinoDB[Math.floor(Math.random() * dinoDB.length)];
             isGameActive = true;
+            startGameTimer();
         }
 
         function submitGuess() {
@@ -322,6 +326,7 @@
 
         async function triggerEnd(won) {
             isGameActive = false;
+            recordGameResult('dinodle', {won: won, guesses: guesses.length || 1, maxGuesses: Math.max(guesses.length, 8)});
             document.getElementById('win-name').innerText = targetDino.Name;
             
             const title = document.getElementById('modal-title');
@@ -334,9 +339,9 @@
             imgEl.src = '';
             
             if (won) {
-                title.innerText = "🎉 Richtig! 🎉";
+                title.innerText = "🎉 Super Leni! 🎉";
                 title.style.color = "#4ade80";
-                desc.innerText = `Du hast den Dino in ${guesses.length} Versuchen erraten!`;
+                desc.innerText = `Leni hat den Dino in ${guesses.length} Versuchen erraten!`;
                 content.style.borderColor = "#4ade80";
             } else {
                 title.innerText = "Schade! 🏳️";
