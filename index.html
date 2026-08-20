@@ -23,15 +23,23 @@
         /* HEADER */
         header {
             display: flex; 
+            flex-direction: column;
             align-items: center; 
             justify-content: center;
             width: 100%; 
-            padding: 15px; 
+            padding: 10px 15px; 
             background: #121213; 
             box-sizing: border-box;
             border-bottom: 1px solid #333; 
-            height: 60px; 
+            height: 95px; 
             z-index: 10;
+            gap: 8px;
+        }
+        .stats-link {
+            display: block; text-align: center; width: 85%; max-width: 300px;
+            background: #333; color: #ffd700; border: 2px solid #ffd700;
+            border-radius: 10px; padding: 8px; text-decoration: none;
+            font-weight: bold; font-size: 0.85rem; box-sizing: border-box;
         }
         h1 { 
             margin: 0; 
@@ -43,10 +51,10 @@
         /* --- HAUPTMENÜ --- */
         #main-menu {
             position: absolute; 
-            top: 60px; 
+            top: 95px; 
             left: 0; 
             width: 100%; 
-            height: calc(100% - 60px);
+            height: calc(100% - 95px);
             background: #121213; 
             z-index: 200;
             display: flex; 
@@ -116,9 +124,8 @@
 
     <header>
         <h1>Lenis coole Spielesammlung 🎮</h1>
+        <a href="stats.html" class="stats-link">📊 Meine Stats ansehen</a>
     </header>
-
-    <a href="stats.html" style="display:block; text-align:center; margin: 0 auto 20px; max-width:300px; background:#333; color:#ffd700; border:2px solid #ffd700; border-radius:12px; padding:12px; text-decoration:none; font-weight:bold;">📊 Meine Stats ansehen</a>
 
     <div id="main-menu">
         
