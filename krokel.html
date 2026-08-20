@@ -117,165 +117,61 @@
 
         window.onload = () => { startKrokelGame(); };
 
+        // Zufällige Spiegelung/Drehung eines fertigen, geprüften Rasters für Abwechslung.
+        // Ändert nur die Darstellung, nicht die Struktur - das Raster bleibt garantiert gültig.
+        function transformPuzzle(puzzle) {
+            const mode = Math.floor(Math.random() * 4); // 0=normal, 1=horizontal, 2=vertikal, 3=180°
+            if (mode === 0) return puzzle;
+
+            function transformIdx(idx) {
+                let r = Math.floor(idx / GRID_COLS), c = idx % GRID_COLS;
+                if (mode === 1 || mode === 3) c = GRID_COLS - 1 - c;
+                if (mode === 2 || mode === 3) r = GRID_ROWS - 1 - r;
+                return r * GRID_COLS + c;
+            }
+
+            const oldLetters = puzzle.grid.split('');
+            const newLetters = new Array(TOTAL_CELLS);
+            oldLetters.forEach((ch, oldIdx) => { newLetters[transformIdx(oldIdx)] = ch; });
+
+            const newSolutionMap = {};
+            for (const [word, path] of Object.entries(puzzle.solutionMap)) {
+                newSolutionMap[word] = path.map(transformIdx);
+            }
+
+            return { ...puzzle, grid: newLetters.join(''), solutionMap: newSolutionMap };
+        }
+
         async function startKrokelGame() {
             if (tStrandsData.length === 0) {
                 try {
                     document.getElementById('tangela-hint').innerText = "Lade Level...";
-                    const r = await fetch('krokels.json.txt');
+                    const r = await fetch('krokel_puzzles.json');
                     if (!r.ok) throw new Error("JSON nicht gefunden");
                     tStrandsData = await r.json();
                 } catch (e) {
-                    console.log("Nutze handgemachte 48er Demo-Level mit Spangramm-Regel");
+                    console.log("Nutze handgemachtes Demo-Level");
                     tStrandsData = [
-                        { theme: "Der wichtigste Start in den Tag", spangram: "FRUEHSTUECK", words: ["KAFFEE", "BROETCHEN", "MARMELADE", "BUTTER", "OBST", "TEE"] },
-                        { theme: "Unter Bäumen versteckt", spangram: "WALDTIERE", words: ["EICHHOERNCHEN", "WILDSCHWEIN", "HIRSCH", "FUCHS", "EULE"] },
-                        { theme: "Eine Reise durchs All", spangram: "SONNENSYSTEM", words: ["JUPITER", "SATURN", "URANUS", "NEPTUN", "VENUS", "MERKUR"] }
+                        { theme: "Punctuation", spangram: "PUNCTUATION", words: ["APOSTROPHE","COLON","COMMA","HYPHEN","PERIOD","SLASH"],
+                          grid: "AHPHCOSLYAEMNHSDMNPOROENLEIIOHOCATPOCNTUORPUAPST",
+                          solutionMap: {"PUNCTUATION":[42,43,37,31,38,39,32,33,27,28,23]} }
                     ];
                 }
             }
 
             const rawPuzzle = tStrandsData[Math.floor(Math.random() * tStrandsData.length)];
-            const generatedPuzzle = generateLivePuzzle(rawPuzzle);
+            const generatedPuzzle = transformPuzzle(rawPuzzle);
 
-            if(generatedPuzzle) {
-                tCurrentPuzzle = generatedPuzzle;
-                tSolutionMap = tCurrentPuzzle.solutionMap; 
-                tSelectedIndices = [];
-                tFoundWords = [];
-                krokelHintCount = 0;
-                startGameTimer();
-                document.getElementById('tangela-hint').innerText = "Thema: " + tCurrentPuzzle.theme;
-                renderTangelaBoard();
-            } else {
-                document.getElementById('tangela-board').innerHTML = "<div style='padding:20px; color:red'>Generator-Fehler :( <br>Versuch's nochmal!</div>";
-            }
+            tCurrentPuzzle = generatedPuzzle;
+            tSolutionMap = tCurrentPuzzle.solutionMap;
+            tSelectedIndices = [];
+            tFoundWords = [];
+            krokelHintCount = 0;
+            startGameTimer();
+            document.getElementById('tangela-hint').innerText = "Thema: " + tCurrentPuzzle.theme;
+            renderTangelaBoard();
         }
 
-        function generateLivePuzzle(baseData) {
-            // SPANGRAMM MUSS ZUERST PLATZIERT WERDEN!
-            let otherWords = [...baseData.words].sort((a,b) => b.length - a.length);
-            let allWords = [baseData.spangram, ...otherWords];
-
-            // Generator läuft jetzt mit der Spangram-Regel (braucht manchmal mehr Anläufe, deshalb 5000)
-            for(let attempt=0; attempt<5000; attempt++) {
-                let grid = new Array(TOTAL_CELLS).fill(null);
-                let placedWords = {};
-
-                if (tryPlaceWords(0, grid, allWords, placedWords, baseData.spangram)) {
-                    fillRemaining(grid);
-                    return { ...baseData, grid: grid.join(""), solutionMap: placedWords };
-                }
-            }
-
-            // Notfall-ZickZack, falls der Generator es nicht schafft.
-            // Spangramm startet oben links und wickelt sich ab, wodurch es garantiert die Ränder berührt!
-            let fallbackGrid = new Array(TOTAL_CELLS).fill(null);
-            let fallbackMap = {};
-            let currentIdx = 0;
-            let shuffledWords = [baseData.spangram, ...[...baseData.words].sort(() => Math.random() - 0.5)];
-
-            for (let w of shuffledWords) {
-                let path = [];
-                for (let i=0; i<w.length; i++) {
-                    if (currentIdx >= TOTAL_CELLS) break;
-                    let r = Math.floor(currentIdx / GRID_COLS);
-                    let c = currentIdx % GRID_COLS;
-                    if (r % 2 !== 0) c = GRID_COLS - 1 - c; 
-                    let actualPos = r * GRID_COLS + c;
-                    fallbackGrid[actualPos] = w[i];
-                    path.push(actualPos);
-                    currentIdx++;
-                }
-                fallbackMap[w] = path;
-            }
-            fillRemaining(fallbackGrid);
-            return { ...baseData, grid: fallbackGrid.join(""), solutionMap: fallbackMap };
-
-            function fillRemaining(arr) {
-                const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                for(let i=0; i<arr.length; i++) {
-                    if(arr[i] === null) arr[i] = alpha[Math.floor(Math.random() * alpha.length)];
-                }
-            }
-        }
-
-        function tryPlaceWords(idx, grid, words, resultMap, spangramWord) {
-            if (idx >= words.length) return true; 
-            const word = words[idx];
-            const isSpangram = (word === spangramWord);
-
-            let freeSpots = [];
-            for(let i=0; i<grid.length; i++) if(grid[i] === null) freeSpots.push(i);
-            freeSpots.sort(() => Math.random() - 0.5);
-
-            for (let start of freeSpots) {
-                // OPTIMIERUNG: Spangramm muss zwingend an einem Rand starten!
-                if (isSpangram) {
-                    let r = Math.floor(start / GRID_COLS);
-                    let c = start % GRID_COLS;
-                    if (r !== 0 && r !== 7 && c !== 0 && c !== 5) continue; 
-                }
-
-                let path = findRandomPath(start, word, grid, [], isSpangram);
-                if (path) {
-                    path.forEach((pos, i) => grid[pos] = word[i]);
-                    resultMap[word] = path;
-                    if (tryPlaceWords(idx + 1, grid, words, resultMap, spangramWord)) return true;
-                    path.forEach(pos => grid[pos] = null);
-                    delete resultMap[word];
-                }
-            }
-            return false;
-        }
-
-        function findRandomPath(currentPos, word, grid, path, isSpangram) {
-            path.push(currentPos);
-            
-            if (path.length === word.length) {
-                // REGEL-CHECK FÜR DAS SPANGRAMM!
-                if (isSpangram) {
-                    let minC = 99, maxC = -1, minR = 99, maxR = -1;
-                    for (let p of path) {
-                        let c = p % GRID_COLS;
-                        let r = Math.floor(p / GRID_COLS);
-                        if (c < minC) minC = c;
-                        if (c > maxC) maxC = c;
-                        if (r < minR) minR = r;
-                        if (r > maxR) maxR = r;
-                    }
-                    // Prüfen, ob Kanten berührt werden (Links->Rechts ODER Oben->Unten)
-                    if ((minC === 0 && maxC === GRID_COLS - 1) || (minR === 0 && maxR === GRID_ROWS - 1)) {
-                        return path; // Gültig!
-                    } else {
-                        return null; // Ungültig, verwerfen und neu versuchen!
-                    }
-                }
-                return path; // Normale Wörter werden direkt akzeptiert
-            }
-
-            const neighbors = getNeighbors(currentPos);
-            neighbors.sort(() => Math.random() - 0.5);
-
-            for (let next of neighbors) {
-                if (grid[next] === null && !path.includes(next)) {
-                    const result = findRandomPath(next, word, grid, [...path], isSpangram);
-                    if (result) return result;
-                }
-            }
-            return null;
-        }
-
-        function getNeighbors(idx) {
-            const x = idx % GRID_COLS, y = Math.floor(idx / GRID_COLS), n = [];
-            for(let dy=-1; dy<=1; dy++) {
-                for(let dx=-1; dx<=1; dx++) {
-                    if(dx===0 && dy===0) continue;
-                    const nx = x+dx, ny = y+dy;
-                    if(nx>=0 && nx<GRID_COLS && ny>=0 && ny<GRID_ROWS) n.push(ny*GRID_COLS + nx);
-                }
-            }
-            return n;
-        }
 
         function renderTangelaBoard() {
             const board = document.getElementById('tangela-board');
@@ -375,8 +271,11 @@
         }
         
         function isIndexUsed(idx) {
-            return document.querySelectorAll('.tangela-tile')[idx].classList.contains('found') ||
-                   document.querySelectorAll('.tangela-tile')[idx].classList.contains('spangram');
+            // Absichtlich: Felder, die bereits Teil eines gefundenen Worts sind, bleiben
+            // trotzdem auswählbar. Das ist die Absicherung gegen das seltene Softlock-
+            // Szenario, bei dem ein doppelter Buchstabe (z.B. zwei "S") zufällig zu zwei
+            // Wörtern "gehört" - so kann man ihn immer für beide nutzen.
+            return false;
         }
         
         function updateTangelaVisuals() {
