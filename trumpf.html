@@ -11,7 +11,7 @@
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0; display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden; user-select: none;
+            min-height: 100vh; overflow-x: hidden; user-select: none;
         }
 
         /* HEADER */
@@ -26,9 +26,39 @@
             padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
         }
 
+        /* --- SETUP SCREEN (im Stil des Wurmdle-Setups) --- */
+        #setup-screen {
+            width: 100%; max-width: 480px; padding: 30px 20px; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        #setup-screen h2 {
+            font-size: 2rem; font-weight: 900; margin: 10px 0 30px 0; text-align: center;
+        }
+        .setup-label {
+            font-size: 1.1rem; color: #ddd; margin-bottom: 10px; text-align: center;
+        }
+        .setup-options {
+            display: flex; width: 100%; background: #1c1c1c; border-radius: 10px;
+            overflow: hidden; margin-bottom: 30px; border: 1px solid #333;
+        }
+        .setup-opt {
+            flex: 1; text-align: center; padding: 16px 5px; cursor: pointer;
+            font-weight: bold; font-size: 1.05rem; color: #aaa; transition: background 0.15s, color 0.15s;
+        }
+        .setup-opt.active {
+            background: #16a34a; color: white;
+        }
+        .setup-status { color: #888; margin-bottom: 25px; font-size: 0.95rem; }
+        .start-btn {
+            background: #16a34a; color: white; border: none; width: 100%;
+            padding: 18px; font-size: 1.3rem; border-radius: 40px; font-weight: 900;
+            cursor: pointer; box-shadow: 0 5px 0 #14532d; text-transform: uppercase;
+        }
+        .start-btn:active { transform: translateY(5px); box-shadow: none; }
+
         /* BATTLE ARENA */
         #arena {
-            flex-grow: 1; width: 100%; max-width: 900px; display: flex; flex-direction: column;
+            flex-grow: 1; width: 100%; max-width: 900px; display: none; flex-direction: column;
             justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;
             position: relative;
         }
@@ -64,15 +94,13 @@
 
         /* --- KARTENRÜCKSEITE MIT DEINEM BILD --- */
         .card-hidden { 
-            /* Hier wird dein Bild geladen. Die Datei muss 'card-back.png' heißen! */
             background-image: url('card-back.jpg'); 
-            background-size: cover;       /* Das Bild füllt die Karte aus */
-            background-position: center;  /* Das Bild wird zentriert */
-            background-repeat: no-repeat; /* Das Bild wird nicht gekachelt */
-            border-color: #cbd5e1;        /* Ein heller Rahmen passt gut */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-color: #cbd5e1;
         }
         
-        /* Die alte Text-Überlagerung ("TOP ASS") entfernen wir, damit dein Bild voll wirkt */
         .card-hidden::after { display: none; }
 
         /* CARD CONTENT */
@@ -118,6 +146,23 @@
         <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
     </header>
 
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen">
+        <h2>🦖 Dino Setup</h2>
+
+        <div class="setup-label">Kartenanzahl (pro Spieler)</div>
+        <div class="setup-options" id="deck-size-options">
+            <div class="setup-opt" data-value="10">10</div>
+            <div class="setup-opt" data-value="20">20</div>
+            <div class="setup-opt active" data-value="40">40</div>
+        </div>
+
+        <div class="setup-status" id="setup-status">Bereit.</div>
+
+        <button class="start-btn" onclick="beginGame()">Starten</button>
+    </div>
+
+    <!-- ARENA -->
     <div id="arena">
         <div class="score-board">
             <div class="score-cpu">Computer: <span id="cpu-count">40</span></div>
@@ -182,6 +227,9 @@
         let roundActive = false; // Verhindert Klicks während Animationen
         let trumpfRoundCount = 0;
 
+        // Vom Setup-Menü gewählte Kartenanzahl pro Spieler
+        let deckSizePerPlayer = 40;
+
         // Max-Werte für die schlaue Computer-KI
         const MAX_STATS = {
             Laenge_m: 35.0,
@@ -190,7 +238,21 @@
             Alter_Mio_Jahre: 230
         };
 
-        window.onload = loadDatabase;
+        // --- SETUP MENÜ LOGIK ---
+        document.querySelectorAll('#deck-size-options .setup-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('#deck-size-options .setup-opt').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                deckSizePerPlayer = parseInt(opt.dataset.value, 10);
+            });
+        });
+
+        function beginGame() {
+            document.getElementById('setup-status').innerText = "Lädt Dinos...";
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('arena').style.display = 'flex';
+            loadDatabase();
+        }
 
         async function loadDatabase() {
             try {
@@ -209,10 +271,14 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
             }
-            
-            // Aufteilen (40 / 40)
-            playerDeck = fullDeck.slice(0, Math.floor(fullDeck.length / 2));
-            cpuDeck = fullDeck.slice(Math.floor(fullDeck.length / 2));
+
+            // Gewählte Kartenanzahl pro Spieler nutzen (begrenzt durch verfügbare Dinos)
+            let perPlayer = Math.min(deckSizePerPlayer, Math.floor(fullDeck.length / 2));
+            let pool = fullDeck.slice(0, perPlayer * 2);
+
+            // Aufteilen
+            playerDeck = pool.slice(0, perPlayer);
+            cpuDeck = pool.slice(perPlayer, perPlayer * 2);
             
             playerTurn = true;
             trumpfRoundCount = 0;
