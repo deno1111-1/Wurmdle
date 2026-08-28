@@ -74,7 +74,7 @@
 
     <header>
         <h1>🐱 Lillys Spelling Game</h1>
-        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+        <button class="menu-btn" onclick="goHome()">HAUPTMENÜ</button>
     </header>
 
     <div id="msg-toast">Nachricht</div>
@@ -83,6 +83,10 @@
         <h2 id="loading-txt" style="color:white; margin-bottom:30px;">Wähle deine Sprache:</h2>
         <div class="lang-card" onclick="selectLang('de')">🇩🇪 DEUTSCH</div>
         <div class="lang-card" onclick="selectLang('en')">🇺🇸 ENGLISH</div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:20px;">
+            <span style="color:#aaa; font-size:0.9rem;">Maximalpunktzahl (0 = kein Limit)</span>
+            <input type="number" id="max-points" min="0" step="10" placeholder="z.B. 600" style="padding:10px; font-size:1.2rem; width:120px; text-align:center; background:#222; border:2px solid #555; color:white; border-radius:10px;" oninput="localStorage.setItem('lilly_maxpoints', this.value)">
+        </div>
         <a href="index.html" class="close-res-btn" style="background:#555; margin-top:30px; display: inline-block;">Abbrechen</a>
     </div>
 
@@ -131,6 +135,7 @@
 
         window.onload=()=>{
             document.addEventListener('keydown', handleGlobalKey);
+            if(localStorage.getItem('lilly_maxpoints')) document.getElementById('max-points').value = localStorage.getItem('lilly_maxpoints');
         };
 
         function handleGlobalKey(e){
@@ -171,22 +176,34 @@
             
             let pangrams=cleanWordList.filter(w=>new Set(w.split('')).size===7); 
             if(pangrams.length===0){ alert("Fehler: Kein passendes Wort gefunden!"); return; }
-            
-            const src=pangrams[Math.floor(Math.random()*pangrams.length)]; 
-            const u=Array.from(new Set(src.split('')));
+
+            const limit=parseInt(document.getElementById('max-points').value)||0;
+            let chosen=null, tries=0;
+            while(tries<400 && !chosen){
+                const src=pangrams[Math.floor(Math.random()*pangrams.length)];
+                const uniq=Array.from(new Set(src.split('')));
+                const center=uniq[Math.floor(Math.random()*uniq.length)];
+                const stats=computePangramStats(src, center);
+                if(!limit || stats.maxPts<=limit) chosen=stats;
+                tries++;
+            }
+            if(!chosen){
+                showToast("Kein Rätsel mit diesem Limit gefunden – Limit wird ignoriert!");
+                const src=pangrams[Math.floor(Math.random()*pangrams.length)];
+                const uniq=Array.from(new Set(src.split('')));
+                const center=uniq[Math.floor(Math.random()*uniq.length)];
+                chosen=computePangramStats(src, center);
+            }
+
+            let u=chosen.uniqueLetters.filter(c=>c!==chosen.center);
             for(let i=u.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[u[i],u[j]]=[u[j],u[i]];}
-            
-            lillyCenter=u[0]; lillyLetters=u; lillyFound=[]; lillyScore=0; maxLillyPoints=0;
-            lillyPangramCount=0;
+            u=[chosen.center, ...u];
+
+            lillyCenter=chosen.center; lillyLetters=u; lillyFound=[]; lillyScore=0;
+            maxLillyPoints=chosen.maxPts; lillyPangramCount=0;
+            validLillyWords=chosen.valid;
             startGameTimer();
             
-            validLillyWords=cleanWordList.filter(w=>{
-                if(w.length<4||!w.includes(lillyCenter))return false; 
-                for(let c of w)if(!lillyLetters.includes(c))return false; 
-                return true;
-            });
-            
-            validLillyWords.forEach(w=>maxLillyPoints+=calcWordScore(w)); 
             renderLillyBoard(); updateLillyScore();
         }
 
@@ -206,6 +223,17 @@
         function lillyDelete(){let t=document.getElementById('lilly-input').innerText;document.getElementById('lilly-input').innerText=t.slice(0,-1);}
         function shuffleLilly(){let o=lillyLetters.slice(1); for(let i=o.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[o[i],o[j]]=[o[j],o[i]];} lillyLetters=[lillyLetters[0],...o]; renderLillyBoard();}
         function calcWordScore(w){if(w.length===4)return 1;let p=w.length;if(new Set(w.split('')).size===7)p+=7;return p;}
+
+        function computePangramStats(src, center){
+            const uniqueLetters=Array.from(new Set(src.split('')));
+            const valid=cleanWordList.filter(w=>{
+                if(w.length<4||!w.includes(center))return false;
+                for(let c of w)if(!uniqueLetters.includes(c))return false;
+                return true;
+            });
+            let maxPts=0; valid.forEach(w=>maxPts+=calcWordScore(w));
+            return {uniqueLetters, center, valid, maxPts};
+        }
 
         function lillySubmit(){
             const t=document.getElementById('lilly-input');const w=t.innerText;
@@ -228,9 +256,22 @@
 
         function updateLillyScore(){document.getElementById('lilly-score').innerText=`${lillyScore} / ${maxLillyPoints}`;}
 
+        function goHome(){
+            if(activeMode==='lilly') recordLillyResult(false);
+            window.location.href='index.html';
+        }
+
+        function recordLillyResult(win){
+            activeMode='';
+            const pct = maxLillyPoints>0 ? Math.round((lillyScore/maxLillyPoints)*100) : 0;
+            recordGameResult('lilly', {won: win, guesses: 1, maxGuesses: 1, extra: {
+                score_sum: lillyScore, pangram_count: lillyPangramCount,
+                pct_sum: pct, best_single_score: lillyScore
+            }});
+        }
+
         function finishLillyGame(win=false){
-            activeMode = ''; // Block keyboard input
-            recordGameResult('lilly', {won: win, guesses: 1, maxGuesses: 1, extra: {score_sum: lillyScore, pangram_count: lillyPangramCount}});
+            recordLillyResult(win);
             const m=document.getElementById('results-modal');
             document.getElementById('res-header-text').innerText=win?"SUPER LENI HAT GEWONNEN!":"SPIEL BEENDET";
             document.getElementById('res-header-text').style.color=win?"#538d4e":"#ffd700";
