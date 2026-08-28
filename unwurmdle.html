@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Unwurmdle</title>
+    <style>
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #b59f3b; text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem;
+        }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .lang-btn.active { background: #b59f3b; color: white; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 100px; text-align: center; background: #222; border: 2px solid #b59f3b; color: white; border-radius: 10px; }
+        .start-btn { background-color: #b59f3b; padding: 15px 50px; font-size: 1.5rem; border: none; color: white; border-radius: 30px; margin-top: 20px; font-weight: bold; cursor: pointer; }
+        .start-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 320px; }
+
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #info-bar { display: flex; justify-content: center; gap: 20px; padding: 8px; color: #aaa; font-size: 0.85rem; flex-shrink: 0; }
+        #info-bar b { color: white; }
+
+        #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; }
+        #board-container { display: flex; flex-direction: column-reverse; gap: 6px; padding: 10px 0 20px; }
+        .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; }
+        .tile { width: 44px; height: 44px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box; }
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .locked { opacity: 0.75; }
+        .cursor-tile { box-shadow: 0 0 0 3px white inset; }
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #action-row { display: flex; gap: 10px; padding: 8px; flex-shrink: 0; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 10px 18px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 15px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; padding: 0; height: 52px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
+        .key-large { flex: 1.5; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🔄 Unwurmdle</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Einstellungen</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Unwurmdle Setup</h2>
+        <div class="info-text">Nur das Lösungswort (unten, grün) ist sichtbar. Arbeite dich mit passenden Wörtern zu den vorgegebenen Farbmustern nach oben vor!</div>
+        <div class="setting-row"><span class="label">Sprache</span><div class="toggle-group"><button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button><button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button></div></div>
+        <div class="setting-row"><span class="label">Buchstaben</span><input type="number" id="letter-count" value="5" min="3" max="9" oninput="localStorage.setItem('uw_letters', this.value)"></div>
+        <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="info-bar">Gelöst: <b id="info-solved">0/0</b></div>
+        <div id="board-scroll"><div id="board-container"></div></div>
+        <div id="action-row"><button class="action-btn" onclick="giveHint()">💡 Tipp für aktive Zeile</button></div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        let currentLang='de', deList=[], enFullList=[], en5List=[], inputValidSet=new Set();
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        let wordLength=5, secret='', rows=[], triedWords=[], cursor={row:0,col:0}, isGameActive=false, hintsUsed=0;
+
+        window.onload=()=>{
+            if(localStorage.getItem('uw_letters')) document.getElementById('letter-count').value = localStorage.getItem('uw_letters');
+            const savedLang = localStorage.getItem('uw_lang') || 'de';
+            setTimeout(()=>loadWords(savedLang), 100);
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function handleGlobalKey(e){
+            const k=e.key.toUpperCase();
+            if(!isGameActive) return;
+            if(k==='ENTER'){handleKey('ENTER');e.preventDefault();}
+            else if(k==='BACKSPACE'){handleKey('BACK');e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)handleKey(k);
+        }
+
+        function cleanList(t){
+            const out=[]; const l=t.split('\n');
+            for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))out.push(w);}
+            return out;
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            localStorage.setItem('uw_lang', lang);
+            document.getElementById('loading-msg').innerText="Lade Wörterbuch...";
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className=lang==='de'?'lang-btn active':'lang-btn';
+            document.getElementById('btn-en').className=lang==='en'?'lang-btn active':'lang-btn';
+            try{
+                if(lang==='de'){
+                    const r=await fetch('de.txt'); if(!r.ok)throw new Error("Offline");
+                    deList=cleanList(await r.text());
+                } else {
+                    const [r1,r2]=await Promise.all([fetch('en.txt'),fetch('en_5letter_ohnekomische.txt')]);
+                    if(!r1.ok||!r2.ok)throw new Error("Offline");
+                    enFullList=cleanList(await r1.text());
+                    en5List=cleanList(await r2.text());
+                }
+                document.getElementById('loading-msg').innerText="Bereit.";
+                document.getElementById('start-btn').disabled=false;
+            }catch(e){
+                document.getElementById('loading-msg').innerText="Fehler beim Laden!";
+                alert("Fehler beim Laden: "+e.message);
+            }
+        }
+
+        function evaluateWord(guess, secretWord){
+            const w=secretWord.split(''), u=guess.split('');
+            let st=new Array(u.length).fill(0);
+            for(let i=0;i<u.length;i++){if(u[i]===w[i]){st[i]=2;w[i]=null;u[i]=null;}}
+            for(let i=0;i<u.length;i++){if(u[i]!==null&&w.indexOf(u[i])>-1){st[i]=1;w[w.indexOf(u[i])]=null;}}
+            return st;
+        }
+        function patternsEqual(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
+
+        function startGame(){
+            wordLength=parseInt(document.getElementById('letter-count').value)||5;
+            if(wordLength<3||wordLength>9){alert("Bitte 3-9 Buchstaben wählen!");return;}
+
+            let solutionPool, guessPool, validSet;
+            if(currentLang==='de'){
+                const pool=deList.filter(w=>w.length===wordLength);
+                solutionPool=pool; guessPool=pool; validSet=new Set(pool);
+            } else {
+                if(wordLength===5){
+                    solutionPool=enFullList.filter(w=>w.length===5);
+                    guessPool=en5List.filter(w=>w.length===5);
+                    validSet=new Set([...enFullList.filter(w=>w.length===5), ...en5List]);
+                } else {
+                    const pool=enFullList.filter(w=>w.length===wordLength);
+                    solutionPool=pool; guessPool=pool; validSet=new Set(pool);
+                }
+            }
+            if(solutionPool.length<1||guessPool.length<1){alert("Zu wenige Wörter für diese Einstellung!");return;}
+            inputValidSet=validSet;
+            secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
+
+            const N=Math.floor(Math.random()*6)+1; // Position der Lösung: 1-6
+            rows=[];
+            for(let i=0;i<N-1;i++){
+                let gw;
+                do{gw=guessPool[Math.floor(Math.random()*guessPool.length)];}while(gw===secret&&guessPool.length>1);
+                rows.push({pattern:evaluateWord(gw,secret), originalGuess:gw, letters:new Array(wordLength).fill(''), solved:false, isFinal:false});
+            }
+            rows.push({pattern:new Array(wordLength).fill(2), originalGuess:secret, letters:secret.split(''), solved:true, isFinal:true});
+
+            triedWords=[];
+            hintsUsed=0;
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            document.getElementById('settings-btn').style.display='inline-block';
+
+            const firstOpen=rows.findIndex(r=>!r.solved);
+            cursor=firstOpen>-1?{row:firstOpen,col:0}:{row:0,col:0};
+            isGameActive=true;
+            createKeyboard();
+            startGameTimer();
+            renderBoard();
+            updateInfoBar();
+            checkWin();
+        }
+
+        function backToSettings(){
+            isGameActive=false;
+            document.getElementById('game-view').style.display='none';
+            document.getElementById('settings-btn').style.display='none';
+            document.getElementById('setup-area').style.display='flex';
+        }
+
+        function renderBoard(){
+            const c=document.getElementById('board-container');
+            c.innerHTML='';
+            rows.forEach((row,ri)=>{
+                const rd=document.createElement('div');
+                rd.className='board-row';
+                rd.id='row-'+ri;
+                for(let ci=0;ci<wordLength;ci++){
+                    const t=document.createElement('div');
+                    let cls='tile '+(row.pattern[ci]===2?'correct':row.pattern[ci]===1?'present':'absent');
+                    if(row.solved)cls+=' locked';
+                    if(cursor.row===ri&&cursor.col===ci&&!row.solved)cls+=' cursor-tile';
+                    t.className=cls;
+                    t.innerText=row.letters[ci]||'';
+                    if(!row.solved){const rr=ri,cc=ci;t.onclick=()=>{cursor={row:rr,col:cc};renderBoard();};}
+                    rd.appendChild(t);
+                }
+                c.appendChild(rd);
+            });
+        }
+
+        function handleKey(k){
+            if(!isGameActive)return;
+            const row=rows[cursor.row];
+            if(!row||row.solved)return;
+            if(k==='ENTER'){submitRow(cursor.row);return;}
+            if(k==='BACK'){
+                if(row.letters[cursor.col]){row.letters[cursor.col]='';}
+                else if(cursor.col>0){cursor.col--;row.letters[cursor.col]='';}
+                renderBoard();return;
+            }
+            row.letters[cursor.col]=k;
+            if(cursor.col<wordLength-1)cursor.col++;
+            renderBoard();
+        }
+
+        function submitRow(ri){
+            const row=rows[ri];
+            if(row.solved)return;
+            if(row.letters.includes('')){showToast("Zeile unvollständig!");shakeRow(ri);return;}
+            const word=row.letters.join('').toUpperCase();
+            if(!inputValidSet.has(word)){showToast("Wort nicht im Wörterbuch!");shakeRow(ri);return;}
+            triedWords.push(word);
+            updateKeyboardColors();
+            const pat=evaluateWord(word,secret);
+            if(!patternsEqual(pat,row.pattern)){showToast("Muster passt nicht!");shakeRow(ri);return;}
+            row.solved=true;
+            const next=rows.findIndex(r=>!r.solved);
+            if(next>-1)cursor={row:next,col:0};
+            renderBoard();
+            updateInfoBar();
+            checkWin();
+        }
+
+        function shakeRow(ri){
+            const el=document.getElementById('row-'+ri);
+            if(!el)return;
+            [...el.children].forEach(t=>{t.classList.remove('shake-effect');void t.offsetWidth;t.classList.add('shake-effect');});
+        }
+
+        function giveHint(){
+            const row=rows[cursor.row];
+            if(!row||row.solved){showToast("Wähle zuerst eine offene Zeile aus!");return;}
+            let idx=row.letters.findIndex(l=>!l);
+            if(idx===-1)idx=Math.floor(Math.random()*wordLength);
+            row.letters[idx]=row.originalGuess[idx];
+            hintsUsed++;
+            renderBoard();
+            showToast(`Tipp: Pos ${idx+1} = "${row.originalGuess[idx]}"`);
+        }
+
+        function updateInfoBar(){
+            const puzzleRows=rows.filter(r=>!r.isFinal);
+            const solved=puzzleRows.filter(r=>r.solved).length;
+            document.getElementById('info-solved').innerText=`${solved}/${puzzleRows.length}`;
+        }
+
+        function checkWin(){
+            if(rows.every(r=>r.solved)){
+                isGameActive=false;
+                const puzzleCount=rows.filter(r=>!r.isFinal).length;
+                showToast("🎉 SUPER LENI HAT UNWURMDLE GELÖST! 🎉");
+                const extra={hints_used_total:hintsUsed, [`len${wordLength}`]:1, [`lang_${currentLang}`]:1};
+                if(hintsUsed===0)extra.hintless_wins=1;
+                if(puzzleCount===5)extra.max_difficulty_wins=1;
+                extra.fastest_solve_seconds=getElapsedSeconds();
+                recordGameResult('unwurmdle', {won:true, guesses:puzzleCount, maxGuesses:puzzleCount, extra});
+            }
+        }
+
+        function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
+
+        function createKeyboard(){
+            const kb=document.getElementById('keyboard-container');
+            kb.innerHTML='';
+            const lay=(currentLang==='de')?keysDE:keysEN;
+            lay.forEach((row,i)=>{
+                const d=document.createElement('div');d.className='keyboard-row';
+                if(i===lay.length-1)appKey(d,'⌫','key-large',()=>handleKey('BACK'));
+                for(let c of row){
+                    const k=document.createElement('div');k.className='key';k.id='key-'+c;k.innerText=c;
+                    k.onclick=()=>handleKey(c);
+                    d.appendChild(k);
+                }
+                if(i===lay.length-1)appKey(d,'ENTER','key-large',()=>handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+
+        function updateKeyboardColors(){
+            const charStatus={};
+            triedWords.forEach(w=>{
+                const pat=evaluateWord(w,secret);
+                w.split('').forEach((ch,i)=>{if(!(ch in charStatus)||pat[i]>charStatus[ch])charStatus[ch]=pat[i];});
+            });
+            document.querySelectorAll('.key').forEach(k=>{
+                const c=k.id.replace('key-','');
+                if(c.length!==1)return;
+                const st=charStatus[c];
+                k.style.backgroundColor=st===2?'#538d4e':st===1?'#b59f3b':st===0?'#3a3a3c':'#818384';
+            });
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>
