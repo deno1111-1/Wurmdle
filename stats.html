@@ -100,14 +100,14 @@
 <script>
 
 const GAME_LABELS = {
-    wurmdle: "🐛 Wurmdle", dontwurmdle: "🚫 Dontwurmdle", lillyleiter: "🐾 Lillys Leiterspaß",
-    dinodle: "🦖 Dinodle", flaggle: "🏳️ Flaggen Flubbern", miaucode: "🙀 Miaucode",
-    betweenle: "🪱 Betwurmdle", domino: "🫟 Dittos Dominos", galaxys: "👁️ Glubsch Galaxien",
-    klossi: "🐈 Kloßis Leckerlijagd", knofensa: "🪴 Knofensas Cooler Garten", kokowei: "🌴 Kokoweis Kopf-Chaos",
-    krokel: "🐢🔥 Krokels Wörtertangela", lilly: "😺 Lillys Spelling Game", mathestunde: "🐔🧮 Frau Huhns Mathestunde",
-    miauern: "🧱 Miauern", miaumultiplikation: "😼 Miau Multiplikation", numble: "🔢 Numble",
-    quaki_pipes: "🐥 Quakis Pipes", schneckerich: "🐌🧩 Schneckerichs Sortierspaß",
-    schnecki: "🐌 Schneckis Wörter Box", trumpf: "🦕 Dino Card Game Pocket"
+    wurmdle: "🐛 Wurmdle", dontwurmdle: "🚫 Dontwurmdle", lillyleiter: "🪜 Lillyleiter",
+    dinodle: "🦖 Dinodle", flaggle: "🏳️ Flaggle", miaucode: "🔢 Miaucode",
+    betweenle: "↕️ Betweenle", domino: "🫟 Dittos Dominos", galaxys: "🌌 Galaxys",
+    klossi: "🐈 Kloßis Leckerlijagd", knofensa: "🌻 Knofensas Garten", kokowei: "🧩 Kokoweis Kopf-Chaos",
+    krokel: "🐌 Krokels Tangela", lilly: "🐝 Lillys Spelling Game", mathestunde: "🐔 Frau Huhns Mathestunde",
+    miauern: "🧱 Miauern", miaumultiplikation: "🦊 FoxiMax", numble: "🔢 Numble",
+    quaki_pipes: "🐥 Quakis Rohrrettung", schneckerich: "🐌 Schneckerichs Sortierspaß",
+    schnecki: "📦 Schneckis Wörter Box", trumpf: "🦖 Dino Card Game", unwurmdle: "🔄 Unwurmdle"
 };
 
 function fmtTime(seconds) {
@@ -152,11 +152,35 @@ function renderGameCard(key, g) {
 
     let extraHtml = '';
     if (g.extra && Object.keys(g.extra).length > 0) {
-        const entries = Object.entries(g.extra).sort((a, b) => a[0].localeCompare(b[0]));
-        extraHtml = entries.map(([k, v]) => {
-            const niceKey = k.replace(/_/g, ' ');
-            return `<div class="stat-row"><span>${niceKey}</span><span class="stat-val">${v}</span></div>`;
-        }).join('');
+        if (key === 'unwurmdle') {
+            const avgHints = g.won ? (g.extra.hints_used_total || 0) / g.won : 0;
+            const rows = [];
+            rows.push(['Ø Hints pro Sieg', avgHints.toFixed(1)]);
+            rows.push(['Siege ohne Hint', g.extra.hintless_wins || 0]);
+            rows.push(['Siege bei Max-Schwierigkeit', g.extra.max_difficulty_wins || 0]);
+            rows.push(['Schnellster Sieg (Zeit)', g.extra.fastest_solve_seconds != null ? fmtTime(g.extra.fastest_solve_seconds) : '–']);
+            const lenKeys = Object.keys(g.extra).filter(k => k.startsWith('len')).sort();
+            lenKeys.forEach(k => rows.push([`Gespielt mit ${k.replace('len','')} Buchstaben`, g.extra[k]]));
+            const langKeys = Object.keys(g.extra).filter(k => k.startsWith('lang_')).sort();
+            langKeys.forEach(k => rows.push([`Gespielt auf ${k.replace('lang_','').toUpperCase()}`, g.extra[k]]));
+            extraHtml = rows.map(([label, v]) => `<div class="stat-row"><span>${label}</span><span class="stat-val">${v}</span></div>`).join('');
+        } else if (key === 'lilly') {
+            const avgPct = g.played ? (g.extra.pct_sum || 0) / g.played : 0;
+            const rows = [
+                ['Ø Erfolg pro Runde', avgPct.toFixed(1) + '%'],
+                ['100% erreicht', g.won || 0],
+                ['Pangramme gefunden', g.extra.pangram_count || 0],
+                ['Bestes Einzelergebnis', g.extra.best_single_score || 0],
+                ['Gesamtpunktzahl', g.extra.score_sum || 0]
+            ];
+            extraHtml = rows.map(([label, v]) => `<div class="stat-row"><span>${label}</span><span class="stat-val">${v}</span></div>`).join('');
+        } else {
+            const entries = Object.entries(g.extra).sort((a, b) => a[0].localeCompare(b[0]));
+            extraHtml = entries.map(([k, v]) => {
+                const niceKey = k.replace(/_/g, ' ');
+                return `<div class="stat-row"><span>${niceKey}</span><span class="stat-val">${v}</span></div>`;
+            }).join('');
+        }
     }
 
     let distHtml = '';
