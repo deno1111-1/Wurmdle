@@ -102,7 +102,13 @@ async function recordGameResult(gameKey, result) {
 
             if (result.extra) {
                 for (const [k, v] of Object.entries(result.extra)) {
-                    g.extra[k] = (g.extra[k] || 0) + v;
+                    if (k.startsWith('fastest_')) {
+                        g.extra[k] = (g.extra[k] === undefined || g.extra[k] === null) ? v : Math.min(g.extra[k], v);
+                    } else if (k.startsWith('best_')) {
+                        g.extra[k] = (g.extra[k] === undefined || g.extra[k] === null) ? v : Math.max(g.extra[k], v);
+                    } else {
+                        g.extra[k] = (g.extra[k] || 0) + v;
+                    }
                 }
             }
 
