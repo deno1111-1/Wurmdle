@@ -41,7 +41,7 @@
         #info-bar b { color: white; }
 
         #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; }
-        #board-container { display: flex; flex-direction: column-reverse; gap: 6px; padding: 10px 0 20px; }
+        #board-container { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 20px; }
         .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; }
         .tile { width: 44px; height: 44px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box; }
         .correct { background-color: #538d4e; border-color: #538d4e; }
@@ -75,7 +75,7 @@
 
     <div id="setup-area">
         <h2 style="margin: 0;">Unwurmdle Setup</h2>
-        <div class="info-text"></div>
+        <div class="info-text">Nur das Lösungswort (unten, grün) ist sichtbar. Arbeite dich mit passenden Wörtern zu den vorgegebenen Farbmustern nach oben vor! Einmal bestätigte Buchstaben (grün/gelb) musst du in den Zeilen darüber weiterverwenden, ausgeschlossene (grau) darfst du nicht mehr nutzen.</div>
         <div class="setting-row"><span class="label">Sprache</span><div class="toggle-group"><button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button><button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button></div></div>
         <div class="setting-row"><span class="label">Buchstaben</span><input type="number" id="letter-count" value="5" min="3" max="9" oninput="localStorage.setItem('uw_letters', this.value)"></div>
         <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
@@ -153,6 +153,45 @@
         }
         function patternsEqual(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
 
+        // Hard-Mode: sammelt Zwangsinfos aus allen bereits gelösten Zeilen ÜBER der Zielzeile (niedrigerer Index = weiter oben)
+        function getHardModeConstraints(targetIndex){
+            const present=new Set(), absent=new Set();
+            rows.forEach((r,i)=>{
+                if(i>=targetIndex||!r.solved)return;
+                r.letters.forEach((ch,pos)=>{
+                    const st=r.pattern[pos];
+                    if(st===2||st===1){present.add(ch);}
+                    else{absent.add(ch);}
+                });
+            });
+            return {present,absent};
+        }
+
+        function checkHardMode(ri, word){
+            const {present,absent}=getHardModeConstraints(ri);
+            for(const ch of word){if(absent.has(ch))return `"${ch}" wurde bereits ausgeschlossen!`;}
+            for(const ch of present){if(!word.includes(ch))return `"${ch}" muss enthalten sein!`;}
+            return null;
+        }
+
+        function pickHardModeGuess(pool, present, absent, excludeWord){
+            const passesFull = w => {
+                if(w===excludeWord && pool.length>1) return false;
+                for(const ch of absent) if(w.includes(ch)) return false;
+                for(const ch of present) if(!w.includes(ch)) return false;
+                return true;
+            };
+            const passesAbsentOnly = w => {
+                if(w===excludeWord && pool.length>1) return false;
+                for(const ch of absent) if(w.includes(ch)) return false;
+                return true;
+            };
+            let candidates = pool.filter(passesFull);
+            if(candidates.length===0) candidates = pool.filter(passesAbsentOnly);
+            if(candidates.length===0) candidates = pool;
+            return candidates[Math.floor(Math.random()*candidates.length)];
+        }
+
         function startGame(){
             wordLength=parseInt(document.getElementById('letter-count').value)||5;
             if(wordLength<3||wordLength>9){alert("Bitte 3-9 Buchstaben wählen!");return;}
@@ -177,10 +216,16 @@
 
             const N=Math.floor(Math.random()*6)+1; // Position der Lösung: 1-6
             rows=[];
+            const present=new Set(), absent=new Set();
             for(let i=0;i<N-1;i++){
-                let gw;
-                do{gw=guessPool[Math.floor(Math.random()*guessPool.length)];}while(gw===secret&&guessPool.length>1);
-                rows.push({pattern:evaluateWord(gw,secret), originalGuess:gw, letters:new Array(wordLength).fill(''), solved:false, isFinal:false});
+                const gw=pickHardModeGuess(guessPool, present, absent, secret);
+                const pat=evaluateWord(gw,secret);
+                rows.push({pattern:pat, originalGuess:gw, letters:new Array(wordLength).fill(''), solved:false, isFinal:false});
+                gw.split('').forEach((ch,pos)=>{
+                    const st=pat[pos];
+                    if(st===2||st===1){present.add(ch);}
+                    else{absent.add(ch);}
+                });
             }
             rows.push({pattern:new Array(wordLength).fill(2), originalGuess:secret, letters:secret.split(''), solved:true, isFinal:true});
 
@@ -250,6 +295,8 @@
             if(row.letters.includes('')){showToast("Zeile unvollständig!");shakeRow(ri);return;}
             const word=row.letters.join('').toUpperCase();
             if(!inputValidSet.has(word)){showToast("Wort nicht im Wörterbuch!");shakeRow(ri);return;}
+            const violation=checkHardMode(ri, word);
+            if(violation){showToast(violation);shakeRow(ri);return;}
             triedWords.push(word);
             updateKeyboardColors();
             const pat=evaluateWord(word,secret);
