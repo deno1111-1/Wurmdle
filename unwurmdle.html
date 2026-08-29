@@ -336,7 +336,7 @@
             if(rows.every(r=>r.solved)){
                 isGameActive=false;
                 const puzzleCount=rows.filter(r=>!r.isFinal).length;
-                showToast("🎉 SUPER LENI HAT UNWURMDLE GELÖST! 🎉");
+                showToast("🎉 SUPER LENI HAT UNWURMDLE GEWURMDLET 🎉");
                 const extra={hints_used_total:hintsUsed, [`len${wordLength}`]:1, [`lang_${currentLang}`]:1};
                 if(hintsUsed===0)extra.hintless_wins=1;
                 if(puzzleCount===5)extra.max_difficulty_wins=1;
