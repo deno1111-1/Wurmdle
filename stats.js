@@ -26,8 +26,8 @@ const db = firebase.firestore();
 function getPlayerName() {
     let name = localStorage.getItem('wurmdle_player_name');
     if (!name) {
-        name = prompt("Wie heißt du? (Dein Name für die Bestenliste)", "Leni");
-        if (!name || !name.trim()) name = "Leni";
+        name = prompt("Wie heißt du? (Dein Name für die Bestenliste)", "Spieler");
+        if (!name || !name.trim()) name = "Spieler";
         name = name.trim();
         localStorage.setItem('wurmdle_player_name', name);
     }
