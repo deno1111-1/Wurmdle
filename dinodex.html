@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Dino-Dex</title>
+    <style>
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; box-sizing: border-box;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; flex-shrink: 0; position: sticky; top: 0; z-index: 20;
+        }
+        h1 { margin: 0; font-size: 1.1rem; color: #b59f3b; text-shadow: 1px 1px 0 #000; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+
+        #controls { width: 100%; max-width: 500px; padding: 10px 15px; box-sizing: border-box; position: sticky; top: 51px; background: #121213; z-index: 15; }
+        #search-input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 1rem; background: #1c1c1e; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 8px; }
+        #sort-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+        .sort-chip { flex-shrink: 0; background: #2a2a2c; color: #ccc; font-size: 0.7rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
+        .sort-chip.active { background: #b59f3b; color: #3c3421; font-weight: bold; }
+        .filter-chip { flex-shrink: 0; background: #2a2a2c; color: #ccc; font-size: 0.7rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; border: 1px solid #555; white-space: nowrap; }
+        .filter-chip.active { background: #538d4e; color: #eafff0; border-color: #538d4e; font-weight: bold; }
+        #view-row { display: flex; gap: 6px; margin-top: 4px; }
+        .view-btn { flex: 1; text-align: center; padding: 8px 0; border-radius: 8px; background: #2a2a2c; color: #888; font-size: 1rem; cursor: pointer; }
+        .view-btn.active { background: #b59f3b; color: #3c3421; }
+
+        #filter-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 110; align-items: flex-end; justify-content: center; }
+        #filter-panel { background: #1c1c1e; border-radius: 16px 16px 0 0; padding: 16px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-sizing: border-box; }
+        .filter-section-title { color: #b59f3b; font-size: 0.85rem; font-weight: bold; margin: 14px 0 6px; }
+        .filter-section-title:first-child { margin-top: 0; }
+        .filter-options { display: flex; gap: 6px; flex-wrap: wrap; }
+        .range-row { display: flex; align-items: center; gap: 8px; }
+        .range-row input { width: 70px; box-sizing: border-box; padding: 8px; background: #2a2a2c; border: 1px solid #444; color: white; border-radius: 6px; font-size: 0.85rem; }
+        .range-row span { color: #666; font-size: 0.8rem; }
+        #filter-actions { display: flex; gap: 8px; margin-top: 16px; }
+        #filter-actions button { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #filter-reset { background: #333; color: white; border: 1px solid #555; }
+        #filter-apply { background: #b59f3b; color: #3c3421; border: none; }
+
+        #dex-grid { width: 100%; max-width: 500px; padding: 10px 15px 30px; box-sizing: border-box; }
+
+        .dex-card { background: #1c1c1e; border-radius: 10px; cursor: pointer; overflow: hidden; }
+        .dex-card.locked { opacity: 0.4; }
+        .dex-thumb { width: 100%; background: #2a2a2c; display: flex; align-items: center; justify-content: center; color: #666; overflow: hidden; }
+        .dex-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .dex-name { color: #eee; font-weight: bold; }
+        .dex-sub { color: #888; }
+
+        /* Grid (2 Spalten, kleine Kacheln) */
+        #dex-grid.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode-grid .dex-card { padding: 8px; text-align: center; }
+        .mode-grid .dex-thumb { height: 60px; border-radius: 6px; margin-bottom: 6px; font-size: 20px; }
+        .mode-grid .dex-name { font-size: 0.8rem; }
+        .mode-grid .dex-sub { font-size: 0.65rem; }
+
+        /* Liste */
+        #dex-grid.mode-list { display: flex; flex-direction: column; gap: 6px; }
+        .mode-list .dex-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+        .mode-list .dex-thumb { width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0; font-size: 16px; }
+        .mode-list .dex-name { font-size: 0.85rem; }
+        .mode-list .dex-sub { font-size: 0.65rem; }
+        .mode-list .dex-info { flex: 1; }
+
+        /* Große Kacheln */
+        #dex-grid.mode-big { display: flex; flex-direction: column; gap: 10px; }
+        .mode-big .dex-thumb { height: 90px; font-size: 26px; }
+        .mode-big .dex-info { padding: 8px; }
+        .mode-big .dex-name { font-size: 0.95rem; }
+        .mode-big .dex-sub { font-size: 0.7rem; margin-top: 2px; }
+
+        /* Mini-Grid (5 Spalten) */
+        #dex-grid.mode-mini { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .mode-mini .dex-card { padding: 0; }
+        .mode-mini .dex-thumb { aspect-ratio: 1; border-radius: 5px; font-size: 12px; }
+        .mode-mini .dex-name, .mode-mini .dex-sub { display: none; }
+
+        #empty-msg { text-align: center; color: #666; margin-top: 30px; font-size: 0.9rem; display: none; }
+
+        #detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        #detail-card { background: #1c1c1e; border-radius: 14px; padding: 18px; max-width: 340px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        #detail-thumb { width: 100%; height: 160px; background: #2a2a2c; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; color: #666; overflow: hidden; }
+        #detail-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        #detail-name { font-size: 1.2rem; color: #b59f3b; font-weight: bold; margin-bottom: 10px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2a2a2c; font-size: 0.85rem; }
+        .detail-row span:first-child { color: #888; }
+        #detail-close { margin-top: 14px; width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="page-title">📖 Dino-Dex</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="dinodle.html" class="menu-btn">🦖 SPIELEN</a>
+            <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+        </div>
+    </header>
+
+    <div id="controls">
+        <input type="text" id="search-input" placeholder="Name suchen…" oninput="onSearchInput()">
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+            <div class="filter-chip" id="filter-toggle-btn" onclick="openFilterPanel()" style="flex-shrink:0;">🔎 Filter</div>
+        </div>
+        <div id="sort-row"></div>
+        <div id="view-row">
+            <div class="view-btn" data-view="list" onclick="setView('list')">☰</div>
+            <div class="view-btn" data-view="big" onclick="setView('big')">▢</div>
+            <div class="view-btn active" data-view="grid" onclick="setView('grid')">▢▢</div>
+            <div class="view-btn" data-view="mini" onclick="setView('mini')">▦▦▦</div>
+        </div>
+    </div>
+
+    <div id="dex-grid" class="mode-grid"></div>
+    <div id="empty-msg">Kein Dino gefunden.</div>
+
+    <div id="filter-overlay" onclick="if(event.target===this)closeFilterPanel()">
+        <div id="filter-panel">
+            <div class="filter-section-title">Kontinent</div>
+            <div class="filter-options" id="filter-kontinent"></div>
+
+            <div class="filter-section-title">Nahrung</div>
+            <div class="filter-options" id="filter-nahrung"></div>
+
+            <div class="filter-section-title">Land</div>
+            <div class="filter-options" id="filter-land"></div>
+
+            <div class="filter-section-title">Länge (m)</div>
+            <div class="range-row"><input type="number" id="f-len-min" placeholder="min"><span>bis</span><input type="number" id="f-len-max" placeholder="max"></div>
+
+            <div class="filter-section-title">Höhe (m)</div>
+            <div class="range-row"><input type="number" id="f-height-min" placeholder="min"><span>bis</span><input type="number" id="f-height-max" placeholder="max"></div>
+
+            <div class="filter-section-title">Gewicht (t)</div>
+            <div class="range-row"><input type="number" id="f-weight-min" placeholder="min"><span>bis</span><input type="number" id="f-weight-max" placeholder="max"></div>
+
+            <div class="filter-section-title">Alter (Mio. Jahre)</div>
+            <div class="range-row"><input type="number" id="f-age-min" placeholder="min"><span>bis</span><input type="number" id="f-age-max" placeholder="max"></div>
+
+            <div id="filter-actions">
+                <button id="filter-reset" onclick="resetFilters()">Zurücksetzen</button>
+                <button id="filter-apply" onclick="applyFilters()">Anwenden</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-overlay" onclick="if(event.target===this)closeDetail()">
+        <div id="detail-card">
+            <div id="detail-thumb">🦖</div>
+            <div id="detail-name"></div>
+            <div id="detail-stats"></div>
+            <button id="detail-close" onclick="closeDetail()">Schließen</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script src="dino-images.js"></script>
+    <script>
+        let allDinos=[], unlockedNames=new Set(), lillyMode=false;
+        let currentView='grid', currentSearch='';
+        let sortField='name', sortDir='asc'; // 'asc' = A-Z/klein-zuerst, 'desc' = Z-A/groß-zuerst
+        const SORT_FIELDS=[
+            {key:'name', label:'Name', field:'Name', type:'string'},
+            {key:'len', label:'Größe', field:'Laenge_m', type:'number'},
+            {key:'height', label:'Höhe', field:'Hoehe_m', type:'number'},
+            {key:'weight', label:'Gewicht', field:'Gewicht_t', type:'number'},
+            {key:'age', label:'Alter', field:'Alter_Mio_Jahre', type:'number'}
+        ];
+        let filters={ kontinent:new Set(), nahrung:new Set(), land:new Set(), lenMin:null, lenMax:null, heightMin:null, heightMax:null, weightMin:null, weightMax:null, ageMin:null, ageMax:null };
+        const imgCache={};
+
+        window.onload=async ()=>{
+            currentView=localStorage.getItem('dinodex_view')||'grid';
+            setView(currentView, false);
+            renderSortButtons();
+
+            try{
+                const r=await fetch('dinos.json');
+                allDinos=await r.json();
+            }catch(e){
+                document.getElementById('dex-grid').innerHTML='<div style="color:#888;text-align:center;">Fehler beim Laden der Dino-Daten.</div>';
+                return;
+            }
+
+            buildFilterOptions();
+
+            try{
+                const snap=await db.collection('dinoStats').get();
+                snap.forEach(doc=>{
+                    const d=doc.data();
+                    if(d.played>0) unlockedNames.add(doc.id);
+                });
+            }catch(e){
+                console.error("Konnte Fortschritt nicht laden:", e);
+            }
+
+            render();
+        };
+
+        function onSearchInput(){
+            const val=document.getElementById('search-input').value;
+            currentSearch=val;
+            if(val.trim().toLowerCase()==='lilly' && !lillyMode){
+                lillyMode=true;
+                document.getElementById('page-title').innerText='🎉 Lilly-Dex';
+            }
+            render();
+        }
+
+        /* ---------- Sortierung: Toggle-Buttons ---------- */
+        function renderSortButtons(){
+            const row=document.getElementById('sort-row');
+            row.innerHTML='';
+            SORT_FIELDS.forEach(sf=>{
+                const btn=document.createElement('div');
+                const isActive=sortField===sf.key;
+                btn.className='sort-chip'+(isActive?' active':'');
+                const arrow = isActive ? (sortDir==='desc' ? '▲' : '▼') : '⇅';
+                btn.innerText = `${sf.label} ${arrow}`;
+                btn.onclick=()=>onSortClick(sf.key);
+                row.appendChild(btn);
+            });
+        }
+        function onSortClick(key){
+            if(sortField===key){
+                sortDir = sortDir==='desc' ? 'asc' : 'desc';
+            } else {
+                sortField=key;
+                sortDir='desc';
+            }
+            renderSortButtons();
+            render();
+        }
+        function compareDinos(a,b){
+            const sf=SORT_FIELDS.find(s=>s.key===sortField);
+            if(sf.type==='string'){
+                return sortDir==='desc' ? b[sf.field].localeCompare(a[sf.field]) : a[sf.field].localeCompare(b[sf.field]);
+            }
+            return sortDir==='desc' ? b[sf.field]-a[sf.field] : a[sf.field]-b[sf.field];
+        }
+
+        /* ---------- Filter-Panel ---------- */
+        function buildFilterOptions(){
+            const kontinente=[...new Set(allDinos.map(d=>d.Kontinent))].sort();
+            const nahrungen=[...new Set(allDinos.map(d=>d.Nahrung))].sort();
+            const laender=[...new Set(allDinos.map(d=>d.Land))].sort();
+            renderFilterChipGroup('filter-kontinent', kontinente, filters.kontinent);
+            renderFilterChipGroup('filter-nahrung', nahrungen, filters.nahrung, {carnivor:'🥩 Carnivor', herbivor:'🌿 Herbivor', omnivor:'🍗 Omnivor'});
+            renderFilterChipGroup('filter-land', laender, filters.land);
+        }
+        function renderFilterChipGroup(containerId, values, set, labelMap){
+            const c=document.getElementById(containerId);
+            c.innerHTML='';
+            values.forEach(v=>{
+                const chip=document.createElement('div');
+                chip.className='filter-chip'+(set.has(v)?' active':'');
+                chip.innerText = labelMap && labelMap[v] ? labelMap[v] : v;
+                chip.onclick=()=>{ set.has(v) ? set.delete(v) : set.add(v); chip.classList.toggle('active'); };
+                c.appendChild(chip);
+            });
+        }
+        function openFilterPanel(){
+            document.getElementById('f-len-min').value = filters.lenMin ?? '';
+            document.getElementById('f-len-max').value = filters.lenMax ?? '';
+            document.getElementById('f-height-min').value = filters.heightMin ?? '';
+            document.getElementById('f-height-max').value = filters.heightMax ?? '';
+            document.getElementById('f-weight-min').value = filters.weightMin ?? '';
+            document.getElementById('f-weight-max').value = filters.weightMax ?? '';
+            document.getElementById('f-age-min').value = filters.ageMin ?? '';
+            document.getElementById('f-age-max').value = filters.ageMax ?? '';
+            document.getElementById('filter-overlay').style.display='flex';
+        }
+        function closeFilterPanel(){
+            document.getElementById('filter-overlay').style.display='none';
+        }
+        function applyFilters(){
+            const num=id=>{ const v=document.getElementById(id).value; return v===''?null:parseFloat(v); };
+            filters.lenMin=num('f-len-min'); filters.lenMax=num('f-len-max');
+            filters.heightMin=num('f-height-min'); filters.heightMax=num('f-height-max');
+            filters.weightMin=num('f-weight-min'); filters.weightMax=num('f-weight-max');
+            filters.ageMin=num('f-age-min'); filters.ageMax=num('f-age-max');
+            closeFilterPanel();
+            renderFilterButtonBadge();
+            render();
+        }
+        function resetFilters(){
+            filters={ kontinent:new Set(), nahrung:new Set(), land:new Set(), lenMin:null, lenMax:null, heightMin:null, heightMax:null, weightMin:null, weightMax:null, ageMin:null, ageMax:null };
+            buildFilterOptions();
+            document.querySelectorAll('#filter-panel input[type=number]').forEach(i=>i.value='');
+            renderFilterButtonBadge();
+            render();
+        }
+        function countActiveFilters(){
+            let n=filters.kontinent.size+filters.nahrung.size+filters.land.size;
+            ['lenMin','lenMax','heightMin','heightMax','weightMin','weightMax','ageMin','ageMax'].forEach(k=>{ if(filters[k]!==null) n++; });
+            return n;
+        }
+        function renderFilterButtonBadge(){
+            const n=countActiveFilters();
+            const btn=document.getElementById('filter-toggle-btn');
+            if(btn) btn.innerText = n>0 ? `🔎 Filter (${n})` : '🔎 Filter';
+        }
+        function passesFilters(d){
+            if(filters.kontinent.size && !filters.kontinent.has(d.Kontinent)) return false;
+            if(filters.nahrung.size && !filters.nahrung.has(d.Nahrung)) return false;
+            if(filters.land.size && !filters.land.has(d.Land)) return false;
+            if(filters.lenMin!==null && d.Laenge_m<filters.lenMin) return false;
+            if(filters.lenMax!==null && d.Laenge_m>filters.lenMax) return false;
+            if(filters.heightMin!==null && d.Hoehe_m<filters.heightMin) return false;
+            if(filters.heightMax!==null && d.Hoehe_m>filters.heightMax) return false;
+            if(filters.weightMin!==null && d.Gewicht_t<filters.weightMin) return false;
+            if(filters.weightMax!==null && d.Gewicht_t>filters.weightMax) return false;
+            if(filters.ageMin!==null && d.Alter_Mio_Jahre<filters.ageMin) return false;
+            if(filters.ageMax!==null && d.Alter_Mio_Jahre>filters.ageMax) return false;
+            return true;
+        }
+
+        function setView(v, doRender=true){
+            currentView=v;
+            localStorage.setItem('dinodex_view', v);
+            document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+            document.getElementById('dex-grid').className='mode-'+v;
+            if(doRender) render();
+        }
+
+        function getFiltered(){
+            let list=allDinos.filter(d=>d.Name.toLowerCase().includes(currentSearch.trim().toLowerCase()) && passesFilters(d));
+            list.sort(compareDinos);
+            return list;
+        }
+
+        function render(){
+            const list=getFiltered();
+            const grid=document.getElementById('dex-grid');
+            document.getElementById('empty-msg').style.display = list.length? 'none':'block';
+            grid.innerHTML='';
+            list.forEach(d=>{
+                const isUnlocked = lillyMode || unlockedNames.has(d.Name);
+                const card=document.createElement('div');
+                card.className='dex-card'+(isUnlocked?'':' locked');
+                card.onclick=()=>{ if(isUnlocked) openDetail(d); };
+
+                const thumb=document.createElement('div');
+                thumb.className='dex-thumb';
+                thumb.innerText = isUnlocked ? '🦖' : '?';
+                card.appendChild(thumb);
+
+                if(currentView!=='mini'){
+                    const info=document.createElement('div');
+                    info.className='dex-info';
+                    const name=document.createElement('div');
+                    name.className='dex-name';
+                    name.innerText = isUnlocked ? d.Name : '???';
+                    const sub=document.createElement('div');
+                    sub.className='dex-sub';
+                    sub.innerText = isUnlocked ? `${d.Laenge_m}m · ${d.Nahrung}` : 'nicht entdeckt';
+                    info.appendChild(name); info.appendChild(sub);
+                    card.appendChild(info);
+                }
+                grid.appendChild(card);
+
+                if(isUnlocked) loadThumbImage(d.Name, thumb);
+            });
+        }
+
+        async function loadThumbImage(name, el){
+            if(imgCache[name]){
+                el.innerHTML=`<img src="${imgCache[name]}" alt="${name}">`;
+                return;
+            }
+            const url=await fetchWikipediaImage(name);
+            if(url){
+                imgCache[name]=url;
+                el.innerHTML=`<img src="${url}" alt="${name}">`;
+            }
+        }
+
+        async function openDetail(d){
+            document.getElementById('detail-overlay').style.display='flex';
+            document.getElementById('detail-name').innerText=d.Name;
+            document.getElementById('detail-stats').innerHTML=`
+                <div class="detail-row"><span>Länge</span><span>${d.Laenge_m} m</span></div>
+                <div class="detail-row"><span>Höhe</span><span>${d.Hoehe_m} m</span></div>
+                <div class="detail-row"><span>Gewicht</span><span>${d.Gewicht_t} t</span></div>
+                <div class="detail-row"><span>Nahrung</span><span>${d.Nahrung}</span></div>
+                <div class="detail-row"><span>Kontinent</span><span>${d.Kontinent}</span></div>
+                <div class="detail-row"><span>Land</span><span>${d.Land}</span></div>
+                <div class="detail-row"><span>Alter</span><span>vor ${d.Alter_Mio_Jahre} Mio. Jahren</span></div>
+            `;
+            const thumb=document.getElementById('detail-thumb');
+            if(imgCache[d.Name]){
+                thumb.innerHTML=`<img src="${imgCache[d.Name]}" alt="${d.Name}">`;
+            }else{
+                thumb.innerHTML='🦖';
+                const url=await fetchWikipediaImage(d.Name);
+                if(url){ imgCache[d.Name]=url; thumb.innerHTML=`<img src="${url}" alt="${d.Name}">`; }
+            }
+        }
+
+        function closeDetail(){
+            document.getElementById('detail-overlay').style.display='none';
+        }
+    </script>
+</body>
+</html>
