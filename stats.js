@@ -26,8 +26,8 @@ const db = firebase.firestore();
 function getPlayerName() {
     let name = localStorage.getItem('wurmdle_player_name');
     if (!name) {
-        name = prompt("Wie heißt du? (Dein Name für die Bestenliste)", "Spieler");
-        if (!name || !name.trim()) name = "Spieler";
+        name = prompt("Wie heißt du? (Dein Name für die Bestenliste)", "Leni");
+        if (!name || !name.trim()) name = "Leni";
         name = name.trim();
         localStorage.setItem('wurmdle_player_name', name);
     }
@@ -52,7 +52,33 @@ function getElapsedSeconds() {
     return Math.round((Date.now() - gameStartTime) / 1000);
 }
 
-/* ---------- Ergebnis speichern ----------
+/* ---------- Dino-Backend-Stats (dinodle) ----------
+   Separate Sammlung, rein intern, wird in keiner UI angezeigt.
+   Trackt pro Dino: wie oft er als Zieldino kam & in wie vielen Versuchen er erraten wurde.
+------------------------------------------------------- */
+
+async function recordDinoStat(dinoName, won, guesses) {
+    if (!dinoName) return;
+    const ref = db.collection('dinoStats').doc(dinoName);
+    try {
+        await db.runTransaction(async (tx) => {
+            const doc = await tx.get(ref);
+            const data = doc.exists ? doc.data() : { played: 0, won: 0, guessDistribution: [0, 0, 0, 0, 0, 0, 0, 0] };
+            data.played = (data.played || 0) + 1;
+            if (won) {
+                data.won = (data.won || 0) + 1;
+                data.guessDistribution = data.guessDistribution || [0, 0, 0, 0, 0, 0, 0, 0];
+                if (typeof guesses === 'number') {
+                    const idx = Math.min(Math.max(guesses - 1, 0), data.guessDistribution.length - 1);
+                    data.guessDistribution[idx] = (data.guessDistribution[idx] || 0) + 1;
+                }
+            }
+            tx.set(ref, data, { merge: true });
+        });
+    } catch (e) {
+        console.error("Dino-Stats konnten nicht gespeichert werden:", e);
+    }
+}
    gameKey: z.B. "wurmdle", "dontwurmdle", "lillyleiter", "dinodle", "flaggle", "miaucode"
    result: { won: bool, guesses: number, maxGuesses: number, extra?: {counterKey: incrementAmount, ...} }
    "extra" ist ein freies Zähler-Objekt für spielspezifische Werte
