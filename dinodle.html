@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -327,6 +328,7 @@
         async function triggerEnd(won) {
             isGameActive = false;
             recordGameResult('dinodle', {won: won, guesses: guesses.length || 1, maxGuesses: Math.max(guesses.length, 8)});
+            recordDinoStat(targetDino.Name, won, guesses.length || 1);
             document.getElementById('win-name').innerText = targetDino.Name;
             
             const title = document.getElementById('modal-title');
