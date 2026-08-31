@@ -79,6 +79,8 @@ async function recordDinoStat(dinoName, won, guesses) {
         console.error("Dino-Stats konnten nicht gespeichert werden:", e);
     }
 }
+
+/* ---------- Ergebnis speichern ----------
    gameKey: z.B. "wurmdle", "dontwurmdle", "lillyleiter", "dinodle", "flaggle", "miaucode"
    result: { won: bool, guesses: number, maxGuesses: number, extra?: {counterKey: incrementAmount, ...} }
    "extra" ist ein freies Zähler-Objekt für spielspezifische Werte
