@@ -192,11 +192,11 @@
             buildFilterOptions();
 
             try{
-                const snap=await db.collection('dinoStats').get();
-                snap.forEach(doc=>{
-                    const d=doc.data();
-                    if(d.played>0) unlockedNames.add(doc.id);
-                });
+                const playerDoc=await db.collection('players').doc(getPlayerName()).get();
+                if(playerDoc.exists){
+                    const progress=playerDoc.data().dinoProgress||{};
+                    Object.keys(progress).forEach(name=>{ if(progress[name].played>0) unlockedNames.add(name); });
+                }
             }catch(e){
                 console.error("Konnte Fortschritt nicht laden:", e);
             }
