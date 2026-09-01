@@ -372,13 +372,13 @@
 
         async function loadThumbImage(name, el){
             if(imgCache[name]){
-                el.innerHTML=`<img src="${imgCache[name]}" alt="${name}">`;
+                el.innerHTML=`<img src="${imgCache[name][0]}" alt="${name}">`;
                 return;
             }
-            const url=await fetchWikipediaImage(name);
-            if(url){
-                imgCache[name]=url;
-                el.innerHTML=`<img src="${url}" alt="${name}">`;
+            const urls=await fetchWikipediaImages(name);
+            if(urls.length){
+                imgCache[name]=urls;
+                el.innerHTML=`<img src="${urls[0]}" alt="${name}">`;
             }
         }
 
@@ -395,12 +395,14 @@
                 <div class="detail-row"><span>Alter</span><span>vor ${d.Alter_Mio_Jahre} Mio. Jahren</span></div>
             `;
             const thumb=document.getElementById('detail-thumb');
+            thumb.style.cursor='pointer';
+            thumb.onclick=()=>{ if(imgCache[d.Name] && imgCache[d.Name].length) openImageLightbox(imgCache[d.Name], 0); };
             if(imgCache[d.Name]){
-                thumb.innerHTML=`<img src="${imgCache[d.Name]}" alt="${d.Name}">`;
+                thumb.innerHTML=`<img src="${imgCache[d.Name][0]}" alt="${d.Name}">`;
             }else{
                 thumb.innerHTML='🦖';
-                const url=await fetchWikipediaImage(d.Name);
-                if(url){ imgCache[d.Name]=url; thumb.innerHTML=`<img src="${url}" alt="${d.Name}">`; }
+                const urls=await fetchWikipediaImages(d.Name);
+                if(urls.length){ imgCache[d.Name]=urls; thumb.innerHTML=`<img src="${urls[0]}" alt="${d.Name}">`; }
             }
         }
 
