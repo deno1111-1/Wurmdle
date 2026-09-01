@@ -341,10 +341,12 @@
             document.getElementById('win-modal').style.display = 'flex';
 
             // Bild live von Wikipedia laden
-            const imageUrl = await fetchWikipediaImage(targetDino.Name);
-            if (imageUrl) {
-                imgEl.src = imageUrl;
+            const imageUrls = await fetchWikipediaImages(targetDino.Name);
+            if (imageUrls.length) {
+                imgEl.src = imageUrls[0];
                 imgEl.style.display = 'block'; // Bild einblenden, sobald es da ist!
+                imgEl.style.cursor = 'pointer';
+                imgEl.onclick = () => openImageLightbox(imageUrls, 0);
             }
         }
 
@@ -363,3 +365,4 @@
     </script>
 </body>
 </html>
+
