@@ -53,27 +53,32 @@ function getElapsedSeconds() {
 }
 
 /* ---------- Dino-Backend-Stats (dinodle) ----------
-   Separate Sammlung, rein intern, wird in keiner UI angezeigt.
+   Pro Spieler (Spielername), NICHT global. Liegt im players-Dokument,
+   rein intern, wird in stats.html nicht angezeigt.
    Trackt pro Dino: wie oft er als Zieldino kam & in wie vielen Versuchen er erraten wurde.
 ------------------------------------------------------- */
 
 async function recordDinoStat(dinoName, won, guesses) {
     if (!dinoName) return;
-    const ref = db.collection('dinoStats').doc(dinoName);
+    const name = getPlayerName();
+    const playerRef = db.collection('players').doc(name);
     try {
         await db.runTransaction(async (tx) => {
-            const doc = await tx.get(ref);
-            const data = doc.exists ? doc.data() : { played: 0, won: 0, guessDistribution: [0, 0, 0, 0, 0, 0, 0, 0] };
-            data.played = (data.played || 0) + 1;
+            const doc = await tx.get(playerRef);
+            const data = doc.exists ? doc.data() : {};
+            const dinoProgress = data.dinoProgress || {};
+            const d = dinoProgress[dinoName] || { played: 0, won: 0, guessDistribution: [0, 0, 0, 0, 0, 0, 0, 0] };
+            d.played = (d.played || 0) + 1;
             if (won) {
-                data.won = (data.won || 0) + 1;
-                data.guessDistribution = data.guessDistribution || [0, 0, 0, 0, 0, 0, 0, 0];
+                d.won = (d.won || 0) + 1;
+                d.guessDistribution = d.guessDistribution || [0, 0, 0, 0, 0, 0, 0, 0];
                 if (typeof guesses === 'number') {
-                    const idx = Math.min(Math.max(guesses - 1, 0), data.guessDistribution.length - 1);
-                    data.guessDistribution[idx] = (data.guessDistribution[idx] || 0) + 1;
+                    const idx = Math.min(Math.max(guesses - 1, 0), d.guessDistribution.length - 1);
+                    d.guessDistribution[idx] = (d.guessDistribution[idx] || 0) + 1;
                 }
             }
-            tx.set(ref, data, { merge: true });
+            dinoProgress[dinoName] = d;
+            tx.set(playerRef, { dinoProgress }, { merge: true });
         });
     } catch (e) {
         console.error("Dino-Stats konnten nicht gespeichert werden:", e);
