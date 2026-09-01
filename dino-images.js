@@ -1,6 +1,8 @@
 /* ========================================================================
-   DINO BILD-LOOKUP (Wikipedia/Wikidata mit Fallbacks)
+   DINO BILD-LOOKUP (Wikipedia/Wikidata mit Fallbacks + Firestore-Cache)
    Gemeinsames Modul für dinodle.html und dinodex.html.
+   Nutzt die globale `db`-Variable aus stats.js - stats.js MUSS vor dieser
+   Datei eingebunden werden.
    ======================================================================== */
 
 async function fetchWikiThumb(lang, title) {
@@ -84,6 +86,16 @@ async function fetchPageGalleryImages(lang, title) {
 }
 
 async function fetchWikipediaImages(dinoName) {
+    try {
+        const cacheDoc = await db.collection('dinoImages').doc(dinoName).get();
+        if (cacheDoc.exists) {
+            const data = cacheDoc.data();
+            if (data.urls && data.urls.length) return data.urls;
+        }
+    } catch (e) {
+        console.error("Konnte Bild-Cache nicht lesen:", e);
+    }
+
     const genus = dinoName.split(' ')[0];
     let results = await fetchPageGalleryImages('de', dinoName);
     if (results.length < 2) results = results.concat(await fetchPageGalleryImages('en', dinoName));
@@ -95,11 +107,20 @@ async function fetchWikipediaImages(dinoName) {
     unique.sort((a, b) => (b.width * b.height) - (a.width * a.height));
     unique = unique.slice(0, 6);
 
+    let finalUrls;
     if (unique.length === 0) {
         const single = await fetchWikipediaImage(dinoName);
-        return single ? [single] : [];
+        finalUrls = single ? [single] : [];
+    } else {
+        finalUrls = unique.map(u => u.url);
     }
-    return unique.map(u => u.url);
+
+    if (finalUrls.length) {
+        db.collection('dinoImages').doc(dinoName).set({ urls: finalUrls, cachedAt: Date.now() })
+            .catch(e => console.error("Konnte Bild-Cache nicht schreiben:", e));
+    }
+
+    return finalUrls;
 }
 
 /* ---------- Lightbox: Bild(er) in voller Größe anzeigen ---------- */
