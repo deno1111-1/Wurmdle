@@ -113,7 +113,7 @@
         let currentLang='de', cleanWordList=[], activeMode='wurmdle';
         const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
         
-        let gameWords=[], games=[], wordLength=5, maxGuesses=6, currentGuess="", totalGames=4, isGameActive=false;
+        let gameWords=[], games=[], wordLength=5, maxGuesses=6, currentGuess="", totalGames=4, isGameActive=false, totalGuessesMade=0;
 
         window.onload=()=>{
             // Einstellungen aus dem LocalStorage laden (falls vorhanden)
@@ -184,7 +184,7 @@
             document.getElementById('status-panel').style.display='flex';
             document.getElementById('status-panel').classList.remove('minimized');
             
-            games=[]; currentGuess="";
+            games=[]; currentGuess=""; totalGuessesMade=0;
             const c=document.getElementById('game-container');c.innerHTML='';
             for(let i=0;i<totalGames;i++){
                 const w=gameWords[Math.floor(Math.random()*gameWords.length)];
@@ -280,6 +280,7 @@
                 g.guesses.push(currentGuess);
                 if(currentGuess===g.word){g.solved=true;document.getElementById(`card-${g.id}`).classList.add('solved-overlay');}
             });
+            totalGuessesMade++;
             updateKeyboardColors();currentGuess="";updateHUD();
             if(games.every(g=>g.solved||g.guesses.length>=maxGuesses)){
                 const allSolved=games.every(g=>g.solved);
@@ -294,8 +295,7 @@
 
         function updateHUD(){
             const s=games.filter(g=>g.solved).length;
-            const u=games.length>0?games[0].guesses.length:0;
-            const r=maxGuesses-u;
+            const r=maxGuesses-totalGuessesMade;
             document.getElementById('hud-progress').innerText=`${s} / ${totalGames}`;
             document.getElementById('hud-guesses').innerText=r;
             const st=document.getElementById('hud-status-text');
