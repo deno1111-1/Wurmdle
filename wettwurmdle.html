@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Wettwurmdle</title>
+    <style>
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #ef4444; text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 80%; }
+
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; flex-wrap: wrap; justify-content: center; }
+        .opt-btn { background: transparent; border: none; color: #aaa; padding: 10px 14px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        .opt-btn.active { background: #ef4444; color: #3c1f30; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 100px; text-align: center; background: #222; border: 2px solid #ef4444; color: white; border-radius: 10px; }
+        .start-btn { background-color: #ef4444; padding: 15px 50px; font-size: 1.5rem; border: none; color: #3c1f30; border-radius: 30px; margin-top: 15px; font-weight: bold; cursor: pointer; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 340px; }
+
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #turn-bar { display: flex; justify-content: center; gap: 20px; padding: 8px; color: #ccc; font-size: 0.95rem; flex-shrink: 0; text-align: center; }
+        #turn-bar b { color: #ef4444; }
+
+        #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; }
+        #board-container { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 20px; }
+        .board-row-wrap { display: flex; align-items: center; gap: 6px; }
+        .row-tag { width: 34px; text-align: center; font-size: 0.75rem; color: #888; font-weight: bold; flex-shrink: 0; }
+        .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; }
+        .tile { width: 40px; height: 40px; border: 2px solid #3a3a3c; background-color: #1c1c1e; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box; }
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .active-tile { border-color: #ef4444; }
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #bot-thinking { color: #ef4444; font-size: 0.9rem; padding: 6px; display: none; flex-shrink: 0; }
+
+        #action-row { display: flex; gap: 10px; padding: 8px; flex-shrink: 0; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 10px 18px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .give-up-btn { background: #ef4444; border-color: #ef4444; }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 15px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; padding: 0; height: 50px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.05rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
+        .key-large { flex: 1.5; font-size: 0.8rem; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #ef4444; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #ef4444; }
+        #win-word { font-size: 2rem; margin: 10px 0; letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⚔️ Wettwurmdle</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Einstellungen</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Wettwurmdle Setup</h2>
+        <div class="info-text"></div>
+
+        <div class="setting-row"><span class="label">Modus</span><div class="toggle-group"><button class="opt-btn active" id="mode-bot" onclick="setGameMode('bot')">🤖 Gegen Bot</button><button class="opt-btn" id="mode-2p" onclick="setGameMode('2p')">👥 2 Spieler</button></div></div>
+
+        <div class="setting-row" id="bot-diff-row"><span class="label">Bot-Schwierigkeit</span><div class="toggle-group"><button class="opt-btn active" id="diff-leicht" onclick="setBotDifficulty('leicht')">Leicht</button><button class="opt-btn" id="diff-mittel" onclick="setBotDifficulty('mittel')">Mittel</button><button class="opt-btn" id="diff-schwer" onclick="setBotDifficulty('schwer')">Schwer</button></div></div>
+
+        <div class="setting-row"><span class="label">Sprache</span><div class="toggle-group"><button class="opt-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button><button class="opt-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button></div></div>
+        <div class="setting-row"><span class="label">Wortlänge</span><input type="number" id="letter-count" value="5" min="4" max="7" onchange="saveNumberSettings()"></div>
+        <div class="setting-row"><span class="label">Versuche insgesamt</span><input type="number" id="max-guesses" value="8" min="4" max="20" onchange="saveNumberSettings()"></div>
+
+        <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="turn-bar">Versuch <b id="info-row">1</b> / <b id="info-max">8</b> &nbsp;·&nbsp; Am Zug: <b id="turn-label">Spieler 1</b></div>
+        <div id="bot-thinking">🤖 denkt nach...</div>
+        <div id="board-scroll"><div id="board-container"></div></div>
+        <div id="action-row"><button class="action-btn give-up-btn" onclick="giveUp()">Abbrechen 🏳️</button></div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Sieg! 🎉</h2>
+            <p id="modal-desc">Geschafft!</p>
+            <div id="win-word">---</div>
+            <button class="action-btn" onclick="closeWinModalAndRestart()" style="width: 100%; margin-top: 15px;">Neue Runde</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        let currentLang='de', deList=[], enFullList=[], en5List=[], inputValidSet=new Set(), targetPool=[];
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        let gameMode='bot', botDifficulty='leicht';
+        let wordLength=5, secret='', maxGuesses=8;
+        let rows=[], curCol=0, isGameActive=false;
+        let currentTurn='p1'; // 'p1' | 'p2' | 'bot'
+        let humanTurnLabel='Spieler 1';
+
+        window.onload=()=>{
+            /* Gespeicherte Einstellungen wiederherstellen */
+            const savedMode = localStorage.getItem('ww_mode');
+            if(savedMode) setGameMode(savedMode);
+
+            const savedDiff = localStorage.getItem('ww_diff');
+            if(savedDiff) setBotDifficulty(savedDiff);
+
+            if(localStorage.getItem('ww_letters')) document.getElementById('letter-count').value = localStorage.getItem('ww_letters');
+            if(localStorage.getItem('ww_maxguesses')) document.getElementById('max-guesses').value = localStorage.getItem('ww_maxguesses');
+
+            const savedLang = localStorage.getItem('ww_lang') || 'de';
+            setTimeout(()=>loadWords(savedLang), 100);
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function saveNumberSettings(){
+            localStorage.setItem('ww_letters', document.getElementById('letter-count').value);
+            localStorage.setItem('ww_maxguesses', document.getElementById('max-guesses').value);
+        }
+
+        function handleGlobalKey(e){
+            if(!isGameActive || currentTurn==='bot') return;
+            const k=e.key.toUpperCase();
+            if(k==='ENTER'){handleKey('ENTER');e.preventDefault();}
+            else if(k==='BACKSPACE'){handleKey('BACK');e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)handleKey(k);
+        }
+
+        function setGameMode(m){
+            gameMode=m;
+            localStorage.setItem('ww_mode', m);
+            document.getElementById('mode-bot').className = m==='bot' ? 'opt-btn active':'opt-btn';
+            document.getElementById('mode-2p').className = m==='2p' ? 'opt-btn active':'opt-btn';
+            document.getElementById('bot-diff-row').style.display = m==='bot' ? 'flex':'none';
+        }
+        function setBotDifficulty(d){
+            botDifficulty=d;
+            localStorage.setItem('ww_diff', d);
+            ['leicht','mittel','schwer'].forEach(id=>{
+                document.getElementById('diff-'+id).className = id===d ? 'opt-btn active':'opt-btn';
+            });
+        }
+
+        function cleanList(t){
+            const out=[]; const l=t.split('\n');
+            for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))out.push(w);}
+            return out;
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            localStorage.setItem('ww_lang', lang);
+            document.getElementById('loading-msg').innerText="Lade Wörterbuch...";
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className=lang==='de'?'opt-btn active':'opt-btn';
+            document.getElementById('btn-en').className=lang==='en'?'opt-btn active':'opt-btn';
+            try{
+                if(lang==='de'){
+                    const r=await fetch('de.txt'); if(!r.ok)throw new Error("Offline");
+                    deList=cleanList(await r.text());
+                } else {
+                    const [r1,r2]=await Promise.all([fetch('en.txt'),fetch('en_5letter_ohnekomische.txt')]);
+                    if(!r1.ok||!r2.ok)throw new Error("Offline");
+                    enFullList=cleanList(await r1.text());
+                    en5List=cleanList(await r2.text());
+                }
+                document.getElementById('loading-msg').innerText="Bereit.";
+                document.getElementById('start-btn').disabled=false;
+            }catch(e){
+                document.getElementById('loading-msg').innerText="Fehler beim Laden!";
+                alert("Fehler beim Laden: "+e.message);
+            }
+        }
+
+        function evaluateWord(guess, secretWord){
+            const w=secretWord.split(''), u=guess.split('');
+            let st=new Array(u.length).fill(0);
+            for(let i=0;i<u.length;i++){if(u[i]===w[i]){st[i]=2;w[i]=null;u[i]=null;}}
+            for(let i=0;i<u.length;i++){if(u[i]!==null&&w.indexOf(u[i])>-1){st[i]=1;w[w.indexOf(u[i])]=null;}}
+            return st;
+        }
+
+        function startGame(){
+            wordLength=parseInt(document.getElementById('letter-count').value)||5;
+            maxGuesses=parseInt(document.getElementById('max-guesses').value)||8;
+            if(wordLength<4||wordLength>7){alert("Bitte 4-7 Buchstaben wählen!");return;}
+            if(maxGuesses<4){alert("Mindestens 4 Versuche!");return;}
+            saveNumberSettings();
+
+            let solutionPool, validSet;
+            if(currentLang==='de'){
+                const pool=deList.filter(w=>w.length===wordLength);
+                solutionPool=pool; validSet=new Set(pool);
+            } else {
+                if(wordLength===5){
+                    solutionPool=en5List.filter(w=>w.length===5);
+                    validSet=new Set([...enFullList.filter(w=>w.length===5), ...en5List]);
+                } else {
+                    const pool=enFullList.filter(w=>w.length===wordLength);
+                    solutionPool=pool; validSet=new Set(pool);
+                }
+            }
+            if(solutionPool.length<5){alert("Zu wenige Wörter für diese Einstellung!");return;}
+            inputValidSet=validSet;
+            targetPool=solutionPool;
+            secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
+
+            rows=[]; curCol=0; keyboardStatus={};
+
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            document.getElementById('settings-btn').style.display='inline-block';
+            document.getElementById('info-max').innerText=maxGuesses;
+
+            isGameActive=true;
+            createKeyboard();
+
+            if(gameMode==='bot'){
+                currentTurn = Math.random()<0.5 ? 'p1' : 'bot';
+                humanTurnLabel='Du';
+            } else {
+                currentTurn = Math.random()<0.5 ? 'p1' : 'p2';
+            }
+
+            renderBoard();
+            updateTurnBar();
+            if(currentTurn==='bot') scheduleBotTurn();
+        }
+
+        function backToSettings(){
+            isGameActive=false;
+            document.getElementById('game-view').style.display='none';
+            document.getElementById('settings-btn').style.display='none';
+            document.getElementById('setup-area').style.display='flex';
+        }
+
+        function closeWinModalAndRestart(){
+            document.getElementById('win-modal').style.display='none';
+            startGame();
+        }
+
+        function turnDisplayName(t){
+            if(t==='bot') return '🤖 Bot';
+            if(gameMode==='bot') return humanTurnLabel;
+            return t==='p1' ? 'Spieler 1' : 'Spieler 2';
+        }
+        function updateTurnBar(){
+            document.getElementById('info-row').innerText = Math.min(rows.length+1, maxGuesses);
+            document.getElementById('turn-label').innerText = turnDisplayName(currentTurn);
+        }
+
+        function renderBoard(){
+            const c=document.getElementById('board-container');
+            c.innerHTML='';
+            for(let ri=0; ri<maxGuesses; ri++){
+                const row=rows[ri];
+                const wrap=document.createElement('div');
+                wrap.className='board-row-wrap';
+
+                const tag=document.createElement('div');
+                tag.className='row-tag';
+                tag.innerText = row ? (row.guesser==='bot'?'🤖':(gameMode==='bot'?'Du':(row.guesser==='p1'?'P1':'P2'))) : '';
+                wrap.appendChild(tag);
+
+                const rd=document.createElement('div');
+                rd.className='board-row';
+                for(let ci=0;ci<wordLength;ci++){
+                    const t=document.createElement('div');
+                    let cls='tile';
+                    if(row){
+                        cls+=' '+(row.pattern[ci]===2?'correct':row.pattern[ci]===1?'present':'absent');
+                    } else if(ri===rows.length && ci===curCol && currentTurn!=='bot'){
+                        cls+=' active-tile';
+                    }
+                    t.className=cls;
+                    t.innerText = row ? row.letters[ci] : (ri===rows.length ? (currentRowLetters[ci]||'') : '');
+                    rd.appendChild(t);
+                }
+                wrap.appendChild(rd);
+                c.appendChild(wrap);
+            }
+        }
+
+        let currentRowLetters=[];
+        function ensureCurrentRow(){
+            if(currentRowLetters.length!==wordLength) currentRowLetters=new Array(wordLength).fill('');
+        }
+        ensureCurrentRow();
+
+        function handleKey(k){
+            if(!isGameActive || currentTurn==='bot')return;
+            ensureCurrentRow();
+            if(k==='ENTER'){submitRow(currentRowLetters.join(''), currentTurn);return;}
+            if(k==='BACK'){
+                if(currentRowLetters[curCol]){
+                    currentRowLetters[curCol]='';
+                } else if(curCol>0){
+                    curCol--; currentRowLetters[curCol]='';
+                }
+                renderBoard();return;
+            }
+            if(curCol<wordLength){
+                currentRowLetters[curCol]=k;
+                if(curCol<wordLength-1)curCol++;
+                renderBoard();
+            }
+        }
+
+        function submitRow(wordRaw, guesser){
+            const word=wordRaw.toUpperCase();
+            if(word.length<wordLength){
+                showToast("Zeile unvollständig!"); shakeCurrentRow(); return;
+            }
+            if(!inputValidSet.has(word)){
+                showToast("Wort nicht im Wörterbuch!"); shakeCurrentRow(); return;
+            }
+
+            const pattern=evaluateWord(word, secret);
+            rows.push({letters: word.split(''), pattern, guesser});
+            updateKeyboardColors(word, pattern);
+            currentRowLetters=new Array(wordLength).fill('');
+            curCol=0;
+            renderBoard();
+            updateTurnBar();
+
+            if(word===secret){
+                setTimeout(()=>triggerEnd('win', guesser), 400);
+                return;
+            }
+            if(rows.length>=maxGuesses){
+                setTimeout(()=>triggerEnd('draw', null), 400);
+                return;
+            }
+
+            /* Zug wechseln */
+            if(gameMode==='bot'){
+                currentTurn = (currentTurn==='p1') ? 'bot' : 'p1';
+            } else {
+                currentTurn = (currentTurn==='p1') ? 'p2' : 'p1';
+            }
+            updateTurnBar();
+            renderBoard();
+            if(currentTurn==='bot') scheduleBotTurn();
+        }
+
+        function shakeCurrentRow(){
+            const el=document.getElementById('board-container').children[rows.length];
+            if(!el)return;
+            const tiles=el.querySelectorAll('.tile');
+            tiles.forEach(t=>{t.classList.remove('shake-effect');void t.offsetWidth;t.classList.add('shake-effect');});
+        }
+
+        function giveUp(){
+            if(!isGameActive)return;
+            triggerEnd('draw', null);
+        }
+
+        /* ---------- Bot-Logik ---------- */
+        function filterCandidates(){
+            return targetPool.filter(cand=>{
+                for(const row of rows){
+                    const guessWord = row.letters.join('');
+                    const simulated = evaluateWord(guessWord, cand);
+                    if(simulated.join(',') !== row.pattern.join(',')) return false;
+                }
+                return true;
+            });
+        }
+        function letterFreqScore(pool){
+            const freq={};
+            pool.forEach(w=>{
+                new Set(w.split('')).forEach(ch=>{ freq[ch]=(freq[ch]||0)+1; });
+            });
+            return freq;
+        }
+        function pickBotGuess(){
+            let candidates = filterCandidates();
+            if(candidates.length===0) candidates = targetPool.slice();
+
+            if(botDifficulty==='leicht'){
+                return candidates[Math.floor(Math.random()*candidates.length)];
+            }
+            const freq = letterFreqScore(candidates);
+            const scored = candidates.map(w=>{
+                const uniq=[...new Set(w.split(''))];
+                return {w, score: uniq.reduce((s,ch)=>s+(freq[ch]||0),0)};
+            });
+            scored.sort((a,b)=>b.score-a.score);
+
+            if(botDifficulty==='schwer'){
+                const topN = scored.slice(0, Math.max(1, Math.ceil(scored.length*0.05)));
+                return topN[Math.floor(Math.random()*topN.length)].w;
+            }
+            /* mittel: gewichteter Zufall über alle Kandidaten (bessere Wörter wahrscheinlicher) */
+            const total = scored.reduce((s,o)=>s+o.score+1, 0);
+            let r = Math.random()*total;
+            for(const o of scored){
+                r -= (o.score+1);
+                if(r<=0) return o.w;
+            }
+            return scored[0].w;
+        }
+        function scheduleBotTurn(){
+            document.getElementById('bot-thinking').style.display='block';
+            setTimeout(()=>{
+                document.getElementById('bot-thinking').style.display='none';
+                if(!isGameActive || currentTurn!=='bot') return;
+                const guess = pickBotGuess();
+                submitRow(guess, 'bot');
+            }, 900 + Math.random()*700);
+        }
+
+        let keyboardStatus={};
+        function updateKeyboardColors(word, pattern){
+            word.split('').forEach((ch,pos)=>{
+                const st=pattern[pos];
+                if(!(ch in keyboardStatus) || st>keyboardStatus[ch]) keyboardStatus[ch]=st;
+            });
+            document.querySelectorAll('.key').forEach(k=>{
+                const c=k.id.replace('key-','');
+                if(c.length!==1)return;
+                const st=keyboardStatus[c];
+                k.style.backgroundColor = st===2?'#538d4e':st===1?'#b59f3b':st===0?'#3a3a3c':'#818384';
+            });
+        }
+
+        function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
+        function createKeyboard(){
+            const kb=document.getElementById('keyboard-container');
+            kb.innerHTML='';
+            const lay=(currentLang==='de')?keysDE:keysEN;
+            lay.forEach((row,i)=>{
+                const d=document.createElement('div');d.className='keyboard-row';
+                if(i===lay.length-1)appKey(d,'⌫','key-large',()=>handleKey('BACK'));
+                for(let c of row){
+                    const k=document.createElement('div');k.className='key';k.id='key-'+c;k.innerText=c;
+                    k.onclick=()=>handleKey(c);
+                    d.appendChild(k);
+                }
+                if(i===lay.length-1)appKey(d,'ENTER','key-large',()=>handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+
+        function triggerEnd(result, winner){
+            isGameActive=false;
+            const title=document.getElementById('modal-title');
+            const desc=document.getElementById('modal-desc');
+            const content=document.querySelector('.modal-content');
+
+            let humanWon=false;
+            if(result==='win'){
+                const winnerName = turnDisplayName(winner);
+                title.innerText = `🎉 ${winnerName} gewinnt! 🎉`;
+                title.style.color="#ef4444";
+                desc.innerText=`Erraten nach ${rows.length} Versuchen insgesamt!`;
+                content.style.borderColor="#ef4444";
+                humanWon = (gameMode==='bot' && winner!=='bot');
+            } else {
+                title.innerText="Unentschieden! 🤝";
+                title.style.color="#ef4444";
+                desc.innerText="Niemand hat's geschafft. Das Wort war:";
+                content.style.borderColor="#ef4444";
+            }
+            document.getElementById('win-word').innerText=secret;
+            document.getElementById('win-modal').style.display='flex';
+
+            const extra = { [`mode_${gameMode}`]: 1 };
+            if(gameMode==='bot') extra[`difficulty_${botDifficulty}`] = 1;
+
+            const won = (gameMode==='bot') ? humanWon : (result==='win');
+            recordGameResult('wettwurmdle', {won: won, guesses: rows.length, maxGuesses: maxGuesses, extra});
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>
