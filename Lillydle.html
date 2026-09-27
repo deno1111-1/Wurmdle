@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Lillydle</title>
+    <style>
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.1rem; color: #ff4da6; text-shadow: 1px 1px 0 #000; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+
+        #msg-toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 15px 30px; border-radius: 30px; font-weight: bold; display: none; z-index: 2000; text-align: center; }
+
+        #game-scroll-area { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; justify-content: center; padding: 30px 0; box-sizing: border-box; }
+        #game-container { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .board { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 6px; }
+        .tile { width: 52px; height: 52px; border: 2px solid #4a2b3d; background-color: #1c1c1e; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; font-weight: bold; text-transform: uppercase; border-radius: 6px; box-sizing: border-box; }
+        .correct { background-color: #ff4da6; border-color: #ff4da6; }
+        .present { background-color: #b57bb5; border-color: #b57bb5; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 20px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { -webkit-appearance: none; appearance: none; outline: none; font-weight: bold; border: 0; height: 55px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; }
+        .key-large { flex: 1.5; font-size: 0.8rem; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #ff4da6; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #ff4da6; }
+        .restart-btn { background: #ff4da6; color: #3c0f28; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌸 Lillydle</h1>
+        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="game-scroll-area">
+        <div id="game-container">
+            <div class="board" id="board"></div>
+        </div>
+    </div>
+    <div id="keyboard-container"></div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🌸 Es war Lilly! 🌸</h2>
+            <p>Erraten in <b id="win-guesses">-</b> Versuchen!</p>
+            <button class="restart-btn" onclick="startGame()">Nochmal spielen</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        const SECRET = "LILLY";
+        const wordLength = 5, maxGuesses = 6;
+        const keys = ["QWERTZUIOP","ASDFGHJKL","YXCVBNM"];
+        let guessesUsed = 0, currentGuess = "", isGameActive = true, keyStatus = {};
+
+        window.onload = () => {
+            startGameTimer();
+            document.addEventListener('keydown', handleGlobalKey);
+            startGame();
+        };
+
+        function handleGlobalKey(e){
+            if(!isGameActive) return;
+            const k=e.key.toUpperCase();
+            if(k==='ENTER'){handleKey('ENTER');e.preventDefault();}
+            else if(k==='BACKSPACE'){handleKey('BACK');e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)handleKey(k);
+        }
+
+        function startGame(){
+            document.getElementById('win-modal').style.display='none';
+            guessesUsed=0; currentGuess=""; isGameActive=true; keyStatus={};
+            startGameTimer();
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            const board=document.getElementById('board'); board.innerHTML='';
+            for(let r=0;r<maxGuesses;r++){
+                for(let c=0;c<wordLength;c++){
+                    const t=document.createElement('div');
+                    t.className='tile'; t.id=`tile-${r}-${c}`;
+                    board.appendChild(t);
+                }
+            }
+            createKeyboard();
+        }
+
+        function createKeyboard(){
+            const kb=document.getElementById('keyboard-container'); kb.innerHTML='';
+            keys.forEach((row,i)=>{
+                const d=document.createElement('div'); d.className='keyboard-row';
+                if(i===keys.length-1) appKey(d,'⌫','key-large',()=>handleKey('BACK'));
+                for(let c of row){
+                    const k=document.createElement('button'); k.className='key'; k.id=`key-${c}`; k.innerText=c;
+                    k.onclick=()=>handleKey(c);
+                    d.appendChild(k);
+                }
+                if(i===keys.length-1) appKey(d,'ENTER','key-large',()=>handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+        function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
+
+        function handleKey(k){
+            if(!isGameActive) return;
+            if(k==='ENTER') submitGuess();
+            else if(k==='BACK'){currentGuess=currentGuess.slice(0,-1); updateRowPreview();}
+            else if(currentGuess.length<wordLength){currentGuess+=k; updateRowPreview();}
+        }
+
+        function updateRowPreview(){
+            for(let i=0;i<wordLength;i++){
+                const t=document.getElementById(`tile-${guessesUsed}-${i}`);
+                t.innerText=currentGuess[i]||"";
+                t.style.borderColor=currentGuess[i]?"#ff4da6":"#4a2b3d";
+            }
+        }
+
+        function shakeRow(){
+            for(let i=0;i<wordLength;i++){
+                const t=document.getElementById(`tile-${guessesUsed}-${i}`);
+                t.classList.remove('shake-effect'); void t.offsetWidth; t.classList.add('shake-effect');
+            }
+        }
+
+        function submitGuess(){
+            if(currentGuess.length!==wordLength){showToast("Zu kurz!");return;}
+            if(!/^[A-Z]+$/.test(currentGuess)){showToast("Nur Buchstaben!");shakeRow();return;}
+
+            const w=SECRET.split(''), u=currentGuess.split('');
+            let st=new Array(wordLength).fill(0);
+            for(let i=0;i<wordLength;i++) if(u[i]===w[i]){st[i]=2;w[i]=null;u[i]=null;}
+            for(let i=0;i<wordLength;i++) if(u[i]!==null && w.indexOf(u[i])>-1){st[i]=1; w[w.indexOf(u[i])]=null;}
+
+            for(let i=0;i<wordLength;i++){
+                const t=document.getElementById(`tile-${guessesUsed}-${i}`);
+                t.style.borderColor="transparent";
+                t.classList.add(st[i]===2?'correct':st[i]===1?'present':'absent');
+            }
+            updateKeyStatus(currentGuess, st);
+
+            const won = currentGuess===SECRET;
+            guessesUsed++;
+            currentGuess="";
+
+            if(won){
+                isGameActive=false;
+                document.getElementById('win-guesses').innerText=guessesUsed;
+                setTimeout(()=>{document.getElementById('win-modal').style.display='flex';},400);
+                recordGameResult('lillydle', {won:true, guesses:guessesUsed, maxGuesses:maxGuesses});
+                return;
+            }
+            if(guessesUsed>=maxGuesses){
+                isGameActive=false;
+                showToast(`Vorbei! Es war LILLY 🌸`);
+                recordGameResult('lillydle', {won:false, guesses:guessesUsed, maxGuesses:maxGuesses});
+            }
+        }
+
+        function updateKeyStatus(guess, statusArr){
+            guess.split('').forEach((ch,i)=>{
+                const s=statusArr[i];
+                const cur=(ch in keyStatus)?keyStatus[ch]:-1;
+                if(s>cur) keyStatus[ch]=s;
+            });
+            for(const [ch,s] of Object.entries(keyStatus)){
+                const keyEl=document.getElementById(`key-${ch}`);
+                if(!keyEl) continue;
+                keyEl.style.backgroundColor = (s===2)?'#ff4da6':(s===1)?'#b57bb5':'#3a3a3c';
+            }
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>
