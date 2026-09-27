@@ -61,7 +61,7 @@
 
     <div id="win-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="modal-title">🌸 Es war Lilly! 🌸</h2>
+            <h2 id="modal-title">🐱 Es war Lilly! 🐱</h2>
             <p>Erraten in <b id="win-guesses">-</b> Versuchen!</p>
             <button class="restart-btn" onclick="startGame()">Nochmal spielen</button>
         </div>
@@ -173,7 +173,7 @@
             }
             if(guessesUsed>=maxGuesses){
                 isGameActive=false;
-                showToast(`Vorbei! Es war LILLY 🌸`);
+                showToast(`Verloren! Das gesuchte Wort war LILLY 🐱`);
                 recordGameResult('lillydle', {won:false, guesses:guessesUsed, maxGuesses:maxGuesses});
             }
         }
