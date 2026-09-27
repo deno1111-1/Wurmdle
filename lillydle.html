@@ -46,7 +46,7 @@
 <body>
 
     <header>
-        <h1>🐱 Lillydle</h1>
+        <h1>🌸 Lillydle</h1>
         <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
     </header>
 
@@ -61,7 +61,7 @@
 
     <div id="win-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="modal-title">🐱 Es war Lilly! 🐱</h2>
+            <h2 id="modal-title">🌸 Es war Lilly! 🌸</h2>
             <p>Erraten in <b id="win-guesses">-</b> Versuchen!</p>
             <button class="restart-btn" onclick="startGame()">Nochmal spielen</button>
         </div>
@@ -166,6 +166,7 @@
 
             if(won){
                 isGameActive=false;
+                document.getElementById('modal-title').innerText = `Yuppie ${getPlayerName()} hat gewonnen! 🐱`;
                 document.getElementById('win-guesses').innerText=guessesUsed;
                 setTimeout(()=>{document.getElementById('win-modal').style.display='flex';},400);
                 recordGameResult('lillydle', {won:true, guesses:guessesUsed, maxGuesses:maxGuesses});
@@ -173,7 +174,7 @@
             }
             if(guessesUsed>=maxGuesses){
                 isGameActive=false;
-                showToast(`Verloren! Das gesuchte Wort war LILLY 🐱`);
+                showToast(`Vorbei! Es war LILLY 🌸`);
                 recordGameResult('lillydle', {won:false, guesses:guessesUsed, maxGuesses:maxGuesses});
             }
         }
