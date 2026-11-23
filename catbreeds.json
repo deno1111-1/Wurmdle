@@ -1,0 +1,566 @@
+[
+  {
+    "Name": "Abessinier",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Abyssinian"
+    ]
+  },
+  {
+    "Name": "American Curl",
+    "Herkunft": "USA",
+    "Gewicht_kg": 3.4,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Balinese",
+    "Herkunft": "USA/Thailand",
+    "Gewicht_kg": 5.2,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Bengalkatze",
+    "Herkunft": "USA",
+    "Gewicht_kg": 6.0,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Bengal"
+    ]
+  },
+  {
+    "Name": "Britisch Kurzhaar",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 5.5,
+    "Lebenserwartung_Jahre": 17,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "British Kurzhaar",
+      "British Shorthair",
+      "BKH"
+    ]
+  },
+  {
+    "Name": "Britisch Langhaar",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 5.5,
+    "Lebenserwartung_Jahre": 17,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "British Langhaar",
+      "British Longhair",
+      "BLH"
+    ]
+  },
+  {
+    "Name": "Burmilla",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 4.0,
+    "Lebenserwartung_Jahre": 12.5,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Burma",
+    "Herkunft": "Myanmar",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Burmese",
+      "Burmakatze"
+    ]
+  },
+  {
+    "Name": "Kartäuser",
+    "Herkunft": "Frankreich",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Chartreux"
+    ]
+  },
+  {
+    "Name": "Cornish Rex",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 3.3,
+    "Lebenserwartung_Jahre": 11,
+    "Fellart": "lockig",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Devon Rex",
+    "Herkunft": "Vereinigtes Königreich",
+    "Gewicht_kg": 3.3,
+    "Lebenserwartung_Jahre": 12.5,
+    "Fellart": "lockig",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Deutsch Rex",
+    "Herkunft": "Deutschland",
+    "Gewicht_kg": 2.7,
+    "Lebenserwartung_Jahre": 12.5,
+    "Fellart": "lockig",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "German Rex"
+    ]
+  },
+  {
+    "Name": "Cymric",
+    "Herkunft": "Kanada/Isle of Man",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Manx",
+    "Herkunft": "Isle of Man",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Donskoy (Don Sphynx)",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "umstritten",
+    "Alias": [
+      "Don Sphynx",
+      "Donskoy"
+    ]
+  },
+  {
+    "Name": "Sphynx",
+    "Herkunft": "Kanada",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "umstritten",
+    "Alias": [
+      "Nacktkatze"
+    ]
+  },
+  {
+    "Name": "Peterbald",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 4.0,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "umstritten"
+  },
+  {
+    "Name": "Europäisch Kurzhaar",
+    "Herkunft": "Europa",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "European Shorthair",
+      "EKH"
+    ]
+  },
+  {
+    "Name": "Exotisch Kurzhaar",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.75,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht",
+    "Alias": [
+      "Exotic Shorthair",
+      "Exotic"
+    ]
+  },
+  {
+    "Name": "Japanisch Bobtail",
+    "Herkunft": "Japan",
+    "Gewicht_kg": 3.25,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Japanese Bobtail"
+    ]
+  },
+  {
+    "Name": "Kurilen-Bobtail",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Kurilian Bobtail"
+    ]
+  },
+  {
+    "Name": "Korat",
+    "Herkunft": "Thailand",
+    "Gewicht_kg": 3.6,
+    "Lebenserwartung_Jahre": 12.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "LaPerm",
+    "Herkunft": "USA",
+    "Gewicht_kg": 3.4,
+    "Lebenserwartung_Jahre": 12.5,
+    "Fellart": "lockig",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Ägyptische Mau",
+    "Herkunft": "Ägypten",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Egyptian Mau",
+      "Mau"
+    ]
+  },
+  {
+    "Name": "Maine Coon",
+    "Herkunft": "USA",
+    "Gewicht_kg": 6.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Neva Masquerade",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 6.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Norwegische Waldkatze",
+    "Herkunft": "Norwegen",
+    "Gewicht_kg": 6.5,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Norwegian Forest Cat",
+      "Norweger"
+    ]
+  },
+  {
+    "Name": "Ocicat",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Orientalisch Langhaar",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Oriental Langhaar",
+      "Oriental Longhair"
+    ]
+  },
+  {
+    "Name": "Orientalisch Kurzhaar",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Oriental Kurzhaar",
+      "Oriental Shorthair"
+    ]
+  },
+  {
+    "Name": "Perser",
+    "Herkunft": "Iran",
+    "Gewicht_kg": 4.8,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht",
+    "Alias": [
+      "Persian",
+      "Perserkatze"
+    ]
+  },
+  {
+    "Name": "Ragdoll",
+    "Herkunft": "USA",
+    "Gewicht_kg": 6.75,
+    "Lebenserwartung_Jahre": 14.5,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Russisch Blau",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 5.2,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Russian Blue"
+    ]
+  },
+  {
+    "Name": "Heilige Birma",
+    "Herkunft": "Myanmar/Frankreich",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Birman",
+      "Birma"
+    ]
+  },
+  {
+    "Name": "Siam",
+    "Herkunft": "Thailand",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Siamese",
+      "Siamkatze"
+    ]
+  },
+  {
+    "Name": "Sibirische Katze",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 6.0,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Siberian",
+      "Sibirier"
+    ]
+  },
+  {
+    "Name": "Singapura",
+    "Herkunft": "Singapur",
+    "Gewicht_kg": 3.0,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Snowshoe",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.8,
+    "Lebenserwartung_Jahre": 17,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Sokoke",
+    "Herkunft": "Kenia/Dänemark",
+    "Gewicht_kg": 3.4,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Somali",
+    "Herkunft": "Nordamerika",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Selkirk Rex",
+    "Herkunft": "USA",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "lockig",
+    "Qualzucht_Status": "unbedenklich"
+  },
+  {
+    "Name": "Thai",
+    "Herkunft": "Thailand",
+    "Gewicht_kg": 4.5,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Thaikatze",
+      "Old Style Siam"
+    ]
+  },
+  {
+    "Name": "Türkisch Angora",
+    "Herkunft": "Türkei",
+    "Gewicht_kg": 3.4,
+    "Lebenserwartung_Jahre": 15,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Turkish Angora",
+      "Angora"
+    ]
+  },
+  {
+    "Name": "Türkisch Van",
+    "Herkunft": "Türkei",
+    "Gewicht_kg": 5.7,
+    "Lebenserwartung_Jahre": 14.5,
+    "Fellart": "langhaar",
+    "Qualzucht_Status": "unbedenklich",
+    "Alias": [
+      "Turkish Van",
+      "Van"
+    ]
+  },
+  {
+    "Name": "Bombay",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.0,
+    "Lebenserwartung_Jahre": 14,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "umstritten"
+  },
+  {
+    "Name": "Lykoi",
+    "Herkunft": "USA",
+    "Gewicht_kg": 4.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "spärlich behaart",
+    "Qualzucht_Status": "umstritten"
+  },
+  {
+    "Name": "Scottish Fold",
+    "Herkunft": "Schottland (UK)",
+    "Gewicht_kg": 4.0,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Munchkin",
+    "Herkunft": "USA",
+    "Gewicht_kg": 3.0,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Twisty Cat (Squitten)",
+    "Herkunft": "USA",
+    "Gewicht_kg": 3.5,
+    "Lebenserwartung_Jahre": 12,
+    "Fellart": "variabel",
+    "Qualzucht_Status": "anerkannte Qualzucht",
+    "Alias": [
+      "Squitten",
+      "Twisty Cat"
+    ]
+  },
+  {
+    "Name": "Bambino",
+    "Herkunft": "USA",
+    "Gewicht_kg": 3.0,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Dwelf",
+    "Herkunft": "USA",
+    "Gewicht_kg": 2.9,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Ukrainische Levkoy",
+    "Herkunft": "Ukraine",
+    "Gewicht_kg": 5.0,
+    "Lebenserwartung_Jahre": 17.5,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "anerkannte Qualzucht",
+    "Alias": [
+      "Ukrainian Levkoy"
+    ]
+  },
+  {
+    "Name": "Elfenkatze",
+    "Herkunft": "USA",
+    "Gewicht_kg": 5.6,
+    "Lebenserwartung_Jahre": 11,
+    "Fellart": "haarlos",
+    "Qualzucht_Status": "umstritten",
+    "Alias": [
+      "Elf Cat"
+    ]
+  },
+  {
+    "Name": "Minskin",
+    "Herkunft": "USA",
+    "Gewicht_kg": 2.2,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "spärlich behaart",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Kinkalow",
+    "Herkunft": "USA",
+    "Gewicht_kg": 2.3,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht"
+  },
+  {
+    "Name": "Napoleon (Minuet)",
+    "Herkunft": "USA",
+    "Gewicht_kg": 2.9,
+    "Lebenserwartung_Jahre": 13,
+    "Fellart": "kurz-/langhaar",
+    "Qualzucht_Status": "anerkannte Qualzucht",
+    "Alias": [
+      "Minuet",
+      "Napoleon"
+    ]
+  },
+  {
+    "Name": "Toybob",
+    "Herkunft": "Russland",
+    "Gewicht_kg": 2.3,
+    "Lebenserwartung_Jahre": 13.5,
+    "Fellart": "kurzhaar",
+    "Qualzucht_Status": "unbedenklich"
+  }
+]
