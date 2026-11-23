@@ -262,6 +262,7 @@
         const obstacleToggle = document.getElementById('obstacle-toggle');
         let knofensaSolved = false;
         let knofensaObstaclesUsed = false;
+        let knofensaHintCount = 0;
 
         function showMenu() {
             gameDiv.style.display = 'none';
@@ -269,6 +270,7 @@
         }
 
         function giveHint() {
+            if (!knofensaSolved) knofensaHintCount++;
             let missing = solutionRects.find(sr => {
                 return !playerRects.some(pr => pr.minX === sr.x && pr.minY === sr.y && pr.maxX === sr.x + sr.w - 1 && pr.maxY === sr.y + sr.h - 1);
             });
@@ -304,6 +306,7 @@
             generatePuzzle();
             renderGrid();
             knofensaSolved = false;
+            knofensaHintCount = 0;
             knofensaObstaclesUsed = obstacleToggle.checked;
             startGameTimer();
         }
@@ -646,6 +649,9 @@
                     const extra = {};
                     extra[knofensaObstaclesUsed ? 'obstacle_played' : 'no_obstacle_played'] = 1;
                     extra[knofensaObstaclesUsed ? 'obstacle_won' : 'no_obstacle_won'] = 1;
+                    extra.hint_sum = knofensaHintCount;
+                    if (knofensaHintCount === 0) extra.hintless_wins = 1;
+                    extra[`size_${size}_solved`] = 1;
                     recordGameResult('knofensa', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
                 }
             } else {

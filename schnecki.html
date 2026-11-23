@@ -54,6 +54,9 @@
         .box-letter:active { transform: scale(0.9); }
         .box-letter.selected { background: #333; color: white; }
         .box-letter.used { background: #538d4e; color: white; transition: background 0.3s; }
+        .box-letter.used.selected, .box-letter.selected { background: #333; color: white; }
+        .shake-effect { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%,100% { margin-left: 0; } 25% { margin-left: -5px; } 75% { margin-left: 5px; } }
         
         /* Box Positions */
         .bl-0 { top: 25px; left: 70px; } .bl-1 { top: 25px; left: 135px; } .bl-2 { top: 25px; left: 200px; }
@@ -93,10 +96,13 @@
         <div class="current-word-display" id="schnecki-input"></div>
         
         <div class="game-controls">
-            <button class="action-btn" onclick="schneckiDelete()">⌫ LÖSCHEN</button>
+            <button class="action-btn" onclick="schneckiDelete()">⌫</button>
             <button class="action-btn" style="background:#538d4e; padding:12px 40px;" onclick="schneckiSubmit()">ENTER</button>
         </div>
-        <button class="action-btn" style="margin-top:10px; background:#444;" onclick="startSchneckiGame(currentLang)">NEUES SPIELFELD 🔀</button>
+        <div class="game-controls" style="margin-top:10px;">
+            <button class="action-btn" style="background:#444;" onclick="startSchneckiGame(currentLang)">NEUES SPIELFELD 🔀</button>
+            <button class="action-btn" style="background:#444;" onclick="showSchneckiSolution()">💡 LÖSUNG</button>
+        </div>
         
         <div class="schnecki-history" id="schnecki-history-list"></div>
     </div>
@@ -149,144 +155,186 @@
             }
         }
 
-        function startSchneckiGame(lang){ 
-            activeMode='schnecki'; 
-            document.getElementById('schnecki-area').style.display = 'flex';
-            
-            // DER FIX: Echtes Randomizer-System für Letter Boxed!
-            let vowels = ['A','E','I','O','U'];
-            // Je nach Sprache nehmen wir passende Konsonanten
-            let consonants = (lang === 'de') 
-                ? ['B','C','D','F','G','H','K','L','M','N','P','R','S','T','V','W','Z'] 
-                : ['B','C','D','F','G','H','J','K','L','M','N','P','R','S','T','V','W','Y'];
-            
-            // Beide Listen durchmischen
-            vowels.sort(() => Math.random() - 0.5);
-            consonants.sort(() => Math.random() - 0.5);
-            
-            // Wir ziehen exakt 4 Vokale und 8 Konsonanten = 12 Buchstaben
-            let selectedLetters = [...vowels.slice(0, 4), ...consonants.slice(0, 8)];
-            
-            // Diese 12 Buchstaben nochmal kräftig durchmischen, damit sie zufällig an den 4 Wänden landen
-            selectedLetters.sort(() => Math.random() - 0.5);
+        // Vorgefilterte Wortliste (max. 12 verschiedene Buchstaben, keine Doppelbuchstaben direkt hintereinander)
+        let schnCandidates=null, schnPath=[], schnHistoryPaths=[], schnSolution=null;
+        function prepareCandidates(){
+            schnCandidates=cleanWordList.filter(w=>{
+                if(w.length<3) return false;
+                for(let i=1;i<w.length;i++) if(w[i]===w[i-1]) return false;
+                return new Set(w).size<=12;
+            });
+        }
+        // Alle Wörter, die auf diesem Brett legal sind (+ Bitmaske der genutzten Buchstaben)
+        function boardWords(letters){
+            const idx={}; letters.forEach((ch,i)=>idx[ch]=i);
+            const out=[];
+            for(const w of schnCandidates){
+                let ok=true, prev=-1, m=0;
+                for(const ch of w){
+                    const i=idx[ch];
+                    if(i===undefined || (prev!==-1 && Math.floor(i/3)===Math.floor(prev/3))){ ok=false; break; }
+                    prev=i; m|=1<<i;
+                }
+                if(ok) out.push({w,m});
+            }
+            return out;
+        }
+        // Sucht eine Lösung mit 2 Wörtern (wie bei Letter Boxed üblich)
+        function findTwoWordSolution(words){
+            const FULL=(1<<12)-1, byFirst={};
+            words.forEach(o=>{ (byFirst[o.w[0]]=byFirst[o.w[0]]||[]).push(o); });
+            for(const a of words){
+                const list=byFirst[a.w[a.w.length-1]]||[];
+                for(const b of list) if((a.m|b.m)===FULL) return [a.w,b.w];
+            }
+            return null;
+        }
 
-            schnLetters=selectedLetters; 
-            schnUsed=new Set(); 
-            schnCurrent=""; 
-            schnHistory=[]; 
-            schnLastIdx=-1; 
+        function startSchneckiGame(lang){
+            activeMode='schnecki';
+            document.getElementById('schnecki-area').style.display = 'flex';
+            if(!schnCandidates) prepareCandidates();
+
+            const vowelsAll = ['A','E','I','O','U'];
+            const consonantsAll = (lang === 'de')
+                ? ['B','C','D','F','G','H','K','L','M','N','P','R','S','T','V','W','Z']
+                : ['B','C','D','F','G','H','J','K','L','M','N','P','R','S','T','V','W','Y'];
+            const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+            // Nur lösbare Bretter nehmen (2-Wort-Lösung muss existieren)
+            let letters=null; schnSolution=null;
+            for(let t=0;t<60 && !schnSolution;t++){
+                letters=shuffle([...shuffle([...vowelsAll]).slice(0,4), ...shuffle([...consonantsAll]).slice(0,8)]);
+                schnSolution=findTwoWordSolution(boardWords(letters));
+            }
+
+            schnLetters=letters;
+            schnUsed=new Set();
+            schnCurrent="";
+            schnHistory=[]; schnHistoryPaths=[]; schnPath=[];
+            schnLastIdx=-1;
             schnFinished = false;
             startGameTimer();
-            renderSchneckiBoard(); 
-            updateSchneckiUI(); 
+            renderSchneckiBoard();
+            updateSchneckiUI();
         }
 
         function renderSchneckiBoard(){
-            const c=document.getElementById('box-container'); 
-            document.querySelectorAll('.box-letter').forEach(el=>el.remove()); 
-            document.getElementById('line-layer').innerHTML=''; 
-            
+            const c=document.getElementById('box-container');
+            document.querySelectorAll('.box-letter').forEach(el=>el.remove());
             schnLetters.forEach((char,i)=>{
                 const d=document.createElement('div');
-                d.className=`box-letter bl-${i}`; 
+                d.className=`box-letter bl-${i}`;
                 d.innerText=char;
                 d.id=`s-btn-${i}`;
                 d.onclick=()=>schneckiClick(i);
                 c.appendChild(d);
             });
+            redrawLines();
         }
 
         function schneckiClick(idx){
-            // NYT Regel 1: Man darf nicht den gleichen Buchstaben oder einen von derselben Wand (0-2, 3-5, 6-8, 9-11) anklicken
-            if(schnLastIdx!==-1){
-                if(Math.floor(idx/3)===Math.floor(schnLastIdx/3)){
-                    showToast("Andere Wand wählen!");
-                    document.getElementById(`s-btn-${idx}`).classList.add('shake-effect');
-                    setTimeout(()=>document.getElementById(`s-btn-${idx}`).classList.remove('shake-effect'), 300);
-                    return;
-                }
+            if(schnFinished) return;
+            const last = schnPath.length ? schnPath[schnPath.length-1] : -1;
+            // Regel: nicht zweimal hintereinander dieselbe Wand
+            if(last!==-1 && Math.floor(idx/3)===Math.floor(last/3)){
+                showToast("Andere Wand wählen!");
+                const el=document.getElementById(`s-btn-${idx}`);
+                el.classList.add('shake-effect');
+                setTimeout(()=>el.classList.remove('shake-effect'), 300);
+                return;
             }
-            // NYT Regel 2: Wenn man ein neues Wort anfängt, MUSS es mit dem Endbuchstaben des alten Wortes beginnen
-            if(schnCurrent==="" && schnHistory.length>0){
-                const lastW=schnHistory[schnHistory.length-1]; 
-                if(schnLetters[idx]!==lastW.charAt(lastW.length-1)){
-                    showToast(`Muss mit '${lastW.charAt(lastW.length-1)}' starten!`);
-                    return;
-                }
-            }
-            
-            // Linie zeichnen
-            if(schnLastIdx!==-1) drawLine(schnLastIdx,idx); 
-            
-            schnLastIdx=idx; 
-            schnCurrent+=schnLetters[idx];
-            
-            document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected'));
-            document.getElementById(`s-btn-${idx}`).classList.add('selected'); 
+            schnPath.push(idx);
             updateSchneckiUI();
         }
 
-        function drawLine(f,t){ 
-            const l=document.createElementNS('http://www.w3.org/2000/svg','line'); 
-            const r1=document.getElementById(`s-btn-${f}`).getBoundingClientRect(); 
-            const r2=document.getElementById(`s-btn-${t}`).getBoundingClientRect(); 
-            const cr=document.getElementById('box-container').getBoundingClientRect(); 
-            l.setAttribute('x1',r1.left-cr.left+15); 
-            l.setAttribute('y1',r1.top-cr.top+15); 
-            l.setAttribute('x2',r2.left-cr.left+15); 
-            l.setAttribute('y2',r2.top-cr.top+15); 
-            l.setAttribute('stroke','#333'); 
-            l.setAttribute('stroke-width','3'); 
-            document.getElementById('line-layer').appendChild(l); 
+        function lineBetween(f,t,color,width){
+            const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+            const r1=document.getElementById(`s-btn-${f}`).getBoundingClientRect();
+            const r2=document.getElementById(`s-btn-${t}`).getBoundingClientRect();
+            const cr=document.getElementById('box-container').getBoundingClientRect();
+            l.setAttribute('x1',r1.left-cr.left+r1.width/2);
+            l.setAttribute('y1',r1.top-cr.top+r1.height/2);
+            l.setAttribute('x2',r2.left-cr.left+r2.width/2);
+            l.setAttribute('y2',r2.top-cr.top+r2.height/2);
+            l.setAttribute('stroke',color);
+            l.setAttribute('stroke-width',width);
+            l.setAttribute('stroke-linecap','round');
+            document.getElementById('line-layer').appendChild(l);
+        }
+        function redrawLines(){
+            const layer=document.getElementById('line-layer');
+            layer.innerHTML='';
+            schnHistoryPaths.forEach(p=>{ for(let i=1;i<p.length;i++) lineBetween(p[i-1],p[i],'rgba(0,0,0,0.25)',3); });
+            for(let i=1;i<schnPath.length;i++) lineBetween(schnPath[i-1],schnPath[i],'#333',4);
         }
 
-        function schneckiDelete(){ 
-            schnCurrent=""; 
-            schnLastIdx=-1; 
-            document.getElementById('line-layer').innerHTML=''; 
-            document.querySelectorAll('.box-letter').forEach(el=>el.classList.remove('selected')); 
-            if(schnHistory.length>0) showToast("Neues Wort ansetzen!"); 
-            updateSchneckiUI(); 
+        // ⌫ löscht einen Buchstaben; am Wortanfang geht es ins vorige Wort zurück (wie im Original)
+        function schneckiDelete(){
+            if(schnFinished) return;
+            if(schnPath.length>1){ schnPath.pop(); }
+            else if(schnHistoryPaths.length>0){
+                schnPath=schnHistoryPaths.pop();
+                schnHistory.pop();
+                schnPath.pop();
+                recomputeUsed();
+            } else { schnPath=[]; }
+            updateSchneckiUI();
+        }
+        function recomputeUsed(){
+            schnUsed=new Set();
+            schnHistory.forEach(w=>w.split('').forEach(c=>schnUsed.add(c)));
         }
 
         function schneckiSubmit(){
-            if(schnCurrent.length<3){showToast("Zu kurz!");return;} 
-            if(!cleanWordList.includes(schnCurrent)){showToast("Kein bekanntes Wort!");return;}
-            
-            schnHistory.push(schnCurrent); 
-            schnCurrent.split('').forEach(c=>schnUsed.add(c)); 
-            
-            // Wenn man das Wort abschickt, bleibt der letzte Buchstabe als Start für das nächste markiert!
-            schnCurrent=""; 
-            document.getElementById('line-layer').innerHTML=''; 
-            
-            updateSchneckiUI(); 
-            
+            if(schnFinished) return;
+            const word=schnPath.map(i=>schnLetters[i]).join('');
+            if(word.length<3){showToast("Zu kurz!");return;}
+            if(!cleanWordList.includes(word)){showToast("Kein bekanntes Wort!");return;}
+
+            schnHistory.push(word);
+            schnHistoryPaths.push([...schnPath]);
+            word.split('').forEach(c=>schnUsed.add(c));
+            schnPath=[schnPath[schnPath.length-1]]; // nächstes Wort startet automatisch mit dem letzten Buchstaben
+
             if(schnUsed.size===12){
-                showToast("👑 SUPER LENI HAT GEWONNEN! 👑");
-                if(!schnFinished){
-                    schnFinished = true;
-                    recordGameResult('schnecki', {won: true, guesses: schnHistory.length, maxGuesses: schnHistory.length + 5});
-                }
+                schnFinished = true;
+                schnPath=[];
+                updateSchneckiUI();
+                showToast(schnHistory.length<=2 ? "👑 PERFEKT! SUPER LENI HAT GEWONNEN! 👑" : "👑 SUPER LENI HAT GEWONNEN! 👑");
+                const extra = { words_sum: schnHistory.length };
+                if(schnHistory.length<=2) extra.two_word_wins = 1;
+                recordGameResult('schnecki', {won: true, guesses: schnHistory.length, maxGuesses: schnHistory.length + 5, extra});
+                return;
             }
-            else showToast("Wort akzeptiert!");
+            updateSchneckiUI();
+            showToast("Wort akzeptiert!");
+        }
+
+        function showSchneckiSolution(){
+            if(schnFinished) return;
+            if(!schnSolution){ showToast("Keine 2-Wort-Lösung bekannt 🙈"); return; }
+            schnFinished = true;
+            document.getElementById('schnecki-history-list').innerText = `Lösung: ${schnSolution[0]} > ${schnSolution[1]}`;
+            recordGameResult('schnecki', {won: false, guesses: 1, maxGuesses: 1, extra: {revealed: 1}});
         }
 
         function updateSchneckiUI(){
+            schnCurrent=schnPath.map(i=>schnLetters[i]).join('');
             document.getElementById('schnecki-input').innerText=schnCurrent;
             document.getElementById('schnecki-progress').innerText=`${schnUsed.size} von 12 Buchstaben`;
             document.getElementById('schnecki-history-list').innerText=schnHistory.join(" > ") || "Starte dein erstes Wort!";
-            
+            const lastIdx = schnPath.length ? schnPath[schnPath.length-1] : -1;
             schnLetters.forEach((char,i)=>{
                 const b=document.getElementById(`s-btn-${i}`);
-                if(b) { 
-                    if(schnUsed.has(char)) b.classList.add('used'); 
-                    else b.classList.remove('used'); 
-                }
+                if(!b) return;
+                b.classList.toggle('used', schnUsed.has(char) || schnPath.includes(i));
+                b.classList.toggle('selected', i===lastIdx);
             });
+            redrawLines();
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>

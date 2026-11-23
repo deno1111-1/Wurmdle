@@ -135,6 +135,8 @@ let lastR = null;
 let lastC = null;
 let galaxysUndoCount = 0;
 let galaxysLevel = 1;
+let galaxysSolved = false;      // verhindert doppeltes Speichern
+let galaxysRevealed = false;    // Lösung angeschaut -> zählt nicht als Sieg
 
 function randomColor(){
   return `hsl(${Math.random()*360}, 65%, 70%)`;
@@ -147,6 +149,10 @@ function clonePlayerState() {
 startBtn.onclick = startGame;
 
 solveBtn.onclick = () => {
+  if (!galaxysSolved && !galaxysRevealed) {
+    galaxysRevealed = true;
+    recordGameResult('galaxys', {won: false, guesses: 1, maxGuesses: 1, extra: {revealed: 1}});
+  }
   history.push(clonePlayerState()); 
   for(let r=0; r<size; r++){
     for(let c=0; c<size; c++){
@@ -183,7 +189,10 @@ eraserBtn.onclick = () => {
 };
 
 function startGame(){
-  size = parseInt(sizeInput.value);
+  size = Math.min(14, Math.max(5, parseInt(sizeInput.value) || 8));
+  sizeInput.value = size;
+  galaxysSolved = false;
+  galaxysRevealed = false;
   document.getElementById("winOverlay").style.display = "none";
   galaxysUndoCount = 0;
   startGameTimer();
@@ -604,8 +613,26 @@ function checkWin() {
     }
   }
   
+  // Jede Galaxie muss zusammenhängend sein
+  for (let g of centers) {
+    let cells = [];
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (player[r][c] === g.id) cells.push([r, c]);
+    if (!cells.length) return;
+    let seen = new Set([cells[0].join()]), queue = [cells[0]];
+    while (queue.length) {
+      let [r, c] = queue.shift();
+      for (let [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        let nr = r + dr, nc = c + dc, k = nr + ',' + nc;
+        if (nr >= 0 && nr < size && nc >= 0 && nc < size && player[nr][nc] === g.id && !seen.has(k)) { seen.add(k); queue.push([nr, nc]); }
+      }
+    }
+    if (seen.size !== cells.length) return;
+  }
+  if (galaxysSolved) return;
+  galaxysSolved = true;
+  if (galaxysRevealed) return; // mit Lösungs-Knopf gelöst -> kein Sieg, kein Jubel
   document.getElementById("winOverlay").style.display = "flex";
-  recordGameResult('galaxys', {won: true, guesses: 1, maxGuesses: 1, extra: {undo_sum: galaxysUndoCount, levels_completed: 1}});
+  recordGameResult('galaxys', {won: true, guesses: 1, maxGuesses: 1, extra: {undo_sum: galaxysUndoCount, levels_completed: 1, [`size_${size}_solved`]: 1}});
 }
 
 startGame();

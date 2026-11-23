@@ -350,6 +350,8 @@
                 const pages = data.query.pages;
                 const pageId = Object.keys(pages)[0];
                 
+                // Bild verwerfen, wenn inzwischen schon eine andere Karte oben liegt
+                if (document.getElementById(`${prefix}-name`).innerText !== dinoName) return;
                 if (pageId !== "-1" && pages[pageId].thumbnail) {
                     document.getElementById(`${prefix}-img`).src = pages[pageId].thumbnail.source;
                     document.getElementById(`${prefix}-img`).style.display = "block";
@@ -455,7 +457,9 @@
 
         function endGame(winnerName) {
             const won = winnerName === "Leni";
-            recordGameResult('trumpf', {won: won, guesses: trumpfRoundCount, maxGuesses: trumpfRoundCount});
+            const extra = { rounds_sum: trumpfRoundCount, [`deck_${deckSizePerPlayer}_played`]: 1 };
+            if (won) extra[`deck_${deckSizePerPlayer}_won`] = 1;
+            recordGameResult('trumpf', {won: won, guesses: trumpfRoundCount, maxGuesses: trumpfRoundCount, extra});
             document.getElementById('arena').innerHTML = `
                 <h1 style="font-size: 3rem; color: #facc15; margin-bottom: 20px;">${winnerName} hat gewonnen!</h1>
                 <button class="next-btn" style="display:block;" onclick="location.reload()">Neues Spiel</button>

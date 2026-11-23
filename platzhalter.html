@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Platzhalter</title>
+    <style>
+        :root { --tile: 44px; --accent: #1ba1e2; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: var(--accent); text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem;
+            font-family: inherit;
+        }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); max-width: 85%; }
+
+        /* --- Setup --- */
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; font-family: inherit; }
+        .lang-btn.active { background: var(--accent); color: white; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 100px; text-align: center; background: #222; border: 2px solid var(--accent); color: white; border-radius: 10px; font-family: inherit; }
+        input[type="number"]:disabled { opacity: 0.4; }
+        .start-btn { background-color: var(--accent); padding: 15px 50px; font-size: 1.5rem; border: none; color: white; border-radius: 30px; margin-top: 20px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .start-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 320px; }
+
+        /* --- Spielansicht --- */
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #info-bar { display: flex; justify-content: center; gap: 20px; padding: 8px; color: #aaa; font-size: 0.85rem; flex-shrink: 0; }
+        #info-bar b { color: white; }
+        #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; touch-action: pan-y; }
+        #board-container { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 20px; margin-top: auto; margin-bottom: auto; }
+        .board-row { display: flex; gap: 5px; justify-content: center; }
+        .range-row { display: flex; gap: 5px; justify-content: center; margin-top: 6px; }
+        .range-cell { width: var(--tile); text-align: center; font-size: 0.7rem; color: #888; white-space: nowrap; }
+        .range-cell.narrow { color: var(--accent); font-weight: bold; }
+        .range-cell.ok { color: #538d4e; font-weight: bold; }
+
+        .tile {
+            width: var(--tile); height: var(--tile); border: 2px solid #3a3a3c; display: flex;
+            justify-content: center; align-items: center; font-size: calc(var(--tile) * 0.55);
+            font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box;
+            position: relative; background: #121213;
+        }
+        .tile.input { border-color: #555; cursor: pointer; }
+        .tile.correct { background-color: #538d4e; border-color: #538d4e; }
+        .tile.up { background-color: #b59f3b; border-color: #b59f3b; }
+        .tile.down { background-color: #1ba1e2; border-color: #1ba1e2; }
+        .tile.hinted::after { content: '💡'; position: absolute; top: -2px; right: 0; font-size: calc(var(--tile) * 0.28); }
+        .tile .arrow { position: absolute; top: 1px; right: 3px; font-size: calc(var(--tile) * 0.28); opacity: 0.9; }
+        .cursor-tile { box-shadow: 0 0 0 3px white inset; }
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #action-row { display: flex; gap: 10px; padding: 8px; flex-shrink: 0; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 10px 18px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .action-btn.danger { color: #ef4444; border-color: #ef4444; background: transparent; }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 15px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; padding: 0; height: 52px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; font-family: inherit; }
+        .key-large { flex: 1.5; font-size: 0.85rem; }
+        .key.disabled { background-color: #222; color: #444; pointer-events: none; }
+
+        /* --- Overlays --- */
+        .overlay { position: fixed; inset: 0; background: rgba(18,18,19,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1500; padding: 20px; box-sizing: border-box; text-align: center; overflow-y: auto; }
+        .overlay h2 { margin: 0 0 15px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>❓ Platzhalter</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Setup</h2>
+        <div class="info-text">Grenze für jede Position das Alphabet ein, bis du das Wort hast!</div>
+        <div class="setting-row"><span class="label">Sprache</span>
+            <div class="toggle-group">
+                <button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button>
+                <button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button>
+            </div>
+        </div>
+        <div class="setting-row"><span class="label">Buchstaben</span><input type="number" id="letter-count" value="5" min="3" max="9" oninput="localStorage.setItem('pp_letters', this.value)"></div>
+        <div class="setting-row"><span class="label">Versuche</span><input type="number" id="max-guesses" value="8" min="3" max="20" oninput="localStorage.setItem('pp_max', this.value)"></div>
+        <div id="loading-msg" style="color:#555; margin-top:10px; text-align:center;">Lade Wörterbuch...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="info-bar">Versuch <b id="info-guess">1 / 8</b></div>
+        <div id="board-scroll"><div id="board-container"></div></div>
+        <div id="action-row">
+            <button class="action-btn" onclick="giveHint()">💡 Tipp</button>
+            <button class="action-btn danger" onclick="giveUp()">Aufgeben</button>
+        </div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="end-overlay" class="overlay">
+        <h2 id="end-title"></h2>
+        <p id="end-word" style="font-size:1.2rem; margin: 5px 0;"></p>
+        <p id="end-info" style="color:#aaa; margin: 5px 0 25px;"></p>
+        <button class="start-btn" style="margin-top:0; font-size:1.2rem; padding:12px 40px;" onclick="playAgain()">NOCHMAL</button>
+        <button class="action-btn" style="margin-top:15px;" onclick="backToSettings()">⚙️ Einstellungen</button>
+        <a href="index.html" class="menu-btn" style="margin-top:15px; padding:10px 18px; font-size:1rem;">🏠 Hauptmenü</a>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        const GAME_KEY = 'platzhalter'; // TODO: bei Namensänderung anpassen (auch in stats.html GAME_LABELS)
+
+        // Mini-Wörterliste zum Debuggen: wird automatisch genutzt, wenn de.txt / en.txt nicht geladen werden können
+        const FALLBACK = {
+            de: ['KATZE', 'APFEL', 'VOGEL', 'STADT', 'BLUME'],
+            en: ['APPLE', 'BEACH', 'CHAIR', 'DANCE', 'EAGLE']
+        };
+
+        const keysDE = ["QWERTZUIOP", "ASDFGHJKL", "YXCVBNM"], keysEN = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+        let currentLang = 'de', dict = [], dictSet = new Set(), usingFallback = false;
+        let N = 5, MAX = 8, secret = '';
+        let lo = [], hi = [], locked = [], hinted = [], guess = [], cursor = 0;
+        let history = [], isActive = false, hintsUsed = 0;
+
+        window.onload = () => {
+            if (localStorage.getItem('pp_letters')) document.getElementById('letter-count').value = localStorage.getItem('pp_letters');
+            if (localStorage.getItem('pp_max')) document.getElementById('max-guesses').value = localStorage.getItem('pp_max');
+            const savedLang = localStorage.getItem('pp_lang') || 'de';
+            setTimeout(() => loadWords(savedLang), 100);
+            document.addEventListener('keydown', handleGlobalKey);
+            window.addEventListener('resize', () => { if (isActive) { updateTileSize(); } });
+        };
+
+        /* ---------- Hilfsfunktionen ---------- */
+        const code = ch => ch.charCodeAt(0) - 65;
+        const chr = c => String.fromCharCode(65 + c);
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = msg; t.style.display = 'block';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2200);
+        }
+
+        function cleanList(t) {
+            const out = [];
+            const l = t.split('\n');
+            for (let i = 0; i < l.length; i++) {
+                const w = l[i].trim().toUpperCase();
+                if (w.length >= 3 && /^[A-Z]+$/.test(w)) out.push(w);
+            }
+            return out;
+        }
+
+        /* ---------- Wörterbuch ---------- */
+        async function loadWords(lang) {
+            currentLang = lang;
+            localStorage.setItem('pp_lang', lang);
+            document.getElementById('loading-msg').innerText = 'Lade Wörterbuch...';
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className = lang === 'de' ? 'lang-btn active' : 'lang-btn';
+            document.getElementById('btn-en').className = lang === 'en' ? 'lang-btn active' : 'lang-btn';
+            const lenInput = document.getElementById('letter-count');
+            try {
+                const r = await fetch(lang === 'de' ? 'de.txt' : 'en.txt');
+                if (!r.ok) throw new Error('Offline');
+                dict = cleanList(await r.text());
+                if (dict.length === 0) throw new Error('Leer');
+                usingFallback = false;
+                lenInput.disabled = false;
+                // Englisch: Lösungswörter mit 5 Buchstaben aus der bereinigten Liste (keine komischen Wörter)
+                cleanEn5 = [];
+                if (lang === 'en') {
+                    try {
+                        const r2 = await fetch('en_5letter_ohnekomische.txt');
+                        if (r2.ok) cleanEn5 = cleanList(await r2.text()).filter(w => w.length === 5);
+                    } catch (e) {}
+                }
+                document.getElementById('loading-msg').innerText = `✅ ${dict.length.toLocaleString('de-DE')} Wörter geladen`;
+            } catch (e) {
+                dict = FALLBACK[lang].slice();
+                usingFallback = true;
+                lenInput.value = 5; lenInput.disabled = true;
+                document.getElementById('loading-msg').innerText = '';
+            }
+            dictSet = new Set(dict);
+            document.getElementById('start-btn').disabled = false;
+        }
+
+        /* ---------- Spielstart ---------- */
+        function startGame() {
+            N = Math.max(3, Math.min(9, parseInt(document.getElementById('letter-count').value) || 5));
+            MAX = Math.max(3, Math.min(20, parseInt(document.getElementById('max-guesses').value) || 8));
+            if (usingFallback) N = 5;
+            const pool = dict.filter(w => w.length === N);
+            if (pool.length === 0) { showToast(`Keine Wörter mit ${N} Buchstaben!`); return; }
+            const useClean = currentLang === 'en' && N === 5 && cleanEn5.length > 0;
+            dictSetForLen = new Set(useClean ? [...pool, ...cleanEn5] : pool);
+            const secretPool = useClean ? cleanEn5 : pool;
+            secret = secretPool[Math.floor(Math.random() * secretPool.length)];
+            lo = Array(N).fill(0); hi = Array(N).fill(25);
+            locked = Array(N).fill(false); hinted = Array(N).fill(false);
+            guess = Array(N).fill('');
+            history = []; hintsUsed = 0; cursor = 0; isActive = true;
+
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('game-view').style.display = 'flex';
+            document.getElementById('settings-btn').style.display = 'inline-block';
+            document.getElementById('end-overlay').style.display = 'none';
+            createKeyboard();
+            updateTileSize();
+            render();
+            if (typeof startGameTimer === 'function') startGameTimer();
+        }
+        let dictSetForLen = new Set(), cleanEn5 = [];
+
+        function playAgain() { startGame(); }
+
+        function backToSettings() {
+            isActive = false;
+            document.getElementById('end-overlay').style.display = 'none';
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('setup-area').style.display = 'flex';
+            document.getElementById('settings-btn').style.display = 'none';
+        }
+
+        function updateTileSize() {
+            const w = Math.min(window.innerWidth, 500) - 30;
+            const size = Math.max(28, Math.min(44, Math.floor((w - (N - 1) * 5) / N)));
+            document.documentElement.style.setProperty('--tile', size + 'px');
+        }
+
+        /* ---------- Rendering ---------- */
+        function render() {
+            const box = document.getElementById('board-container');
+            let h = '';
+            history.forEach(row => {
+                h += '<div class="board-row">';
+                row.letters.forEach((l, i) => {
+                    const st = row.states[i];
+                    const arrow = st === 'up' ? '<span class="arrow">▼</span>' : st === 'down' ? '<span class="arrow">▲</span>' : '';
+                    h += `<div class="tile ${st}">${l}${arrow}</div>`;
+                });
+                h += '</div>';
+            });
+            // Bereichsanzeige pro Position
+            h += '<div class="range-row">';
+            for (let i = 0; i < N; i++) {
+                if (locked[i]) h += '<div class="range-cell ok">✓</div>';
+                else if (lo[i] === hi[i]) h += `<div class="range-cell narrow">${chr(lo[i])}</div>`;
+                else h += `<div class="range-cell ${lo[i] > 0 || hi[i] < 25 ? 'narrow' : ''}">${chr(lo[i])}–${chr(hi[i])}</div>`;
+            }
+            h += '</div>';
+            // Aktive Zeile
+            h += '<div class="board-row" id="active-row">';
+            for (let i = 0; i < N; i++) {
+                const cls = locked[i] ? 'correct' + (hinted[i] ? ' hinted' : '') : 'input' + (i === cursor ? ' cursor-tile' : '');
+                h += `<div class="tile ${cls}" onclick="selectCell(${i})">${guess[i] || ''}</div>`;
+            }
+            h += '</div>';
+            box.innerHTML = h;
+            document.getElementById('info-guess').innerText = `${Math.min(history.length + 1, MAX)} / ${MAX}`;
+            const sc = document.getElementById('board-scroll');
+            sc.scrollTop = sc.scrollHeight;
+            updateKeyboard();
+        }
+
+        function shakeActive() {
+            const row = document.getElementById('active-row');
+            if (!row) return;
+            [...row.children].forEach(t => { t.classList.remove('shake-effect'); void t.offsetWidth; t.classList.add('shake-effect'); });
+        }
+
+        function shakeCursorTile() {
+            const row = document.getElementById('active-row');
+            if (!row || !row.children[cursor]) return;
+            const t = row.children[cursor];
+            t.classList.remove('shake-effect'); void t.offsetWidth; t.classList.add('shake-effect');
+        }
+
+        /* ---------- Tastatur ---------- */
+        function appKey(p, t, c, a) { const b = document.createElement('button'); b.className = 'key ' + c; b.innerText = t; b.onclick = a; p.appendChild(b); }
+
+        function createKeyboard() {
+            const kb = document.getElementById('keyboard-container');
+            kb.innerHTML = '';
+            const lay = currentLang === 'de' ? keysDE : keysEN;
+            lay.forEach((row, i) => {
+                const d = document.createElement('div'); d.className = 'keyboard-row';
+                if (i === lay.length - 1) appKey(d, '⌫', 'key-large', () => handleKey('BACK'));
+                for (const c of row) {
+                    const k = document.createElement('button'); k.className = 'key'; k.id = 'key-' + c; k.innerText = c;
+                    k.onclick = () => handleKey(c);
+                    d.appendChild(k);
+                }
+                if (i === lay.length - 1) appKey(d, 'ENTER', 'key-large', () => handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+
+        function isAllowed(slot, letter) {
+            if (locked[slot]) return false;
+            const c = code(letter);
+            return c >= lo[slot] && c <= hi[slot];
+        }
+
+        function updateKeyboard() {
+            document.querySelectorAll('.key').forEach(k => {
+                if (k.id.length !== 5) return; // nur Buchstaben (key-X)
+                const letter = k.id.replace('key-', '');
+                k.classList.toggle('disabled', !isActive || !isAllowed(cursor, letter));
+            });
+        }
+
+        /* ---------- Eingabe ---------- */
+        function handleGlobalKey(e) {
+            if (!isActive) return;
+            const k = e.key.toUpperCase();
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (k === 'ENTER') { handleKey('ENTER'); e.preventDefault(); }
+            else if (k === 'BACKSPACE') { handleKey('BACK'); e.preventDefault(); }
+            else if (k === 'ARROWLEFT') { moveCursor(-1); e.preventDefault(); }
+            else if (k === 'ARROWRIGHT') { moveCursor(1); e.preventDefault(); }
+            else if (/^[A-Z]$/.test(k)) handleKey(k);
+        }
+
+        function moveCursor(dir) {
+            for (let i = cursor + dir; i >= 0 && i < N; i += dir) {
+                if (!locked[i]) { cursor = i; render(); return; }
+            }
+        }
+
+        function selectCell(i) {
+            if (!isActive || locked[i]) return;
+            cursor = i;
+            render();
+        }
+
+        function firstUnlocked() { return locked.findIndex(l => !l); }
+
+        function handleKey(k) {
+            if (!isActive) return;
+            if (k === 'ENTER') { submitGuess(); return; }
+            if (k === 'BACK') {
+                if (locked[cursor]) { const f = firstUnlocked(); if (f > -1) cursor = f; }
+                if (guess[cursor]) { guess[cursor] = ''; }
+                else {
+                    for (let i = cursor - 1; i >= 0; i--) {
+                        if (!locked[i]) { cursor = i; guess[i] = ''; break; }
+                    }
+                }
+                render();
+                return;
+            }
+            // Buchstabe
+            if (locked[cursor]) { const f = firstUnlocked(); if (f === -1) return; cursor = f; }
+            if (!isAllowed(cursor, k)) { shakeCursorTile(); return; }
+            guess[cursor] = k;
+            // nächstes leeres, unverriegeltes Feld (rechts, dann von vorn); sonst auf dem Feld bleiben
+            for (let step = 1; step < N; step++) {
+                const j = (cursor + step) % N;
+                if (!locked[j] && !guess[j]) { cursor = j; break; }
+            }
+            render();
+        }
+
+        /* ---------- Auswertung ---------- */
+        function submitGuess() {
+            if (guess.some(g => !g)) { showToast('Wort ist noch nicht vollständig!'); shakeActive(); return; }
+            const word = guess.join('');
+            if (!dictSetForLen.has(word)) { showToast('Wort nicht im Wörterbuch!'); shakeActive(); return; }
+
+            const states = [];
+            for (let i = 0; i < N; i++) {
+                const g = code(word[i]), s = code(secret[i]);
+                if (g === s) { states.push('correct'); locked[i] = true; lo[i] = hi[i] = s; }
+                else if (g < s) { states.push('up'); lo[i] = Math.max(lo[i], g + 1); }
+                else { states.push('down'); hi[i] = Math.min(hi[i], g - 1); }
+            }
+            history.push({ letters: word.split(''), states });
+
+            if (word === secret) { finishGame(true); return; }
+            if (history.length >= MAX) { finishGame(false); return; }
+
+            // nächste Zeile vorbereiten
+            guess = guess.map((g, i) => locked[i] ? secret[i] : '');
+            cursor = Math.max(0, firstUnlocked());
+            render();
+        }
+
+        function giveHint() {
+            if (!isActive) return;
+            const open = locked.map((l, i) => l ? -1 : i).filter(i => i > -1);
+            if (open.length === 0) { showToast('Alle Buchstaben sind schon bekannt!'); return; }
+            const idx = open[Math.floor(Math.random() * open.length)];
+            locked[idx] = true; hinted[idx] = true;
+            lo[idx] = hi[idx] = code(secret[idx]);
+            guess[idx] = secret[idx];
+            hintsUsed++;
+            if (locked[cursor]) { const f = firstUnlocked(); if (f > -1) cursor = f; }
+            render();
+            showToast(`Tipp: "${secret[idx]}" an Pos ${idx + 1}`);
+        }
+
+        function giveUp() { if (isActive) finishGame(false); }
+
+        function finishGame(won) {
+            isActive = false;
+            const used = history.length;
+            render();
+            const title = document.getElementById('end-title');
+            title.innerText = won ? '🎉 Super Leni hat gewonnen! 🎉' : 'Schade, verloren!';
+            title.style.color = won ? '#538d4e' : '#ef4444';
+            document.getElementById('end-word').innerText = `Das gesuchte Wort war: ${secret}`;
+            document.getElementById('end-info').innerText = won
+                ? `Du hast ${used} Versuch(e) gebraucht${hintsUsed ? ` (${hintsUsed} Tipp${hintsUsed > 1 ? 's' : ''})` : ''}!`
+                : '';
+            setTimeout(() => { document.getElementById('end-overlay').style.display = 'flex'; }, won ? 700 : 400);
+
+            if (!usingFallback && typeof recordGameResult === 'function') {
+                try {
+                    const extra = { hints_used_total: hintsUsed, [`len${N}`]: 1, [`lang_${currentLang}`]: 1 };
+                    if (won && hintsUsed === 0) extra.hintless_wins = 1;
+                    if (won) extra.fastest_solve_seconds = getElapsedSeconds();
+                    recordGameResult(GAME_KEY, { won, guesses: Math.max(used, 1), maxGuesses: MAX, extra });
+                } catch (e) { console.warn('Stats konnten nicht gespeichert werden', e); }
+            }
+        }
+    </script>
+</body>
+</html>

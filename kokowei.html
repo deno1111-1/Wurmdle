@@ -213,7 +213,7 @@
         function showToast(txt) {
             const t = document.getElementById('msg-toast');
             t.innerText = txt; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 2500);
+            (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2500));
         }
 
         function backToMenu() {
@@ -255,6 +255,25 @@
             saveState();
         }
 
+        // Tastatur: Zahlen, Pfeiltasten, Entf/Backspace, N für Notizen
+        document.addEventListener('keydown', (e) => {
+            if (!isGameActive) return;
+            const k = e.key;
+            if (/^[1-9]$/.test(k) && parseInt(k) <= N) { handleInput(parseInt(k)); e.preventDefault(); }
+            else if (k === 'Backspace' || k === 'Delete' || k === '0') { handleInput(0); e.preventDefault(); }
+            else if (k === 'n' || k === 'N') { toggleNotes(); }
+            else if (k.startsWith('Arrow')) {
+                const cur = activeCell || {r: 0, c: 0};
+                let r = cur.r, c = cur.c;
+                if (activeCell) {
+                    if (k === 'ArrowUp') r = Math.max(0, r - 1);
+                    if (k === 'ArrowDown') r = Math.min(N - 1, r + 1);
+                    if (k === 'ArrowLeft') c = Math.max(0, c - 1);
+                    if (k === 'ArrowRight') c = Math.min(N - 1, c + 1);
+                }
+                selectCell(r, c); e.preventDefault();
+            }
+        });
         function toggleNotes() {
             if(!isGameActive) return;
             isNoteMode = !isNoteMode;
@@ -643,7 +662,9 @@
             activeCell = null;
             document.querySelectorAll('.playable').forEach(el => el.classList.remove('selected'));
             isGameActive = false;
-            recordGameResult('kokowei', {won: true, guesses: 1, maxGuesses: 1, extra: {hint_sum: kokoweiHintCount, undo_sum: kokoweiUndoCount}});
+            const extra = {hint_sum: kokoweiHintCount, undo_sum: kokoweiUndoCount, [`size_${N}_solved`]: 1};
+            if (kokoweiHintCount === 0) extra.hintless_wins = 1;
+            recordGameResult('kokowei', {won: true, guesses: 1, maxGuesses: 1, extra});
             
             setTimeout(() => {
                 document.getElementById('win-modal').style.display = 'flex';

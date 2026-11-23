@@ -274,7 +274,7 @@
 
         let layout = []; let regionMap = []; let regions = {}; let boardState = []; let dominos = []; let solutionPlacements = []; 
         let bonusMap = []; 
-        let dominoRoundSolved = false; let dominoUsedBonusRule = false;
+        let dominoRoundSolved = false; let dominoUsedBonusRule = false; let dominoHintCount = 0;
         const boardEl = document.getElementById('game-board');
         const trayEl = document.getElementById('tray');
         const statusEl = document.getElementById('status-bar');
@@ -311,6 +311,7 @@
             clearHints(); boardEl.innerHTML = ''; trayEl.innerHTML = '';
             statusEl.innerText = 'Ordne alle Dittos richtig an!'; statusEl.className = '';
             dominoRoundSolved = false;
+            dominoHintCount = 0;
             dominoUsedBonusRule = document.getElementById('rule-bonus').checked;
             startGameTimer();
             layout = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(false));
@@ -526,6 +527,7 @@
 
         function showHint() {
             clearHints(); 
+            if (!dominoRoundSolved) dominoHintCount++;
             let unsatisfied = solutionPlacements.find(sp => {
                 return !dominos.find(d => d.x === sp.x && d.y === sp.y && 
                     ((d.orientation === sp.dir && d.val1 === sp.v1 && d.val2 === sp.v2) ||
@@ -686,7 +688,8 @@
                 statusEl.innerText = "Juppie Leni! Alle Dittos haben sich perfekt verwandelt! 🫟✨"; statusEl.className = "status-win";
                 if (!dominoRoundSolved) {
                     dominoRoundSolved = true;
-                    const extra = {};
+                    const extra = { hint_sum: dominoHintCount, dominos_sum: dominos.length };
+                    if (dominoHintCount === 0) extra.hintless_wins = 1;
                     if (dominoUsedBonusRule) extra.bonus_rule_used = 1;
                     recordGameResult('domino', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
                 }

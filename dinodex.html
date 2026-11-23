@@ -222,7 +222,7 @@
                 const btn=document.createElement('div');
                 const isActive=sortField===sf.key;
                 btn.className='sort-chip'+(isActive?' active':'');
-                const arrow = isActive ? (sortDir==='desc' ? '▲' : '▼') : '⇅';
+                const arrow = isActive ? (sortDir==='desc' ? '▼' : '▲') : '⇅';
                 btn.innerText = `${sf.label} ${arrow}`;
                 btn.onclick=()=>onSortClick(sf.key);
                 row.appendChild(btn);

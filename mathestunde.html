@@ -140,6 +140,7 @@
         const boardContainer = document.getElementById('board');
         let boardEls = [];
         let mathestundeSolved = false;
+        let mathestundeRevealed = false; // Lösung angezeigt -> kein Sieg
 
         function openMenu() {
             document.getElementById('main-menu-overlay').style.display = 'flex';
@@ -265,7 +266,7 @@
                     currentValEl.innerText = res + " - Perfekt gelöst!";
                     currentValEl.className = 'success-text';
                     vibrate(100); 
-                    if (!mathestundeSolved) {
+                    if (!mathestundeSolved && !mathestundeRevealed) {
                         mathestundeSolved = true;
                         recordGameResult('mathestunde', {won: true, guesses: 1, maxGuesses: 1, extra: {['difficulty_' + gameState.numCount + '_played']: 1, ['difficulty_' + gameState.numCount + '_won']: 1}});
                     }
@@ -374,6 +375,7 @@
             gameState.slots = new Array(gameState.totalSlots).fill(null);
             gameState.selectedTile = null;
             mathestundeSolved = false;
+            mathestundeRevealed = false;
             startGameTimer();
             
             // Beide Pools für den frischen Start komplett leeren!
@@ -415,6 +417,10 @@
         // --- LÖSUNG ZEIGEN ---
         function showSolution() {
             if (!gameState.solution || gameState.solution.length === 0) return;
+            if (!mathestundeSolved && !mathestundeRevealed) {
+                mathestundeRevealed = true;
+                recordGameResult('mathestunde', {won: false, guesses: 1, maxGuesses: 1, extra: {revealed: 1, ['difficulty_' + gameState.numCount + '_revealed']: 1}});
+            }
 
             boardEls.forEach((slot, index) => {
                 if (slot.hasChildNodes()) {

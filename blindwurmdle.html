@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Blindwurmdle</title>
+    <style>
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #f0a4d0; text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; flex-wrap: wrap; justify-content: center; }
+        .lang-btn { background: transparent; border: none; color: #aaa; padding: 10px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+        .lang-btn.active { background: #f0a4d0; color: #3c1f30; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 100px; text-align: center; background: #222; border: 2px solid #f0a4d0; color: white; border-radius: 10px; }
+        .start-btn { background-color: #f0a4d0; padding: 15px 50px; font-size: 1.5rem; border: none; color: #3c1f30; border-radius: 30px; margin-top: 20px; font-weight: bold; cursor: pointer; }
+        .start-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 340px; }
+        .checkbox-container { display: flex; align-items: center; gap: 8px; color: #ccc; font-size: 0.95rem; }
+        .checkbox-container input { transform: scale(1.4); }
+
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #info-bar { display: flex; justify-content: center; gap: 20px; padding: 8px; color: #aaa; font-size: 0.85rem; flex-shrink: 0; }
+        #info-bar b { color: white; }
+
+        #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; }
+        #board-container { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 20px; }
+        .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; }
+        .tile { width: 44px; height: 44px; border: 2px solid #3a3a3c; background-color: #1c1c1e; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box; }
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .locked { background-color: #1c1c1e; border: 2px dashed #444; color: #666; }
+        .active-tile { border-color: #f0a4d0; }
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #action-row { display: flex; gap: 10px; padding: 8px; flex-shrink: 0; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 10px 18px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .give-up-btn { background: #ef4444; border-color: #ef4444; }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 15px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; padding: 0; height: 52px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
+        .key-large { flex: 1.5; font-size: 0.85rem; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #f0a4d0; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #f0a4d0; }
+        #win-word { font-size: 2rem; margin: 10px 0; letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🪱👩‍🦯 Blindwurmdle</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Einstellungen</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Blindwurmdle Setup</h2>
+        <div class="info-text">Wie Wurmdle – aber in jeder Zeile sind einige Felder <b>verdeckt</b> (gestrichelt). Dort bekommst du keine Farbe zurück. Plane deine Wörter so, dass die wichtigen Buchstaben auf den offenen Feldern landen!</div>
+
+        <div class="setting-row"><span class="label">Sprache</span><div class="toggle-group"><button class="lang-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button><button class="lang-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button></div></div>
+        <div class="setting-row"><span class="label">Buchstaben (= Versuche)</span><input type="number" id="letter-count" value="5" min="3" max="9"></div>
+
+        <div class="setting-row">
+            <span class="label">Aufdeck-Modus</span>
+            <div class="toggle-group">
+                <button class="lang-btn active" id="mode-treppe" onclick="setMode('treppe')">🪜 Treppe</button>
+                <button class="lang-btn" id="mode-zufallstreppe" onclick="setMode('zufallstreppe')">🎲🪜 Zufalls-Treppe</button>
+                <button class="lang-btn" id="mode-komplettzufall" onclick="setMode('komplettzufall')">🎲 Komplett-Zufall</button>
+            </div>
+        </div>
+
+        <label class="checkbox-container">
+            <input type="checkbox" id="babybubu-checkbox" onchange="toggleBabybubu()">
+            Babybubu Modus 🍼 (Extra-Versuche)
+        </label>
+        <div id="babybubu-input-container" style="display:none;">
+            <input type="number" id="babybubu-extra" value="1" min="1" max="50" onchange="saveBabybubu()">
+        </div>
+
+        <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="info-bar">Versuch <b id="info-row">1</b> / <b id="info-max">5</b></div>
+        <div id="board-scroll"><div id="board-container"></div></div>
+        <div id="action-row"><button class="action-btn" onclick="giveHint()">💡 Hint</button><button class="action-btn give-up-btn" onclick="giveUp()">Aufgeben 🏳️</button></div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Richtig! 🎉</h2>
+            <p id="modal-desc">Geschafft!</p>
+            <div id="win-word">---</div>
+            <button class="action-btn" onclick="location.reload()" style="width: 100%; margin-top: 15px;">Neues Spiel</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){} try{const o=JSON.parse(window.name||'{}');o[k]=String(v);window.name=JSON.stringify(o);}catch(e){}}
+        function lsGet(k){try{const v=localStorage.getItem(k);if(v!==null)return v;}catch(e){} try{const o=JSON.parse(window.name||'{}');return o[k]!==undefined?o[k]:null;}catch(e){return null;}}
+        let currentLang='de', deList=[], enFullList=[], en5List=[], inputValidSet=new Set();
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        let currentMode='treppe';
+        let treppeDirection='end';
+        let wordLength=5, secret='', maxGuesses=5, revealSchedule=[];
+        let rows=[], curRow=0, curCol=0, isGameActive=false;
+        let hintsUsedTotal=0;
+
+        window.onload=()=>{
+            if(lsGet('bw_letters')) document.getElementById('letter-count').value = lsGet('bw_letters');
+            const savedMode = lsGet('bw_mode');
+            if(savedMode) setMode(savedMode);
+            const savedExtra = lsGet('bw_babybubu_extra');
+            if(savedExtra) document.getElementById('babybubu-extra').value = savedExtra;
+            if(lsGet('bw_babybubu')==='1'){
+                document.getElementById('babybubu-checkbox').checked = true;
+                toggleBabybubu();
+            }
+            const savedLang = lsGet('bw_lang') || 'de';
+            setTimeout(()=>loadWords(savedLang), 100);
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function handleGlobalKey(e){
+            const k=e.key.toUpperCase();
+            if(!isGameActive) return;
+            if(k==='ENTER'){handleKey('ENTER');e.preventDefault();}
+            else if(k==='BACKSPACE'){handleKey('BACK');e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)handleKey(k);
+        }
+
+        function setMode(m){
+            currentMode=m;
+            lsSet('bw_mode', m);
+            ['treppe','zufallstreppe','komplettzufall'].forEach(id=>{
+                document.getElementById('mode-'+id).className = (id===m) ? 'lang-btn active' : 'lang-btn';
+            });
+        }
+
+        function saveBabybubu(){
+            lsSet('bw_babybubu', document.getElementById('babybubu-checkbox').checked ? '1' : '0');
+            lsSet('bw_babybubu_extra', document.getElementById('babybubu-extra').value);
+        }
+
+        function toggleBabybubu(){
+            const checked=document.getElementById('babybubu-checkbox').checked;
+            document.getElementById('babybubu-input-container').style.display = checked ? 'block' : 'none';
+            saveBabybubu();
+        }
+
+        function cleanList(t){
+            const out=[]; const l=t.split('\n');
+            for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))out.push(w);}
+            return out;
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            lsSet('bw_lang', lang);
+            document.getElementById('loading-msg').innerText="Lade Wörterbuch...";
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className=lang==='de'?'lang-btn active':'lang-btn';
+            document.getElementById('btn-en').className=lang==='en'?'lang-btn active':'lang-btn';
+            try{
+                if(lang==='de'){
+                    const r=await fetch('de.txt'); if(!r.ok)throw new Error("Offline");
+                    deList=cleanList(await r.text());
+                } else {
+                    const [r1,r2]=await Promise.all([fetch('en.txt'),fetch('en_5letter_ohnekomische.txt')]);
+                    if(!r1.ok||!r2.ok)throw new Error("Offline");
+                    enFullList=cleanList(await r1.text());
+                    en5List=cleanList(await r2.text());
+                }
+                document.getElementById('loading-msg').innerText="Bereit.";
+                document.getElementById('start-btn').disabled=false;
+            }catch(e){
+                document.getElementById('loading-msg').innerText="Fehler beim Laden!";
+                alert("Fehler beim Laden: "+e.message);
+            }
+        }
+
+        function evaluateWord(guess, secretWord){
+            const w=secretWord.split(''), u=guess.split('');
+            let st=new Array(u.length).fill(0);
+            for(let i=0;i<u.length;i++){if(u[i]===w[i]){st[i]=2;w[i]=null;u[i]=null;}}
+            for(let i=0;i<u.length;i++){if(u[i]!==null&&w.indexOf(u[i])>-1){st[i]=1;w[w.indexOf(u[i])]=null;}}
+            return st;
+        }
+
+        function shuffleIndices(n){
+            const arr=[...Array(n).keys()];
+            for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+            return arr;
+        }
+
+        /* Erzeugt für jede Zeile, welche Positionen frei (sichtbar) sind */
+        function buildRevealSchedule(){
+            const sched=[];
+            if(currentMode==='treppe'){
+                for(let r=0;r<maxGuesses;r++){
+                    const freeCount=Math.min(r+1, wordLength);
+                    const free=new Set();
+                    if(treppeDirection==='end'){
+                        for(let p=wordLength-freeCount; p<wordLength; p++) free.add(p);
+                    } else {
+                        for(let p=0; p<freeCount; p++) free.add(p);
+                    }
+                    sched.push(free);
+                }
+            } else if(currentMode==='zufallstreppe'){
+                for(let r=0;r<maxGuesses;r++){
+                    const freeCount=Math.min(r+1, wordLength);
+                    const idx=shuffleIndices(wordLength).slice(0, freeCount);
+                    sched.push(new Set(idx));
+                }
+            } else { /* komplett-zufall */
+                for(let r=0;r<maxGuesses;r++){
+                    const coveredCount = wordLength<=1 ? 0 : 1+Math.floor(Math.random()*(wordLength-1));
+                    const freeCount = wordLength-coveredCount;
+                    const idx=shuffleIndices(wordLength).slice(0, freeCount);
+                    sched.push(new Set(idx));
+                }
+            }
+            return sched;
+        }
+
+        function startGame(){
+            wordLength=parseInt(document.getElementById('letter-count').value)||5;
+            if(wordLength<3||wordLength>9){alert("Bitte 3-9 Buchstaben wählen!");return;}
+            lsSet('bw_letters', wordLength);
+            saveBabybubu();
+
+            let solutionPool, validSet;
+            if(currentLang==='de'){
+                const pool=deList.filter(w=>w.length===wordLength);
+                solutionPool=pool; validSet=new Set(pool);
+            } else {
+                if(wordLength===5){
+                    solutionPool=en5List.filter(w=>w.length===5);
+                    validSet=new Set([...enFullList.filter(w=>w.length===5), ...en5List]);
+                } else {
+                    const pool=enFullList.filter(w=>w.length===wordLength);
+                    solutionPool=pool; validSet=new Set(pool);
+                }
+            }
+            if(solutionPool.length<1){alert("Zu wenige Wörter für diese Einstellung!");return;}
+            inputValidSet=validSet;
+            secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
+
+            const babybubuOn=document.getElementById('babybubu-checkbox').checked;
+            const extra=babybubuOn ? (parseInt(document.getElementById('babybubu-extra').value)||0) : 0;
+            maxGuesses=wordLength+extra;
+
+            treppeDirection = Math.random()<0.5 ? 'end' : 'start';
+            revealSchedule=buildRevealSchedule();
+            rows=Array.from({length:maxGuesses},()=>({letters:new Array(wordLength).fill(''), solved:false, pattern:null}));
+            curRow=0; curCol=0;
+            keyboardStatus={};
+            hintsUsedTotal=0;
+
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            document.getElementById('settings-btn').style.display='inline-block';
+            document.getElementById('info-max').innerText=maxGuesses;
+
+            isGameActive=true;
+            if(typeof startGameTimer==='function') startGameTimer();
+            createKeyboard();
+            renderBoard();
+            updateInfoBar();
+        }
+
+        function backToSettings(){
+            isGameActive=false;
+            document.getElementById('game-view').style.display='none';
+            document.getElementById('settings-btn').style.display='none';
+            document.getElementById('setup-area').style.display='flex';
+        }
+
+        function renderBoard(){
+            const c=document.getElementById('board-container');
+            c.innerHTML='';
+            rows.forEach((row,ri)=>{
+                const rd=document.createElement('div');
+                rd.className='board-row';
+                for(let ci=0;ci<wordLength;ci++){
+                    const t=document.createElement('div');
+                    let cls='tile';
+                    const isFree=revealSchedule[ri].has(ci);
+                    /* bedeckte Felder sind IMMER als "locked" erkennbar, egal ob die Zeile schon geloest ist - so kann man von Anfang an strategisch planen */
+                    if(!isFree){
+                        cls+=' locked';
+                    }
+                    if(row.solved && isFree){
+                        cls+=' '+(row.pattern[ci]===2?'correct':row.pattern[ci]===1?'present':'absent');
+                    }
+                    if(!row.solved && ri===curRow && ci===curCol){
+                        cls+=' active-tile';
+                    }
+                    t.className=cls;
+                    t.innerText=row.letters[ci]||'';
+                    rd.appendChild(t);
+                }
+                c.appendChild(rd);
+            });
+        }
+
+        function handleKey(k){
+            if(!isGameActive)return;
+            const row=rows[curRow];
+            if(!row)return;
+            if(k==='ENTER'){submitRow();return;}
+            if(k==='BACK'){
+                if(row.letters[curCol]){
+                    row.letters[curCol]='';
+                } else if(curCol>0){
+                    curCol--;
+                    row.letters[curCol]='';
+                }
+                renderBoard();return;
+            }
+            if(curCol<wordLength){
+                row.letters[curCol]=k;
+                if(curCol<wordLength-1)curCol++;
+                renderBoard();
+            }
+        }
+
+        function submitRow(){
+            const row=rows[curRow];
+            if(row.letters.includes('')){showToast("Zeile unvollständig!");shakeRow(curRow);return;}
+            const word=row.letters.join('').toUpperCase();
+            if(!inputValidSet.has(word)){showToast("Wort nicht im Wörterbuch!");shakeRow(curRow);return;}
+
+            row.pattern=evaluateWord(word, secret);
+            row.solved=true;
+            updateKeyboardColors(row, curRow);
+            renderBoard();
+
+            if(word===secret){
+                isGameActive=false; // sofort sperren: sonst Eingaben/Aufgeben während der Animation -> doppeltes Ergebnis
+                const covered = wordLength - revealSchedule[curRow].size;
+                setTimeout(()=>triggerEnd(true, covered), 500);
+                return;
+            }
+
+            curRow++;
+            curCol=0;
+            updateInfoBar();
+
+            if(curRow>=maxGuesses){
+                isGameActive=false;
+                setTimeout(()=>triggerEnd(false, null), 500);
+                return;
+            }
+            renderBoard();
+        }
+
+        function shakeRow(ri){
+            const el=document.getElementById('board-container').children[ri];
+            if(!el)return;
+            [...el.children].forEach(t=>{t.classList.remove('shake-effect');void t.offsetWidth;t.classList.add('shake-effect');});
+        }
+
+        // Hint: deckt in der aktuellen Zeile ein verdecktes Feld auf.
+        // Ist dort nichts mehr verdeckt, verrät er einen Buchstaben des Lösungsworts.
+        function giveHint(){
+            if(!isGameActive)return;
+            const free=revealSchedule[curRow];
+            const covered=[...Array(wordLength).keys()].filter(p=>!free.has(p));
+            hintsUsedTotal++;
+            if(covered.length){
+                const p=covered[Math.floor(Math.random()*covered.length)];
+                free.add(p);
+                renderBoard();
+                showToast(`Feld ${p+1} in dieser Zeile ist jetzt offen 👀`);
+            } else {
+                const idx=Math.floor(Math.random()*wordLength);
+                showToast(`Tipp: "${secret[idx]}" an Pos ${idx+1}`);
+            }
+        }
+
+        function giveUp(){
+            if(!isGameActive)return;
+            triggerEnd(false, null);
+        }
+
+        function updateInfoBar(){
+            document.getElementById('info-row').innerText = Math.min(curRow+1, maxGuesses);
+        }
+
+        let keyboardStatus={};
+        function updateKeyboardColors(row, rowIndex){
+            const free=revealSchedule[rowIndex];
+            row.letters.forEach((ch,pos)=>{
+                if(!free.has(pos))return; /* verdeckte Felder verraten der Tastatur NICHTS */
+                const st=row.pattern[pos];
+                if(!(ch in keyboardStatus) || st>keyboardStatus[ch]) keyboardStatus[ch]=st;
+            });
+            document.querySelectorAll('.key').forEach(k=>{
+                const c=k.id.replace('key-','');
+                if(c.length!==1)return;
+                const st=keyboardStatus[c];
+                k.style.backgroundColor = st===2?'#538d4e':st===1?'#b59f3b':st===0?'#3a3a3c':'#818384';
+            });
+        }
+
+        function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
+
+        function createKeyboard(){
+            const kb=document.getElementById('keyboard-container');
+            kb.innerHTML='';
+            const lay=(currentLang==='de')?keysDE:keysEN;
+            lay.forEach((row,i)=>{
+                const d=document.createElement('div');d.className='keyboard-row';
+                if(i===lay.length-1)appKey(d,'⌫','key-large',()=>handleKey('BACK'));
+                for(let c of row){
+                    const k=document.createElement('div');k.className='key';k.id='key-'+c;k.innerText=c;
+                    k.onclick=()=>handleKey(c);
+                    d.appendChild(k);
+                }
+                if(i===lay.length-1)appKey(d,'ENTER','key-large',()=>handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+
+        function triggerEnd(won, coveredAtWin){
+            isGameActive=false;
+            const title=document.getElementById('modal-title');
+            const desc=document.getElementById('modal-desc');
+            const content=document.querySelector('.modal-content');
+
+            if(won){
+                title.innerText="🎉 Super Leni! 🎉";
+                title.style.color="#f0a4d0";
+                desc.innerText=`Erraten in Versuch ${curRow+1} von ${maxGuesses}!`;
+                content.style.borderColor="#f0a4d0";
+            } else {
+                title.innerText="Schade! 🏳️";
+                title.style.color="#ef4444";
+                desc.innerText="Das gesuchte Wort war:";
+                content.style.borderColor="#ef4444";
+            }
+            document.getElementById('win-word').innerText=secret;
+            document.getElementById('win-modal').style.display='flex';
+
+            const extra={
+                [`mode_${currentMode}`]: 1
+            };
+            if(document.getElementById('babybubu-checkbox').checked) extra.babybubu_used = 1;
+            if(won && coveredAtWin!==null) extra.covered_sum = coveredAtWin;
+            if(hintsUsedTotal>0) extra.hints_used_total = hintsUsedTotal;
+
+            recordGameResult('blindwurmdle', {won:won, guesses:curRow+1, maxGuesses:maxGuesses, extra});
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+    </script>
+</body>
+</html>

@@ -68,6 +68,7 @@
     .bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.75rem; }
     .bar-track { flex-grow: 1; background: #2d2d2d; border-radius: 4px; height: 14px; overflow: hidden; }
     .bar-fill { background: #538d4e; height: 100%; }
+    .dist-title { margin-top: 8px; font-size: 0.75rem; color: #aaa; }
     #empty-msg { text-align: center; color: #888; margin-top: 40px; padding: 0 20px; }
     #loading-msg { text-align: center; color: #888; margin-top: 40px; }
 </style>
@@ -99,16 +100,153 @@
 <script src="stats.js"></script>
 <script>
 
-const GAME_LABELS = {
-    wurmdle: "🐛 Wurmdle", dontwurmdle: "⛔ Don't Wurmdle", lillyleiter: "🐾 Lilly's Leiterspaß",
-    dinodle: "🦖 Dinodle", flaggle: "🏳️ Flaggen Flubbern", miaucode: "🙀 Miau Code",
-    betweenle: "🪱 Betwurmdle", domino: "🫟 Dittos Dominos", galaxys: "👁️ Glubschgalaxien",
-    klossi: "🐈 Kloßis Leckerlijagd", knofensa: "🪴 Knofensas Cooler Garten", kokowei: "🌴 Kokoweis Kopf-Chaos",
-    krokel: "🐢🔥 Krokels Wörterbox", lilly: "🐱 Lillys Spelling Game", mathestunde: "🐔🧮 Frau Huhns Mathestunde",
-    miauern: "🧱 Miauern", miaumultiplikation: "😼 Miau Multiplikation", numble: "🔢 Numble",
-    quaki_pipes: "🐥 Quakis Pipes", schneckerich: "🐌🧩 Schneckerichs Sortierspaß",
-    schnecki: "🐌 Schneckis Wörter Box", trumpf: "🦕 Dino Card Game Pocket", unwurmdle: "🔄 Unwurmdle"
+/* ------------------------------------------------------------------
+   Spiel-Konfiguration
+   type:  'win'    = echtes Sieg/Niederlage-Spiel  -> Win-Rate + Streaks, zählt in die Gesamt-Win-Rate
+          'puzzle' = Rätsel (man löst es oder schaut die Lösung an) -> "Gelöst", keine Win-Rate
+          'score'  = Punkte-Spiel ohne Sieg (Spelling Game) -> nur Punkte/Prozent
+          'pvp'    = zwei Menschen an einem Gerät -> nur wer wie oft gewonnen hat
+   unit:  Einheit der "guesses" (für Bester/Ø-Wert); fehlt sie, werden die Zeilen ausgeblendet
+   dist:  Titel der Verteilung; fehlt er, wird keine Verteilung gezeigt
+   ------------------------------------------------------------------ */
+const avg = (sum, n, d = 1) => n ? ((sum || 0) / n).toFixed(d) : '–';
+const frac = (a, b) => `${a || 0}/${b || 0}`;
+const fmtClock = s => s != null ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : '–';
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+const GAMES = {
+    wurmdle: { label: "🐛 Wurmdle", type: 'win', unit: 'Versuche', dist: 'Versuche bis alle Bretter gelöst',
+        extra: (e, g) => {
+            const r = [['Ø Tipps pro Spiel', avg(e.hint_sum, g.played)]];
+            Object.keys(e).filter(k => /^boards_\d+_played$/.test(k)).sort((x, y) => parseInt(x.split('_')[1]) - parseInt(y.split('_')[1]))
+                .forEach(k => { const n = k.split('_')[1]; r.push([`Siege mit ${n} Brett${n === '1' ? '' : 'ern'}`, frac(e[`boards_${n}_won`], e[k])]); });
+            return r;
+        } },
+    dontwurmdle: { label: "⛔ Don't Wurmdle", type: 'win',
+        extra: (e, g) => [['Ø Undos pro Spiel', avg(e.undo_used_sum, g.played)], ['Bonusfrage geschafft', frac(e.bonus_won, e.bonus_played)]] },
+    betweenle: { label: "🪱 Betwurmdle", type: 'win', unit: 'Versuche', dist: 'Versuche',
+        extra: e => [['Siege normal', frac(e.normal_won, e.normal_played)], ['Siege Babybubu-Modus', frac(e.babybubu_won, e.babybubu_played)]] },
+    dinodle: { label: "🦖 Dinodle", type: 'win', unit: 'Versuche', dist: 'Versuche' },
+    flaggle: { label: "🏳️ Flaggen Flubbern", type: 'win', unit: 'Versuche', dist: 'Versuche' },
+    miaucode: { label: "🙀 Miau Code", type: 'win', unit: 'Versuche', dist: 'Versuche',
+        extra: (e, g) => [['Ø Tipps pro Spiel', avg(e.hint_sum, g.played)], ['Siege ohne Tipp', e.hintless_wins || 0], ['Siege Hardmode', frac(e.hardmode_won, e.hardmode_played)]] },
+    numble: { label: "🔢 Numble", type: 'win', unit: 'Versuche', dist: 'Versuche',
+        extra: e => [['Ungültige Rechnungen', e.invalid_count || 0]] },
+    lillydle: { label: "🐱 Lillydle", type: 'win', unit: 'Versuche', dist: 'Versuche' },
+    schneckerich: { label: "🐌🧩 Schneckerichs Sortierspaß", type: 'win', unit: 'Fehler', unitOffset: -1, dist: 'Fehler bei Siegen', distOffset: -1,
+        extra: (e, g) => [['Perfekt (0 Fehler)', e.perfect_count || 0], ['Ø Fehler pro Spiel', avg(e.mistake_sum, g.played)]] },
+    klossi: { label: "🐈 Kloßis Leckerlijagd", type: 'win',
+        extra: (e, g) => [['Unentschieden', e.draws || 0], ['Ø Kästchen Leni', avg(e.points_sum, g.played)], ['Ø Kästchen Kloßi', avg(e.bot_points_sum, g.played)]] },
+    miauern: { label: "🧱 Miauern (gegen Kloßi)", type: 'win',
+        extra: e => {
+            const names = { sprinter: 'Sprinter', builder: 'Baumeister', trapper: 'Fallenleger', shadow: 'Schatten', super: 'Super Kloßi', human: 'Pass & Play (alt)' };
+            return Object.keys(e).filter(k => /^ai_.+_played$/.test(k)).map(k => {
+                const m = k.slice(3, -7);
+                return [`Siege gegen ${names[m] || m}`, frac(e[`ai_${m}_lilly_won`], e[k])];
+            });
+        } },
+    miauern_pvp: { label: "🧱 Miauern (Pass & Play)", type: 'pvp',
+        extra: e => [['Lilly gewinnt', e.lilly_won || 0], ['Kloßi gewinnt', e.klossi_won || 0]] },
+    trumpf: { label: "🦕 Dino Card Game Pocket", type: 'win',
+        extra: (e, g) => {
+            const r = [['Ø Runden pro Spiel', avg(e.rounds_sum, g.played, 0)]];
+            [10, 20, 40].forEach(n => { if (e[`deck_${n}_played`]) r.push([`Siege mit ${n} Karten`, frac(e[`deck_${n}_won`], e[`deck_${n}_played`])]); });
+            return r;
+        } },
+    miaumultiplikation: { label: "😼 Miau Multiplikation", type: 'win',
+        extra: (e, g) => [['Ø Fehler pro Spiel', avg(e.mistake_sum, g.played)], ['Ø Wörter pro Sieg', avg(e.words_solved, g.won)], ['Ø Tipps pro Spiel', avg(e.hint_sum, g.played)], ['Siege ohne Tipp', e.hintless_wins || 0]] },
+    wettwurmdle: { label: "⚔️ Wettwurmdle (gegen Bot)", type: 'win', unit: 'Zeilen', dist: 'Zeilen bis zum Sieg',
+        extra: e => {
+            const r = ['leicht', 'mittel', 'schwer'].filter(d => e[`difficulty_${d}`]).map(d => [`Siege gegen Bot (${cap(d)})`, frac(e[`difficulty_${d}_won`], e[`difficulty_${d}`])]);
+            r.push(['Unentschieden', e.draws || 0]);
+            return r;
+        } },
+    wettwurmdle_2p: { label: "⚔️ Wettwurmdle (2 Spieler)", type: 'pvp',
+        extra: e => [['Spieler 1 gewinnt', e.p1_won || 0], ['Spieler 2 gewinnt', e.p2_won || 0], ['Unentschieden', e.draws || 0]] },
+    reisezulilly: { label: "✈️ Reise zu Lilly", type: 'win', unit: 'Schritte',
+        extra: (e, g) => reiseRows(e, g) },
+
+    // ---------- Rätsel ----------
+    schnecki: { label: "🐌 Schneckis Wörter Box", type: 'puzzle', unit: 'Wörter', dist: 'Wörter bis gelöst',
+        extra: e => [['Mit nur 2 Wörtern gelöst', e.two_word_wins || 0]] },
+    krokel: { label: "🐢🔥 Krokels Wörtertangela", type: 'puzzle',
+        extra: (e, g) => [['Ø Tipps pro Rätsel', avg(e.hint_sum, g.won)]] },
+    unwurmdle: { label: "🔄 Unwurmdle", type: 'puzzle', unit: 'Zeilen', dist: 'Rätselzeilen',
+        extra: (e, g) => {
+            const r = [['Ø Tipps pro Rätsel', avg(e.hints_used_total, g.won)], ['Ohne Tipp gelöst', e.hintless_wins || 0],
+                ['Mit 5 Rätselzeilen gelöst', e.max_difficulty_wins || 0], ['Schnellste Lösung', fmtClock(e.fastest_solve_seconds)]];
+            Object.keys(e).filter(k => /^len\d+$/.test(k)).sort().forEach(k => r.push([`Mit ${k.slice(3)} Buchstaben`, e[k]]));
+            Object.keys(e).filter(k => k.startsWith('lang_')).sort().forEach(k => r.push([`Auf ${k.slice(5).toUpperCase()}`, e[k]]));
+            return r;
+        } },
+    lillyleiter: { label: "🐾 Lilly's Leiterspaß", type: 'puzzle', unit: 'Schritte', dist: 'Schritte',
+        extra: (e, g) => [['Perfekt (kürzester Weg)', e.perfect_count || 0], ['Ø Umwege', avg(e.extra_steps_sum, g.won)], ['Ø Tipps', avg(e.hint_sum, g.won)]] },
+    galaxys: { label: "👁️ Glubschgalaxien", type: 'puzzle',
+        extra: (e, g) => {
+            const r = [['Ø Rückgängig pro Rätsel', avg(e.undo_sum, g.won)]];
+            Object.keys(e).filter(k => /^size_\d+_solved$/.test(k)).sort((x, y) => parseInt(x.split('_')[1]) - parseInt(y.split('_')[1]))
+                .forEach(k => r.push([`Gelöst ${k.split('_')[1]}×${k.split('_')[1]}`, e[k]]));
+            return r;
+        } },
+    domino: { label: "🫟 Dittos Dominos", type: 'puzzle',
+        extra: (e, g) => [['Ø Tipps pro Rätsel', avg(e.hint_sum, g.won)], ['Ohne Tipp gelöst', e.hintless_wins || 0], ['Mit Bonusfeldern gelöst', e.bonus_rule_used || 0]] },
+    knofensa: { label: "🪴 Knofensas Cooler Garten", type: 'puzzle',
+        extra: (e, g) => [['Mit Hindernissen gelöst', e.obstacle_won || 0], ['Ohne Hindernisse gelöst', e.no_obstacle_won || 0], ['Ohne Tipp gelöst', e.hintless_wins || 0], ['Ø Tipps pro Rätsel', avg(e.hint_sum, g.won)]] },
+    kokowei: { label: "🌴 Kokoweis Kopf-Chaos", type: 'puzzle',
+        extra: (e, g) => {
+            const r = [['Ø Tipps pro Rätsel', avg(e.hint_sum, g.won)], ['Ohne Tipp gelöst', e.hintless_wins || 0], ['Ø Rückgängig', avg(e.undo_sum, g.won)]];
+            [4, 5, 6].forEach(n => { if (e[`size_${n}_solved`]) r.push([`Gelöst ${n}×${n}`, e[`size_${n}_solved`]]); });
+            return r;
+        } },
+    mathestunde: { label: "🐔🧮 Frau Huhns Mathestunde", type: 'puzzle',
+        extra: e => [3, 4, 5].filter(n => e[`difficulty_${n}_won`] || e[`difficulty_${n}_revealed`])
+            .map(n => [`${n} Zahlen gelöst`, e[`difficulty_${n}_won`] || 0]) },
+    quaki_pipes: { label: "🐥 Quakis Pipes", type: 'puzzle',
+        extra: (e, g) => [['Tiere gerettet', e.rescued_sum || 0]] },
+
+    // ---------- Punkte-Spiel ----------
+    lilly: { label: "🐱 Lillys Spelling Game", type: 'score',
+        extra: (e, g) => [['Ø Anteil der Punkte', avg(e.pct_sum, g.played) + (g.played ? '%' : '')], ['Bestes Ergebnis', e.best_pct != null ? e.best_pct + '%' : '–'],
+            ['Alles gefunden', (e.all_found || 0) + (g.won || 0)], ['Pangramme gefunden', e.pangram_count || 0],
+            ['Höchste Punktzahl', e.best_single_score || 0], ['Gesamtpunktzahl', e.score_sum || 0]] }
 };
+
+function reiseRows(e, g) {
+    const won = g.won || 0, played = g.played || 0;
+    const lands = Object.keys(e).filter(k => k.startsWith('land_'));
+    let favLand = '–';
+    if (lands.length) {
+        const top = [...lands].sort((a, b) => e[b] - e[a])[0].replace('land_', '');
+        let nm = top;
+        try { nm = new Intl.DisplayNames(['de'], { type: 'region' }).of(top); } catch (err) {}
+        favLand = `${nm} (${e['land_' + top]}x)`;
+    }
+    const rows = [
+        ['Perfekte Routen', `${e.perfect_routes || 0} (${pct(e.perfect_routes || 0, won)})`],
+        ['Ø Umwege pro Sieg', avg(e.extra_steps_sum, won)],
+        ['Effizienz (optimal ÷ gelaufen)', g.totalGuessesOnWins ? pct(e.optimal_steps_sum || 0, g.totalGuessesOnWins) : '–'],
+        ['Beste Perfekt-Serie', e.best_perfect_streak || 0],
+        ['Schnellster Sieg (Zeit)', fmtClock(e.fastest_win_seconds)],
+        ['Ø Hints pro Spiel', avg(e.hints_used_total, played)],
+        ['Siege ohne Hint', e.hintless_wins || 0],
+        ['Fehleingaben gesamt', e.wrong_guesses_sum || 0],
+        ['Zurück genutzt', e.undo_sum || 0],
+        ['Länder bereist', lands.length],
+        ['Meistbereistes Land', favLand],
+        ['Tagesreisen geschafft', frac(e.daily_won, e.daily_played)],
+        ['Hardcore-Siege', frac(e.hardcore_wins, e.hardcore_played)]
+    ];
+    ['leicht', 'mittel', 'schwer'].forEach(d => { if (e[`diff_${d}_played`]) rows.push([`Siege ${cap(d)}`, frac(e[`diff_${d}_won`], e[`diff_${d}_played`])]); });
+    return rows;
+}
+function reiseDist(e) {
+    const ub = [['0', 'Perfekt'], ['1', '+1'], ['2', '+2'], ['3plus', '+3 oder mehr']];
+    if (!ub.some(([k]) => e['umweg_' + k])) return '';
+    const maxU = Math.max(1, ...ub.map(([k]) => e['umweg_' + k] || 0));
+    return '<div class="dist-title">Umweg-Verteilung (Siege)</div>' + ub.map(([k, l]) => barRow(l, e['umweg_' + k] || 0, maxU, 80)).join('');
+}
+
+const GAME_LABELS = Object.fromEntries(Object.entries(GAMES).map(([k, c]) => [k, c.label]));
 
 function fmtTime(seconds) {
     if (!seconds) return "0 min";
@@ -131,7 +269,7 @@ function renderCalendar(playHistory) {
     for (let i = days - 1; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const count = (playHistory && playHistory[key]) || 0;
         const div = document.createElement('div');
         div.className = 'cal-day';
@@ -145,69 +283,62 @@ function renderCalendar(playHistory) {
     }
 }
 
-function renderGameCard(key, g) {
-    const label = GAME_LABELS[key] || key;
-    const winRate = pct(g.won || 0, g.played || 0);
-    const avgGuesses = (g.won && g.totalGuessesOnWins) ? (g.totalGuessesOnWins / g.won).toFixed(1) : '–';
+const statRow = (label, v) => `<div class="stat-row"><span>${label}</span><span class="stat-val">${v}</span></div>`;
+function barRow(label, v, max, labelWidth = 22) {
+    const w = Math.round((v / Math.max(max, 1)) * 100);
+    return `<div class="bar-row"><span style="width:${labelWidth}px;">${label}</span><div class="bar-track"><div class="bar-fill" style="width:${w}%;"></div></div><span style="width:24px; text-align:right;">${v}</span></div>`;
+}
 
-    let extraHtml = '';
-    if (g.extra && Object.keys(g.extra).length > 0) {
-        if (key === 'unwurmdle') {
-            const avgHints = g.won ? (g.extra.hints_used_total || 0) / g.won : 0;
-            const rows = [];
-            rows.push(['Ø Hints pro Sieg', avgHints.toFixed(1)]);
-            rows.push(['Siege ohne Hint', g.extra.hintless_wins || 0]);
-            rows.push(['Siege bei Max-Schwierigkeit', g.extra.max_difficulty_wins || 0]);
-            rows.push(['Schnellster Sieg (Zeit)', g.extra.fastest_solve_seconds != null ? fmtTime(g.extra.fastest_solve_seconds) : '–']);
-            const lenKeys = Object.keys(g.extra).filter(k => k.startsWith('len')).sort();
-            lenKeys.forEach(k => rows.push([`Gespielt mit ${k.replace('len','')} Buchstaben`, g.extra[k]]));
-            const langKeys = Object.keys(g.extra).filter(k => k.startsWith('lang_')).sort();
-            langKeys.forEach(k => rows.push([`Gespielt auf ${k.replace('lang_','').toUpperCase()}`, g.extra[k]]));
-            extraHtml = rows.map(([label, v]) => `<div class="stat-row"><span>${label}</span><span class="stat-val">${v}</span></div>`).join('');
-        } else if (key === 'lilly') {
-            const avgPct = g.played ? (g.extra.pct_sum || 0) / g.played : 0;
-            const rows = [
-                ['Ø Erfolg pro Runde', avgPct.toFixed(1) + '%'],
-                ['100% erreicht', g.won || 0],
-                ['Pangramme gefunden', g.extra.pangram_count || 0],
-                ['Bestes Einzelergebnis', g.extra.best_single_score || 0],
-                ['Gesamtpunktzahl', g.extra.score_sum || 0]
-            ];
-            extraHtml = rows.map(([label, v]) => `<div class="stat-row"><span>${label}</span><span class="stat-val">${v}</span></div>`).join('');
-        } else {
-            const entries = Object.entries(g.extra).sort((a, b) => a[0].localeCompare(b[0]));
-            extraHtml = entries.map(([k, v]) => {
-                const niceKey = k.replace(/_/g, ' ');
-                return `<div class="stat-row"><span>${niceKey}</span><span class="stat-val">${v}</span></div>`;
-            }).join('');
-        }
+function renderGameCard(key, g) {
+    const cfg = GAMES[key] || { label: key, type: 'win' };
+    const e = g.extra || {};
+    const played = g.played || 0, won = g.won || 0;
+    const off = cfg.unitOffset || 0;
+    let rows = [];
+
+    if (cfg.type === 'win') {
+        rows.push(['Win Rate', `${pct(won, played)} (${won}/${played})`]);
+        rows.push(['Aktuelle Serie', g.currentStreak || 0]);
+        rows.push(['Beste Serie', g.bestStreak || 0]);
+    } else if (cfg.type === 'puzzle') {
+        rows.push(['Gelöst', won]);
+        if (played > won) rows.push(['Lösung angeschaut', played - won]);
+        if (won) rows.push(['Ø Zeit pro Rätsel', fmtTime((g.playtimeSeconds || 0) / played)]);
+    } else {
+        rows.push([cfg.type === 'pvp' ? 'Partien' : 'Runden', played]);
     }
+    if (cfg.unit && won) {
+        if (g.fastestWinGuesses != null) rows.push([`Bester Sieg`, `${g.fastestWinGuesses + off} ${cfg.unit}`]);
+        if (g.totalGuessesOnWins) rows.push([`Ø ${cfg.unit} (Siege)`, (g.totalGuessesOnWins / won + off).toFixed(1)]);
+    }
+    rows.push(['Spielzeit gesamt', fmtTime(g.playtimeSeconds)]);
+
+    let extraRows = [];
+    if (cfg.extra) extraRows = cfg.extra(e, g);
+    else extraRows = Object.entries(e).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k.replace(/_/g, ' '), v]);
 
     let distHtml = '';
-    if (g.guessDistribution && g.guessDistribution.some(v => v > 0)) {
-        const max = Math.max(...g.guessDistribution, 1);
-        distHtml = '<div style="margin-top:8px; font-size:0.75rem; color:#aaa;">Guess-Verteilung</div>';
-        g.guessDistribution.forEach((v, i) => {
-            if (v === 0 && i >= g.guessDistribution.length - 2) return;
-            const w = Math.round((v / max) * 100);
-            distHtml += `<div class="bar-row"><span style="width:14px;">${i+1}</span><div class="bar-track"><div class="bar-fill" style="width:${w}%;"></div></div><span style="width:20px; text-align:right;">${v}</span></div>`;
-        });
+    const dist = g.guessDistribution || [];
+    if (key === 'reisezulilly') {
+        distHtml = reiseDist(e);
+    } else if (cfg.dist && dist.some(v => v > 0)) {
+        let last = dist.length - 1;
+        while (last > 0 && !dist[last]) last--;
+        const max = Math.max(...dist, 1);
+        const dOff = cfg.distOffset || 0;
+        distHtml = `<div class="dist-title">${cfg.dist}</div>` + dist.slice(0, last + 1).map((v, i) => barRow(i + 1 + dOff, v, max)).join('');
     }
 
+    const typeBadge = { puzzle: '🧩 Rätsel', score: '⭐ Punkte', pvp: '👥 2 Spieler' }[cfg.type] || '';
     return `
     <div class="game-card">
         <div class="game-header" onclick="toggleGame('${key}')">
-            <span class="title">${label}</span>
-            <span class="played-count">${g.played || 0}x gespielt</span>
+            <span class="title">${cfg.label}</span>
+            <span class="played-count">${typeBadge ? typeBadge + ' · ' : ''}${played}x gespielt</span>
         </div>
         <div class="game-body" id="body-${key}">
-            <div class="stat-row"><span>Win Rate</span><span class="stat-val">${winRate}</span></div>
-            <div class="stat-row"><span>Aktuelle Streak</span><span class="stat-val">${g.currentStreak || 0}</span></div>
-            <div class="stat-row"><span>Beste Streak</span><span class="stat-val">${g.bestStreak || 0}</span></div>
-            <div class="stat-row"><span>Schnellster Sieg</span><span class="stat-val">${g.fastestWinGuesses ?? '–'}</span></div>
-            <div class="stat-row"><span>Ø Versuche (Siege)</span><span class="stat-val">${avgGuesses}</span></div>
-            <div class="stat-row"><span>Spielzeit gesamt</span><span class="stat-val">${fmtTime(g.playtimeSeconds)}</span></div>
-            ${extraHtml}
+            ${rows.map(r => statRow(...r)).join('')}
+            ${extraRows.map(r => statRow(...r)).join('')}
             ${distHtml}
         </div>
     </div>`;
@@ -250,15 +381,22 @@ async function loadStats() {
 
         document.getElementById('content').style.display = 'block';
 
-        // Zusammenfassung
-        let totalPlayed = 0, totalWon = 0;
-        gameKeys.forEach(k => { totalPlayed += games[k].played || 0; totalWon += games[k].won || 0; });
+        // Zusammenfassung: Win-Rate nur aus echten Sieg/Niederlage-Spielen (keine Rätsel, Punkte- oder 2-Spieler-Spiele)
+        let totalPlayed = 0, winPlayed = 0, winWon = 0, puzzlesSolved = 0;
+        gameKeys.forEach(k => {
+            const g = games[k], type = (GAMES[k] || { type: 'win' }).type;
+            totalPlayed += g.played || 0;
+            if (type === 'win') { winPlayed += g.played || 0; winWon += g.won || 0; }
+            if (type === 'puzzle') puzzlesSolved += g.won || 0;
+        });
         const favGame = gameKeys[0];
         const favLabel = GAME_LABELS[favGame] || favGame;
 
         document.getElementById('summary-grid').innerHTML = `
             <div class="summary-card"><div class="val">${totalPlayed}</div><div class="lbl">Spiele insgesamt</div></div>
-            <div class="summary-card"><div class="val">${pct(totalWon, totalPlayed)}</div><div class="lbl">Gesamt-Win-Rate</div></div>
+            <div class="summary-card"><div class="val">${pct(winWon, winPlayed)}</div><div class="lbl">Win-Rate (ohne Rätsel)</div></div>
+            <div class="summary-card"><div class="val">${puzzlesSolved}</div><div class="lbl">Rätsel gelöst</div></div>
+            <div class="summary-card"><div class="val">${Object.keys(data.playHistory || {}).length}</div><div class="lbl">Tage gespielt</div></div>
             <div class="summary-card"><div class="val">${fmtTime(data.totalPlaytimeSeconds)}</div><div class="lbl">Gesamt-Spielzeit</div></div>
             <div class="summary-card"><div class="val" style="font-size:1rem;">${favLabel}</div><div class="lbl">Lieblingsspiel</div></div>
         `;

@@ -229,7 +229,9 @@
             if(!isGameActive) return;
             const input = document.getElementById('dino-input');
             const guessName = input.value.trim();
-            const guessedDino = dinoDB.find(d => d.Name.toLowerCase() === guessName.toLowerCase());
+            const q = guessName.toLowerCase();
+            // exakter Name, sonst erster Treffer der Vorschlagsliste (Teiltext + Enter)
+            const guessedDino = q ? (dinoDB.find(d => d.Name.toLowerCase() === q) || dinoDB.find(d => d.Name.toLowerCase().startsWith(q)) || dinoDB.find(d => d.Name.toLowerCase().includes(q))) : null;
             
             if(!guessedDino) { showToast("Dino nicht gefunden!"); return; }
             if(guesses.includes(guessedDino.Name)) { showToast("Schon geraten!"); return; }
@@ -241,6 +243,7 @@
             renderGuess(guessedDino);
 
             if(guessedDino.Name === targetDino.Name) {
+                isGameActive = false; // sofort sperren, sonst sind während der Animation weitere Tipps/Aufgeben möglich
                 // Ein kleiner Delay, damit die letzte Reihe noch reinanimiert, bevor das Modal ploppt
                 setTimeout(() => triggerEnd(true), 600);
             }
@@ -310,7 +313,10 @@
 
         // --- WIKIPEDIA/WIKIDATA BILD MAGIE: siehe dino-images.js ---
 
+        let endRecorded = false;
         async function triggerEnd(won) {
+            if (endRecorded) return;
+            endRecorded = true;
             isGameActive = false;
             recordGameResult('dinodle', {won: won, guesses: guesses.length || 1, maxGuesses: Math.max(guesses.length, 8)});
             recordDinoStat(targetDino.Name, won, guesses.length || 1);
@@ -353,7 +359,7 @@
         function showToast(m) {
             const t = document.getElementById('msg-toast');
             t.innerText = m; t.style.display = 'block';
-            setTimeout(() => t.style.display='none', 2500);
+            (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2500));
         }
 
         document.getElementById('dino-input').addEventListener('keydown', (e) => {

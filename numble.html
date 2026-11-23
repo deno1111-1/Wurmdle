@@ -168,6 +168,7 @@
         let targetNumber = 0;
         let numbleInvalidCount = 0;
         let gameOver = false;
+        let isRevealing = false; // während die Zeile aufgedeckt wird, keine weiteren Eingaben
 
         // Generator für eine gültige 8-Zeichen Rechnung (Ergebnis max 200)
         function generateSecret() {
@@ -250,7 +251,7 @@
         }
 
         function handleInput(key) {
-            if (gameOver) return;
+            if (gameOver || isRevealing) return;
 
             if (key === 'Backspace') {
                 if (currentCol > 0) {
@@ -319,6 +320,7 @@
                 return;
             }
 
+            isRevealing = true;
             let secretArr = secretEquation.split('');
             let guessArr = guess.split('');
             let cellColors = Array(COLS).fill('absent');
@@ -353,13 +355,16 @@
             }
 
             setTimeout(() => {
+                isRevealing = false;
                 if (guess === secretEquation) {
                     showToast("🎉 Perfekt gelöst!");
                     gameOver = true;
+                    showRestart();
                     recordGameResult('numble', {won: true, guesses: currentRow + 1, maxGuesses: ROWS, extra: {invalid_count: numbleInvalidCount}});
                 } else if (currentRow === ROWS - 1) {
                     showToast(`Schade! Die Lösung war: ${secretEquation}`);
                     gameOver = true;
+                    showRestart();
                     recordGameResult('numble', {won: false, guesses: currentRow + 1, maxGuesses: ROWS, extra: {invalid_count: numbleInvalidCount}});
                 } else {
                     currentRow++;
@@ -368,6 +373,15 @@
             }, COLS * 150 + 300);
         }
 
+        function showRestart() {
+            if (document.getElementById('restart-btn')) return;
+            const b = document.createElement('button');
+            b.id = 'restart-btn';
+            b.innerText = '🔄 Neues Spiel';
+            b.onclick = () => location.reload();
+            b.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:500; padding:12px 36px; font-size:1.1rem; font-weight:bold; border:none; border-radius:30px; background:#538d4e; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+            document.body.appendChild(b);
+        }
         function updateKeyboard(keyChar, colorStatus) {
             let keys = document.querySelectorAll('.key');
             for (let btn of keys) {

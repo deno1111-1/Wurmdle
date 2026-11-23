@@ -170,6 +170,15 @@
                 } else {
                     countryDB = Object.keys(data).map(key => ({ code: key.toLowerCase(), name: data[key] }));
                 }
+                // Deutsche Ländernamen (englischer Name bleibt als Suchbegriff erhalten)
+                let dn = null;
+                try { dn = new Intl.DisplayNames(['de'], { type: 'region' }); } catch (e) {}
+                countryDB.forEach(c => {
+                    c.en = c.name;
+                    if (dn && /^[a-z]{2}$/.test(c.code)) {
+                        try { const de = dn.of(c.code.toUpperCase()); if (de && de !== c.code.toUpperCase()) c.name = de; } catch (e) {}
+                    }
+                });
 
                 setupAutocomplete();
                 startNewGame();
@@ -193,7 +202,10 @@
                 list.style.display = 'block';
                 
                 // Filtere die Länder nach der Eingabe (wenn leer, werden alle angezeigt)
-                const matches = countryDB.filter(c => c.name.toLowerCase().includes(val.toLowerCase()));
+                const q = norm(val);
+                const matches = countryDB
+                    .filter(c => norm(c.name).includes(q) || norm(c.en).includes(q))
+                    .sort((a, b) => (norm(b.name).startsWith(q) - norm(a.name).startsWith(q)) || a.name.localeCompare(b.name, 'de'));
                 
                 matches.forEach(c => {
                     const item = document.createElement('div');
@@ -225,6 +237,16 @@
             });
         }
 
+        function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss').trim(); }
+        function findCountry(text) {
+            const q = norm(text);
+            if (!q) return null;
+            const exact = countryDB.find(c => norm(c.name) === q || norm(c.en) === q);
+            if (exact) return exact;
+            // Teiltext -> bester Treffer aus der Vorschlagsliste
+            return countryDB.find(c => norm(c.name).startsWith(q)) || countryDB.find(c => norm(c.name).includes(q) || norm(c.en).includes(q)) || null;
+        }
+        let isSubmitting = false;
         async function startNewGame() {
             targetCountry = countryDB[Math.floor(Math.random() * countryDB.length)];
             try {
@@ -249,11 +271,10 @@
         }
 
         async function submitGuess() {
-            if(!isGameActive) return;
+            if(!isGameActive || isSubmitting) return;
             const input = document.getElementById('country-input');
             const btn = document.getElementById('guess-btn');
-            const guessName = input.value.trim();
-            const guessedCountry = countryDB.find(c => c.name.toLowerCase() === guessName.toLowerCase());
+            const guessedCountry = findCountry(input.value);
             
             if(!guessedCountry) { showToast("Land nicht gefunden!"); return; }
             if(guesses.includes(guessedCountry.code)) { showToast("Schon geraten!"); return; }
@@ -263,6 +284,7 @@
 
             input.value = "";
             btn.disabled = true;
+            isSubmitting = true;
 
             try {
                 const img = await loadImage(`SVG/${guessedCountry.code}.svg`);
@@ -273,10 +295,12 @@
                 addHistoryItem(guessedCountry);
                 guesses.push(guessedCountry.code);
 
-                if(guessedCountry.code === targetCountry.code) triggerEnd(true);
+                // Gewonnen, wenn es das Land ist ODER die Flagge pixelgleich ist (z.B. Bouvetinsel = Norwegen)
+                if(guessedCountry.code === targetCountry.code || flagsIdentical()) triggerEnd(true);
             } catch(e) {
                 showToast("Bildfehler bei " + guessedCountry.name);
             }
+            isSubmitting = false;
             btn.disabled = false;
         }
 
@@ -300,6 +324,15 @@
             return [h * 360, s * 100, l * 100];
         }
 
+        function flagsIdentical() {
+            const a = targetCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
+            const b = guessCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
+            let diff = 0;
+            for (let i = 0; i < a.length; i += 4) {
+                if (Math.abs(a[i] - b[i]) + Math.abs(a[i+1] - b[i+1]) + Math.abs(a[i+2] - b[i+2]) > 30) diff++;
+            }
+            return diff / (a.length / 4) < 0.005;
+        }
         function comparePixels() {
             const targetData = targetCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
             const guessData = guessCtx.getImageData(0, 0, C_WIDTH, C_HEIGHT).data;
@@ -389,7 +422,7 @@
         function showToast(m) {
             const t = document.getElementById('msg-toast');
             t.innerText = m; t.style.display = 'block';
-            setTimeout(() => t.style.display='none', 2500);
+            (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2500));
         }
 
         document.getElementById('country-input').addEventListener('keydown', (e) => {

@@ -181,12 +181,18 @@
         let guesses=[], currentGuess="", undosLeft=5;
         let historyStack=[]; // Speichert {guesses, validWords}
         let isGameActive=false, isBonusPhase=false;
-        let bonusGuesses=[], maxBonusGuesses=3;
+        let bonusGuesses=[], maxBonusGuesses=3, undosStart=0;
 
         const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
 
         window.onload=()=>{
-            setTimeout(()=>loadWords('de'),100);
+            try {
+                if(localStorage.getItem('dw_letters')) document.getElementById('letter-count').value = localStorage.getItem('dw_letters');
+                if(localStorage.getItem('dw_undos')) document.getElementById('undo-count').value = localStorage.getItem('dw_undos');
+                if(localStorage.getItem('dw_bonus')) document.getElementById('bonus-toggle').checked = localStorage.getItem('dw_bonus') === 'true';
+            } catch(e) {}
+            const savedLang = (()=>{ try { return localStorage.getItem('dw_lang'); } catch(e) { return null; } })() || 'de';
+            setTimeout(()=>loadWords(savedLang),100);
             document.addEventListener('keydown', handleGlobalKey);
         };
 
@@ -202,7 +208,8 @@
                 const r=await fetch(lang==='de'?'de.txt':'en.txt');
                 if(!r.ok)throw new Error("Offline");
                 const t=await r.text();
-                dictionary=t.split('\n').map(w=>w.trim().toUpperCase()).filter(w=>/^[A-ZÄÖÜ]+$/.test(w));
+                // nur A-Z: die Tastatur hat kein Ä/Ö/Ü, sonst wären manche Wörter nicht tippbar
+                dictionary=t.split('\n').map(w=>w.trim().toUpperCase()).filter(w=>/^[A-Z]+$/.test(w));
                 document.getElementById('loading-msg').innerText="Bereit.";
                 document.querySelector('.start-btn').disabled = false;
             } catch(e) {
@@ -213,6 +220,13 @@
         function startDontWordle(){
             wordLength = parseInt(document.getElementById('letter-count').value) || 5;
             undosLeft = parseInt(document.getElementById('undo-count').value) || 0;
+            undosStart = undosLeft;
+            try {
+                localStorage.setItem('dw_letters', wordLength);
+                localStorage.setItem('dw_undos', undosLeft);
+                localStorage.setItem('dw_bonus', document.getElementById('bonus-toggle').checked);
+                localStorage.setItem('dw_lang', currentLang);
+            } catch(e) {}
             document.documentElement.style.setProperty('--col-count', wordLength);
             
             let filteredDict = dictionary.filter(w=>w.length === wordLength);
@@ -276,7 +290,7 @@
             if(!isGameActive) return;
             if(k==='ENTER'){ handleInput('ENTER'); e.preventDefault(); }
             else if(k==='BACKSPACE'){ handleInput('BACK'); e.preventDefault(); }
-            else if(/^[A-ZÄÖÜ]$/.test(k)&&!e.ctrlKey) handleInput(k);
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey) handleInput(k);
         }
 
         function handleInput(k){
@@ -304,7 +318,7 @@
         function showToast(txt){
             const t=document.getElementById('msg-toast');
             t.innerText=txt; t.style.display='block';
-            setTimeout(()=>t.style.display='none', 2500);
+            (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2500));
         }
 
         // --- GAME LOGIC (DON'T WORDLE) ---
@@ -386,7 +400,7 @@
             if(currentGuess === secretWord){
                 showToast("GAME OVER! Du hast das gesuchte Wort getippt!");
                 isGameActive = false;
-                recordGameResult('dontwurmdle', {won: false, guesses: guesses.length, maxGuesses: maxRows});
+                recordGameResult('dontwurmdle', {won: false, guesses: guesses.length, maxGuesses: maxRows, extra: {undo_used_sum: undosStart - undosLeft}});
                 setTimeout(()=> triggerEndScreen(false), 1500);
                 return;
             }
@@ -410,7 +424,7 @@
                 } else {
                     showToast("🎉 DU HAST ÜBERLEBT! 🎉");
                     isGameActive = false;
-                    recordGameResult('dontwurmdle', {won: true, guesses: maxRows, maxGuesses: maxRows});
+                    recordGameResult('dontwurmdle', {won: true, guesses: maxRows, maxGuesses: maxRows, extra: {undo_used_sum: undosStart - undosLeft}});
                 }
             }
         }
@@ -521,10 +535,10 @@
                 
                 isGameActive = false;
                 spawnConfetti();
-                recordGameResult('dontwurmdle', {won: true, guesses: maxRows + bonusGuesses.length, maxGuesses: maxRows + maxBonusGuesses});
+                recordGameResult('dontwurmdle', {won: true, guesses: maxRows, maxGuesses: maxRows, extra: {undo_used_sum: undosStart - undosLeft, bonus_played: 1, bonus_won: 1, bonus_guesses_sum: bonusGuesses.length}});
             } else if(bonusGuesses.length === maxBonusGuesses) {
-                document.getElementById('end-title').innerText = "Schade!";
-                document.getElementById('end-title').style.color = "#ef4444";
+                document.getElementById('end-title').innerText = "Überlebt! Nur die Bonusfrage nicht 😉";
+                document.getElementById('end-title').style.color = "#eab308";
                 document.getElementById('end-desc').innerText = `Das gesuchte Wort war: ${secretWord}`;
                 
                 // Tastatur verstecken, Neues-Spiel Button anzeigen
@@ -532,7 +546,7 @@
                 document.getElementById('end-restart-btn').style.display = 'block';
                 
                 isGameActive = false;
-                recordGameResult('dontwurmdle', {won: false, guesses: maxRows + bonusGuesses.length, maxGuesses: maxRows + maxBonusGuesses});
+                recordGameResult('dontwurmdle', {won: true, guesses: maxRows, maxGuesses: maxRows, extra: {undo_used_sum: undosStart - undosLeft, bonus_played: 1}});
             }
             
             currentGuess = "";

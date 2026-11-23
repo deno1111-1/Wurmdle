@@ -396,6 +396,15 @@
 
         function checkWin() {
             const aiLabel = aiNames[state.mode] || state.mode;
+            // Pass & Play: eigener Stats-Eintrag ohne Win-Rate (zwei Menschen spielen gegeneinander)
+            if(state.mode === 'human' && (state.p1.r === 0 || state.p2.r === 8)) {
+                const lillyWon = state.p1.r === 0;
+                state.gameOver = true;
+                showMsg(lillyWon ? "🎉 Lilly gewinnt! 🎉" : "🎉 Kloßi gewinnt! 🎉", lillyWon ? "#ec4899" : "#9333ea");
+                showMenuLater();
+                recordGameResult('miauern_pvp', {won: null, guesses: 1, maxGuesses: 1, extra: lillyWon ? {lilly_won: 1} : {klossi_won: 1}});
+                return;
+            }
             if(state.p1.r === 0) {
                 state.gameOver = true; showMsg(`🎉 Lilly gewinnt! (Gegner: ${aiLabel}) 🎉`, "#ec4899"); showMenuLater();
                 const extra = { as_lilly_played: 1, as_lilly_won: 1 };
@@ -439,6 +448,7 @@
             let moves = [];
             let dirs = [[-1,0], [1,0], [0,-1], [0,1]];
 
+            const inB = (r, c) => r>=0 && r<9 && c>=0 && c<9;
             dirs.forEach(d => {
                 let nr = p.r + d[0], nc = p.c + d[1];
                 if(nr>=0 && nr<9 && nc>=0 && nc<9 && !hasWall(p.r, p.c, d[0], d[1])) {
@@ -446,6 +456,13 @@
                         let nnr = nr + d[0], nnc = nc + d[1];
                         if(nnr>=0 && nnr<9 && nnc>=0 && nnc<9 && !hasWall(nr, nc, d[0], d[1])) {
                             moves.push({r: nnr, c: nnc});
+                        } else {
+                            // Quoridor-Regel: Sprung blockiert (Wand/Rand) -> schräg am Gegner vorbei
+                            const sides = d[0] !== 0 ? [[0,-1],[0,1]] : [[-1,0],[1,0]];
+                            sides.forEach(s => {
+                                const sr = nr + s[0], sc = nc + s[1];
+                                if(inB(sr, sc) && !hasWall(nr, nc, s[0], s[1]) && !(sr === p.r && sc === p.c)) moves.push({r: sr, c: sc});
+                            });
                         }
                     } else {
                         moves.push({r: nr, c: nc});
@@ -497,6 +514,7 @@
         let dragging = null;
         let currentDropSlot = null;
 
+        let dragDocListeners = false;
         function initDragAndDrop() {
             document.querySelectorAll('.drag-item').forEach(item => {
                 item.onpointerdown = (e) => {
@@ -512,6 +530,8 @@
                 };
             });
 
+            if(dragDocListeners) return; // Dokument-Listener nur einmal anhängen
+            dragDocListeners = true;
             document.addEventListener('pointermove', (e) => {
                 if(!dragging) return;
                 moveGhost(e.clientX, e.clientY);
@@ -553,7 +573,7 @@
 
         // --- KI (Kloßi - 5 Styles) ---
         function doAITurn() {
-            if(state.gameOver) return;
+            if(state.gameOver || state.turn !== 2 || state.mode === 'human') return;
             
             let possibleMoves = getValidMoves(2); 
             let possibleWalls = [];

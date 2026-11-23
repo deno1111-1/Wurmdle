@@ -164,6 +164,8 @@
                     else{absent.add(ch);}
                 });
             });
+            // Doppelbuchstaben (z.B. ein E gelb, ein E grau): Buchstabe ist NICHT ausgeschlossen -> sonst unlösbar
+            present.forEach(ch=>absent.delete(ch));
             return {present,absent};
         }
 
@@ -214,7 +216,7 @@
             inputValidSet=validSet;
             secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
 
-            const N=Math.floor(Math.random()*6)+1; // Position der Lösung: 1-6
+            const N=Math.floor(Math.random()*5)+2; // Position der Lösung: 2-6 (mind. 1 Rätselzeile)
             rows=[];
             const present=new Set(), absent=new Set();
             for(let i=0;i<N-1;i++){
@@ -226,6 +228,7 @@
                     if(st===2||st===1){present.add(ch);}
                     else{absent.add(ch);}
                 });
+                present.forEach(ch=>absent.delete(ch));
             }
             rows.push({pattern:new Array(wordLength).fill(2), originalGuess:secret, letters:secret.split(''), solved:true, isFinal:true});
 
@@ -378,7 +381,7 @@
             });
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>

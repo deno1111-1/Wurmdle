@@ -87,6 +87,7 @@
     <div id="krokel-area">
         <div class="krokel-header">Krokels Wörtertangela 🐢🌀</div>
         <div id="tangela-hint" class="krokel-hint-text">Thema wird geladen...</div>
+        <div id="tangela-progress" style="font-size:0.85rem; opacity:0.8; margin-bottom:4px;"></div>
         
         <div id="tangela-current-word"></div>
         
@@ -109,6 +110,7 @@
         let tIsDragging = false;
         let tStrandsData = []; 
         let tSolutionMap = {}; 
+        let tSolved = false;
 
         // NYT Strands Grid Size
         const GRID_COLS = 6;
@@ -167,7 +169,9 @@
             tSelectedIndices = [];
             tFoundWords = [];
             krokelHintCount = 0;
+            tSolved = false;
             startGameTimer();
+            updateTangelaProgress();
             document.getElementById('tangela-hint').innerText = "Thema: " + tCurrentPuzzle.theme;
             renderTangelaBoard();
         }
@@ -242,7 +246,7 @@
             const tiles = document.querySelectorAll('.tangela-tile');
             let isValid = false;
 
-            if (tCurrentPuzzle && word === tCurrentPuzzle.spangram) {
+            if (tCurrentPuzzle && word === tCurrentPuzzle.spangram && !tFoundWords.includes(word)) {
                 showToast("✨ SPANGRAM! ✨");
                 tSelectedIndices.forEach(idx => { tiles[idx].classList.remove('active'); tiles[idx].classList.add('spangram'); });
                 tFoundWords.push(word);
@@ -261,7 +265,14 @@
 
             tSelectedIndices = [];
             wordDisplay.innerText = "";
-            if(isValid) checkTangelaWin();
+            if(isValid) { updateTangelaProgress(); checkTangelaWin(); }
+        }
+
+        function updateTangelaProgress() {
+            if (!tCurrentPuzzle) return;
+            const total = tCurrentPuzzle.words.length + 1;
+            const spg = tFoundWords.includes(tCurrentPuzzle.spangram) ? ' · Spangram ✨' : '';
+            document.getElementById('tangela-progress').innerText = `${tFoundWords.length} von ${total} Wörtern gefunden${spg}`;
         }
         
         function isNeighborCheck(idx1, idx2) {
@@ -290,7 +301,8 @@
         }
 
         function checkTangelaWin() {
-            if (tFoundWords.length >= tCurrentPuzzle.words.length + 1) {
+            if (!tSolved && tFoundWords.length >= tCurrentPuzzle.words.length + 1) {
+                tSolved = true;
                 showToast("🎉 Krokels Tangela gelöst! 🎉");
                 recordGameResult('krokel', {won: true, guesses: 1, maxGuesses: 1, extra: {hint_sum: krokelHintCount}});
             }
@@ -317,7 +329,7 @@
         }
         
         function clearHints() { document.querySelectorAll('.tangela-tile.hint').forEach(el => el.classList.remove('hint')); }
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',3000));}
     </script>
 </body>
 </html>

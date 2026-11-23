@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, interactive-widget=resizes-content">
+    <title>Reise zu Lilly</title>
+    <style>
+        :root { --pink: #ff4da6; --pink-dark: #4a1f38; --gold: #ffd700; --green: #538d4e; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; height: 100dvh; overflow: hidden; box-sizing: border-box;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: var(--pink); text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; font-family: inherit; }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 80%; pointer-events: none; }
+
+        /* ---------- Setup ---------- */
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; flex-grow: 1; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 340px; line-height: 1.5; }
+        .info-text b { color: #ccc; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .setting-row .label { font-size: 0.85rem; color: #ccc; }
+        .setting-row .sub { font-size: 0.72rem; color: #777; }
+        .toggle-group { display: flex; flex-wrap: wrap; justify-content: center; background: #333; border-radius: 10px; padding: 4px; max-width: 360px; }
+        .opt-btn { background: transparent; border: none; color: #aaa; padding: 9px 13px; font-weight: bold; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.8rem; }
+        .opt-btn.active { background: var(--pink); color: white; }
+        #daily-status { font-size: 0.8rem; color: #ccc; text-align: center; min-height: 1em; }
+        .start-btn { background-color: var(--pink); padding: 15px 50px; font-size: 1.4rem; border: none; color: white; border-radius: 30px; margin-top: 6px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .start-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+
+        /* ---------- Spiel ---------- */
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
+        #goal-bar { text-align: center; padding: 6px 8px 0; font-size: 0.85rem; color: #ccc; flex-shrink: 0; }
+        #goal-bar b { color: var(--pink); }
+        #status-bar { text-align: center; font-size: 0.72rem; color: #888; padding: 2px 0 0; flex-shrink: 0; }
+        #status-bar span { color: #ddd; font-weight: bold; }
+
+        #route-scroll { display: flex; gap: 6px; overflow-x: auto; padding: 6px 12px; flex-shrink: 0; }
+        .route-chip { flex-shrink: 0; background: #2a2a2c; border-radius: 14px; padding: 5px 10px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; white-space: nowrap; border: 1px solid transparent; }
+        .route-chip.current-chip { border-color: var(--gold); }
+        .route-chip.target-chip { background: var(--pink-dark); border-color: var(--pink); }
+        .flag { height: 0.95em; width: auto; vertical-align: -0.12em; margin-right: 4px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
+        .route-arrow { color: #666; flex-shrink: 0; align-self: center; }
+
+        #map-wrap { width: 100%; padding: 4px 8px; box-sizing: border-box; flex: 1 1 auto; min-height: 140px; position: relative; overflow: hidden; touch-action: none; }
+        #map-svg-container { width: 100%; height: 100%; background: #1a1a2e; border-radius: 10px; overflow: hidden; }
+        #map-svg { width: 100%; height: 100%; display: block; cursor: grab; }
+        .map-btns { position: absolute; top: 10px; right: 14px; display: flex; gap: 6px; z-index: 5; }
+        .map-btn { background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; border-radius: 6px; padding: 5px 8px; font-size: 0.8rem; cursor: pointer; }
+
+        #map-svg path, #map-svg polygon { fill: #33334a; stroke: #121213; stroke-width: 0.6px; vector-effect: non-scaling-stroke; }
+        #map-svg .mark-hint, #map-svg .mark-hint * { fill: #4f4f78; }
+        #map-svg .mark-optimal, #map-svg .mark-optimal * { fill: #7a2b55; }
+        #map-svg .mark-visited, #map-svg .mark-visited * { fill: var(--green); }
+        #map-svg .mark-current, #map-svg .mark-current * { fill: var(--gold); }
+        #map-svg .mark-target, #map-svg .mark-target * { fill: var(--pink); }
+        #map-overlay { pointer-events: none; }
+        #map-overlay text { font-weight: bold; fill: white; text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: #000; font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; }
+        #map-overlay polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+
+        #input-area { padding: 8px 12px 4px; flex-shrink: 0; position: relative; }
+        #country-input { width: 100%; box-sizing: border-box; padding: 12px; font-size: 1rem; background: #1c1c1e; border: 2px solid var(--pink); color: white; border-radius: 10px; font-family: inherit; }
+        #country-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(255, 77, 166, 0.3); }
+        #suggestions { position: absolute; left: 12px; right: 12px; bottom: 100%; background: #1c1c1e; border: 1px solid #444; border-radius: 8px; max-height: 220px; overflow-y: auto; display: none; z-index: 50; }
+        .suggestion-item { padding: 10px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #2a2a2c; }
+        .suggestion-item:hover, .suggestion-item.sel { background: #2a2a2c; }
+        .suggestion-item.visited { color: #777; }
+
+        .action-row { display: flex; gap: 8px; padding: 6px 12px 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: center; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 9px 14px; font-size: 0.85rem; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .action-btn:disabled { background: #2a2a2a; border-color: #3a3a3a; color: #666; cursor: default; }
+        .pink-btn { background: var(--pink); border-color: var(--pink); }
+        .pink-btn:disabled { background: #444; border-color: #555; color: #888; }
+
+        /* ---------- Ergebnis ---------- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 24px; border-radius: 15px; border: 2px solid var(--pink); text-align: center; max-width: 380px; width: 100%; box-sizing: border-box; max-height: 88vh; overflow-y: auto; }
+        #modal-title { margin-top: 0; color: var(--pink); font-size: 1.3rem; }
+        .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+        .result-cell { background: #2a2a2c; border-radius: 8px; padding: 6px 2px; }
+        .result-cell .v { font-weight: bold; font-size: 1.05rem; }
+        .result-cell .l { font-size: 0.65rem; color: #999; }
+        .route-compare { text-align: left; margin-top: 14px; }
+        .route-compare-title { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+        .route-line { font-size: 0.85rem; line-height: 1.6; word-wrap: break-word; }
+        .modal-btns { display: flex; gap: 8px; margin-top: 18px; }
+        .modal-btns .action-btn { flex: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>✈️ Reise zu Lilly</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Setup</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Setup</h2>
+        <div class="info-text">Lilly 🐱 wartet in einem anderen Land! Reise von deinem Startland aus, indem du immer ein <b>Nachbarland</b> eingibst. Sobald du <b>direkt neben Lillys Land</b> bist, bist du angekommen. Schaffst du den kürzesten Weg?</div>
+
+        <div class="setting-row">
+            <span class="label">Modus</span>
+            <div class="toggle-group" id="grp-mode">
+                <button class="opt-btn" data-v="zufall">🎲 Zufall</button>
+                <button class="opt-btn" data-v="daily">📅 Tagesreise</button>
+            </div>
+        </div>
+        <div class="setting-row" id="row-diff">
+            <span class="label">Schwierigkeit</span>
+            <div class="toggle-group" id="grp-diff">
+                <button class="opt-btn" data-v="leicht">Leicht</button>
+                <button class="opt-btn" data-v="mittel">Mittel</button>
+                <button class="opt-btn" data-v="schwer">Schwer</button>
+            </div>
+            <span class="sub" id="diff-desc"></span>
+        </div>
+        <div class="setting-row" id="row-region">
+            <span class="label">Region</span>
+            <div class="toggle-group" id="grp-region">
+                <button class="opt-btn" data-v="welt">🌍 Welt</button>
+                <button class="opt-btn" data-v="europa">Europa</button>
+                <button class="opt-btn" data-v="afrika">Afrika</button>
+                <button class="opt-btn" data-v="asien">Asien</button>
+                <button class="opt-btn" data-v="amerika">Amerika</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span class="label">Hilfen</span>
+            <div class="toggle-group" id="grp-hc">
+                <button class="opt-btn" data-v="0">🗺️ Mit Karte & Hints</button>
+                <button class="opt-btn" data-v="1">🙈 Hardcore</button>
+            </div>
+        </div>
+        <div id="daily-status"></div>
+        <div id="loading-msg" style="color:#555;">Lade Länderdaten...</div>
+        <button class="start-btn" id="start-btn" onclick="startFromSetup()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="goal-bar">Von <b id="start-label">-</b> nach <b id="target-label">-</b></div>
+        <div id="status-bar">👣 <span id="st-steps">0</span> Schritte · 🎯 Optimal <span id="st-opt">0</span> · ❌ <span id="st-wrong">0</span></div>
+        <div id="route-scroll"></div>
+        <div id="map-wrap">
+            <div class="map-btns">
+                <button class="map-btn" onclick="fitRoute(true)" title="Auf Route zoomen">🎯</button>
+                <button class="map-btn" onclick="resetMapView(true)" title="Ganze Welt">🌍</button>
+            </div>
+            <div id="map-svg-container"></div>
+        </div>
+        <div id="input-area">
+            <div id="suggestions"></div>
+            <input type="text" id="country-input" placeholder="Nachbarland eingeben..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" oninput="onInputChange()" onkeydown="onInputKeydown(event)">
+        </div>
+        <div class="action-row" id="play-actions">
+            <button class="action-btn pink-btn" id="hint-btn" onclick="useHint()">💡 Hint</button>
+            <button class="action-btn" id="undo-btn" onclick="undoStep()">↩️ Zurück</button>
+            <button class="action-btn" onclick="giveUp()">🏳️ Aufgeben</button>
+        </div>
+        <div class="action-row" id="review-actions" style="display:none;">
+            <button class="action-btn" onclick="showResultModal()">📋 Ergebnis</button>
+            <button class="action-btn pink-btn" onclick="newJourney()">✈️ Neue Reise</button>
+        </div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Yuppie! Du hast Lilly gefunden 🎉</h2>
+            <p id="modal-desc">Geschafft!</p>
+            <div class="result-grid" id="result-grid"></div>
+            <div class="route-compare">
+                <div class="route-compare-title">Deine Route:</div>
+                <div class="route-line" id="your-route">-</div>
+                <div class="route-compare-title" style="margin-top:10px;">Kürzeste Route:</div>
+                <div class="route-line" id="optimal-route">-</div>
+            </div>
+            <div class="modal-btns">
+                <button class="action-btn" onclick="showReview()">🗺️ Karte</button>
+                <button class="action-btn pink-btn" onclick="newJourney()">✈️ Neue Reise</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        /* ================= Daten & Einstellungen ================= */
+        let countries = {};          // cca3 -> {cca2, name, flag, borders, region}
+        let nameIndex = [];          // [{n: normalisiert, c: cca3, alias: bool}]
+        const ALIASES = {
+            'usa':'USA', 'us':'USA', 'amerika':'USA', 'vereinigte staaten von amerika':'USA',
+            'uk':'GBR', 'england':'GBR', 'grossbritannien':'GBR', 'britannien':'GBR', 'schottland':'GBR', 'wales':'GBR',
+            'uae':'ARE', 'vae':'ARE', 'emirate':'ARE', 'arabische emirate':'ARE', 'dubai':'ARE',
+            'drc':'COD', 'dr kongo':'COD', 'demokratische republik kongo':'COD', 'kongo kinshasa':'COD',
+            'republik kongo':'COG', 'kongo brazzaville':'COG',
+            'elfenbeinküste':'CIV', 'ivory coast':'CIV',
+            'holland':'NLD', 'weissrussland':'BLR', 'tschechische republik':'CZE', 'czechia':'CZE',
+            'burma':'MMR', 'bosnien':'BIH', 'herzegowina':'BIH', 'mazedonien':'MKD',
+            'moldau':'MDA', 'republik moldau':'MDA', 'swasiland':'SWZ', 'swaziland':'SWZ',
+            'zentralafrika':'CAF', 'zar':'CAF', 'saudiarabien':'SAU', 'saudi':'SAU', 'türkiye':'TUR',
+            'dom rep':'DOM', 'dominikanische rep':'DOM'
+        };
+        const DIFFS = {
+            leicht: { min: 2, max: 4,  desc: '2–4 Grenzen' },
+            mittel: { min: 5, max: 7,  desc: '5–7 Grenzen' },
+            schwer: { min: 8, max: 99, desc: '8+ Grenzen' }
+        };
+        const REGION_NAMES = { welt: 'der Welt', europa: 'Europa', afrika: 'Afrika', asien: 'Asien', amerika: 'Amerika' };
+        const DAILY_DIFF = 'mittel', DAILY_REGION = 'welt';
+
+        let settings = { mode: 'zufall', diff: 'mittel', region: 'welt', hc: '0' };
+
+        /* ================= Spielzustand ================= */
+        let active = new Set();      // begehbare Länder (Region)
+        let startCca3 = '', targetCca3 = '', currentCca3 = '';
+        let chain = [], optimalPath = [];
+        let steps = 0, undos = 0, wrongGuesses = 0;
+        let hintLevel = 0, hintsUsedTotal = 0;
+        let isGameActive = false, finishing = false, reviewMode = false;
+        let isDaily = false, isHardcore = false, gameDiff = 'mittel', gameRegion = 'welt';
+        let gameStartMs = 0, lastResult = null;
+
+        /* ================= Hilfsfunktionen ================= */
+        function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+        function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+        function todayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        // Suche: Umlaute zählen wie im Deutschen als "ae/oe/ue" (Ä ≠ A), Namen werden zusätzlich
+        // auch ohne Umlaut-Punkte gefunden ("turkei" findet Türkei, "ä" aber NICHT alle A-Länder).
+        function normFinish(s) {
+            return s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/[-'’`´.()]/g, ' ').replace(/[^a-z0-9 ]/g, '')
+                .replace(/\s+/g, ' ').trim();
+        }
+        function normalize(s) {
+            return normFinish(String(s).toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue'));
+        }
+        function normalizeLoose(s) {
+            return normFinish(String(s).toLowerCase().replace(/ß/g, 'ss'));
+        }
+        // Flaggen als Bild (Windows kann Flaggen-Emojis nicht anzeigen und zeigt nur "DE", "AF" ...)
+        function flagImg(c) {
+            return `<img class="flag" src="SVG/${countries[c].cca2.toLowerCase()}.svg" alt="" onerror="this.style.display='none'">`;
+        }
+        function label(c) { return `${flagImg(c)}${countries[c].name}`; }
+        function fmtSec(s) { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, '0')}`; }
+        function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+        let toastTimer = null;
+        function showToast(txt) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = txt; t.style.display = 'block';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.style.display = 'none', 2400);
+        }
+
+        /* ================= Laden ================= */
+        window.onload = init;
+
+        async function init() {
+            loadSettings();
+            initSetupButtons();
+            try {
+                const [r1, r2] = await Promise.all([fetch('laender.json'), fetch('weltkarte.svg')]);
+                if (!r1.ok || !r2.ok) throw new Error("Offline");
+                countries = await r1.json();
+                setupSvg(await r2.text());
+
+                const addName = (text, c, alias) => {
+                    const n1 = normalize(text), n2 = normalizeLoose(text);
+                    nameIndex.push({ n: n1, c, alias });
+                    if (n2 !== n1) nameIndex.push({ n: n2, c, alias });
+                };
+                Object.keys(countries).forEach(c => addName(countries[c].name, c, false));
+                Object.entries(ALIASES).forEach(([a, c]) => { if (countries[c]) addName(a, c, true); });
+
+                document.getElementById('loading-msg').innerText = "Bereit.";
+                document.getElementById('start-btn').disabled = false;
+                initMapGestures();
+                updateSetupUI();
+            } catch (e) {
+                document.getElementById('loading-msg').innerText = "Fehler beim Laden: " + e.message;
+            }
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!e.target.closest('#input-area')) hideSuggestions();
+            });
+            window.addEventListener('resize', () => renderOverlay());
+        }
+
+        /* ================= Setup ================= */
+        function loadSettings() {
+            try { Object.assign(settings, JSON.parse(lsGet('reisezulilly_settings') || '{}')); } catch (e) {}
+        }
+        function initSetupButtons() {
+            const groups = { 'grp-mode': 'mode', 'grp-diff': 'diff', 'grp-region': 'region', 'grp-hc': 'hc' };
+            Object.entries(groups).forEach(([id, key]) => {
+                document.querySelectorAll(`#${id} .opt-btn`).forEach(btn => {
+                    btn.onclick = () => {
+                        settings[key] = btn.dataset.v;
+                        lsSet('reisezulilly_settings', JSON.stringify(settings));
+                        updateSetupUI();
+                    };
+                });
+            });
+            updateSetupUI();
+        }
+        function updateSetupUI() {
+            const groups = { 'grp-mode': 'mode', 'grp-diff': 'diff', 'grp-region': 'region', 'grp-hc': 'hc' };
+            Object.entries(groups).forEach(([id, key]) => {
+                document.querySelectorAll(`#${id} .opt-btn`).forEach(b => b.classList.toggle('active', b.dataset.v === settings[key]));
+            });
+            const daily = settings.mode === 'daily';
+            document.getElementById('row-diff').style.display = daily ? 'none' : 'flex';
+            document.getElementById('row-region').style.display = daily ? 'none' : 'flex';
+            document.getElementById('diff-desc').innerText = DIFFS[settings.diff] ? DIFFS[settings.diff].desc : '';
+
+            const st = document.getElementById('daily-status');
+            if (!daily) { st.innerText = ''; return; }
+            const done = getDailyResult();
+            if (done) {
+                st.innerText = done.won
+                    ? `✅ Heute geschafft: ${done.steps} Schritte (optimal ${done.optimal})${done.steps <= done.optimal ? ' – perfekt!' : ''}`
+                    : `🏳️ Heute abgebrochen. Morgen gibt's eine neue Reise!`;
+            } else {
+                st.innerText = 'Eine Reise pro Tag, für alle gleich (Mittel · Welt).';
+            }
+        }
+        function getDailyResult() {
+            try { return JSON.parse(lsGet('reisezulilly_daily_' + todayKey()) || 'null'); } catch (e) { return null; }
+        }
+        function startFromSetup() {
+            startGame(settings.mode === 'daily');
+        }
+
+        /* ================= Graph ================= */
+        function nbrs(c) { return countries[c].borders.filter(b => active.has(b)); }
+        function bfs(from) {
+            const dist = { [from]: 0 }, prev = {}, queue = [from];
+            for (let i = 0; i < queue.length; i++) {
+                const cur = queue[i];
+                for (const nb of nbrs(cur)) {
+                    if (!(nb in dist)) { dist[nb] = dist[cur] + 1; prev[nb] = cur; queue.push(nb); }
+                }
+            }
+            return { dist, prev };
+        }
+        function shortestPath(from, to) {
+            const { prev, dist } = bfs(from);
+            if (!(to in dist)) return null;
+            const path = [to];
+            while (path[0] !== from) path.unshift(prev[path[0]]);
+            return path;
+        }
+        function pickRoute(rng, d) {
+            const codes = Object.keys(countries).filter(c => active.has(c) && nbrs(c).length);
+            const all = [];
+            codes.forEach(s => {
+                const { dist } = bfs(s);
+                Object.entries(dist).forEach(([t, k]) => { if (k >= 2) all.push([s, t, k]); });
+            });
+            if (!all.length) return null;
+            let pool = all.filter(p => p[2] >= d.min && p[2] <= d.max);
+            if (!pool.length) {
+                // Region zu klein für die Schwierigkeit -> nächstpassende Distanz nehmen
+                const off = p => p[2] < d.min ? d.min - p[2] : p[2] - d.max;
+                const best = Math.min(...all.map(off));
+                pool = all.filter(p => off(p) === best);
+            }
+            return pool[Math.floor(rng() * pool.length)];
+        }
+
+        /* ================= Spielablauf ================= */
+        function startGame(daily) {
+            if (!Object.keys(countries).length) return;
+            if (daily && getDailyResult()) { showToast("Heute schon gereist – morgen gibt's eine neue Reise!"); return; }
+
+            isDaily = !!daily;
+            gameDiff = isDaily ? DAILY_DIFF : settings.diff;
+            gameRegion = isDaily ? DAILY_REGION : settings.region;
+            isHardcore = settings.hc === '1';
+            active = new Set(Object.keys(countries).filter(c => gameRegion === 'welt' || (countries[c].region || []).includes(gameRegion)));
+
+            const rng = isDaily ? mulberry32(hashStr('reisezulilly-' + todayKey())) : Math.random;
+            const route = pickRoute(rng, DIFFS[gameDiff] || DIFFS.mittel);
+            if (!route) { showToast("Keine passende Route gefunden!"); return; }
+
+            [startCca3, targetCca3] = route;
+            currentCca3 = startCca3;
+            chain = [startCca3];
+            optimalPath = shortestPath(startCca3, targetCca3);
+            steps = 0; undos = 0; wrongGuesses = 0;
+            hintLevel = 0; hintsUsedTotal = 0;
+            finishing = false; reviewMode = false; lastResult = null;
+
+            document.getElementById('win-modal').style.display = 'none';
+            document.getElementById('msg-toast').style.display = 'none';
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('game-view').style.display = 'flex';
+            document.getElementById('settings-btn').style.display = 'inline-block';
+            document.getElementById('play-actions').style.display = 'flex';
+            document.getElementById('review-actions').style.display = 'none';
+            document.getElementById('input-area').style.display = 'block';
+            document.getElementById('map-wrap').style.display = isHardcore ? 'none' : 'block';
+            document.getElementById('hint-btn').style.display = isHardcore ? 'none' : 'inline-block';
+            document.getElementById('hint-btn').disabled = false;
+            document.getElementById('start-label').innerHTML = label(startCca3);
+            document.getElementById('target-label').innerHTML = label(targetCca3) + ' 🐱';
+
+            isGameActive = true;
+            gameStartMs = Date.now();
+            if (typeof startGameTimer === 'function') startGameTimer();
+
+            const inp = document.getElementById('country-input');
+            inp.value = ''; inp.disabled = false;
+            hideSuggestions();
+            renderAll();
+            if (!isHardcore) fitRoute(false);
+            inp.focus();
+        }
+
+        function backToSettings() {
+            isGameActive = false; finishing = false; reviewMode = false;
+            hideSuggestions();
+            document.getElementById('win-modal').style.display = 'none';
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('settings-btn').style.display = 'none';
+            document.getElementById('setup-area').style.display = 'flex';
+            updateSetupUI();
+        }
+
+        function hintNeighbors() {
+            return nbrs(currentCca3).filter(nb => !chain.includes(nb));
+        }
+
+        function renderAll() {
+            renderRoute();
+            renderStatus();
+            renderMap();
+        }
+        function renderStatus() {
+            document.getElementById('st-steps').innerText = steps;
+            document.getElementById('st-opt').innerText = optimalPath.length - 1;
+            document.getElementById('st-wrong').innerText = wrongGuesses;
+            document.getElementById('undo-btn').disabled = chain.length < 2 || !isGameActive || finishing;
+            document.getElementById('hint-btn').disabled = hintLevel >= 2 || !isGameActive || finishing;
+            document.getElementById('country-input').placeholder = `Nachbarland von ${countries[currentCca3].name}...`;
+        }
+        function renderRoute() {
+            const c = document.getElementById('route-scroll');
+            c.innerHTML = '';
+            const addArrow = () => { const a = document.createElement('div'); a.className = 'route-arrow'; a.innerText = '→'; c.appendChild(a); };
+            chain.forEach((cca3, i) => {
+                if (i > 0) addArrow();
+                const chip = document.createElement('div');
+                chip.className = 'route-chip' + (cca3 === targetCca3 ? ' target-chip' : (i === chain.length - 1 ? ' current-chip' : ''));
+                chip.innerHTML = label(cca3);
+                c.appendChild(chip);
+            });
+            if (currentCca3 !== targetCca3) {
+                addArrow();
+                const goal = document.createElement('div');
+                goal.className = 'route-chip target-chip';
+                goal.innerHTML = label(targetCca3) + ' 🐱';
+                c.appendChild(goal);
+            }
+            c.scrollLeft = c.scrollWidth;
+        }
+
+        /* ================= Eingabe & Autovervollständigung ================= */
+        let suggestionList = []; let selIndex = -1;
+
+        function hideSuggestions() {
+            document.getElementById('suggestions').style.display = 'none';
+            suggestionList = []; selIndex = -1;
+        }
+        function searchCountries(q) {
+            const best = {};
+            nameIndex.forEach(({ n, c, alias }) => {
+                if (!active.has(c)) return;
+                let score = null;
+                if (n === q) score = 0;
+                else if (n.startsWith(q)) score = 1;
+                else if (!alias && n.split(' ').some(w => w.startsWith(q))) score = 2;
+                else if (!alias && q.length >= 3 && n.includes(q)) score = 3;
+                if (score === null) return;
+                if (alias) score += 0.5;
+                if (!(c in best) || score < best[c]) best[c] = score;
+            });
+            return Object.keys(best).sort((a, b) => best[a] - best[b] || countries[a].name.localeCompare(countries[b].name, 'de'));
+        }
+        function resolveInput(raw) {
+            const q = normalize(raw);
+            if (!q) return null;
+            const exact = nameIndex.find(e => e.n === q);
+            if (exact) return exact.c;
+            const hits = searchCountries(q);
+            return hits.length ? hits[0] : null;   // Teiltext -> erster Vorschlag
+        }
+        function onInputChange() {
+            const q = normalize(document.getElementById('country-input').value);
+            const box = document.getElementById('suggestions');
+            if (!q || !isGameActive) { hideSuggestions(); return; }
+
+            suggestionList = searchCountries(q).slice(0, 12); // Liste scrollt, damit z.B. bei "a" alle A-Länder erreichbar sind
+            selIndex = -1;
+            if (!suggestionList.length) { box.style.display = 'none'; return; }
+            box.innerHTML = suggestionList.map((c, i) =>
+                `<div class="suggestion-item${chain.includes(c) ? ' visited' : ''}" data-i="${i}">${label(c)}${chain.includes(c) ? ' (besucht)' : ''}</div>`).join('');
+            box.style.display = 'block';
+            box.querySelectorAll('.suggestion-item').forEach(el => {
+                // pointerdown + preventDefault: Tastatur bleibt offen
+                el.onpointerdown = (e) => { e.preventDefault(); selectSuggestion(parseInt(el.dataset.i)); };
+            });
+        }
+        function selectSuggestion(i) {
+            const c = suggestionList[i];
+            hideSuggestions();
+            if (c) submitGuess(c);
+        }
+        function onInputKeydown(e) {
+            if (e.key === 'ArrowDown' && suggestionList.length) {
+                e.preventDefault(); selIndex = Math.min(selIndex + 1, suggestionList.length - 1); updateSelHighlight();
+            } else if (e.key === 'ArrowUp' && suggestionList.length) {
+                e.preventDefault(); selIndex = Math.max(selIndex - 1, 0); updateSelHighlight();
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selIndex >= 0 && suggestionList[selIndex]) selectSuggestion(selIndex);
+                else submitGuess();
+            }
+        }
+        function updateSelHighlight() {
+            document.querySelectorAll('.suggestion-item').forEach((el, i) => el.classList.toggle('sel', i === selIndex));
+        }
+
+        function submitGuess(forcedCode) {
+            if (!isGameActive || finishing) return;
+            const inp = document.getElementById('country-input');
+            const raw = inp.value;
+            const code = forcedCode || resolveInput(raw);
+            hideSuggestions();
+
+            if (!code) { if (raw.trim()) showToast("Unbekanntes Land!"); return; }
+            const name = countries[code].name;
+            if (code === currentCca3) { showToast(`Du bist gerade in ${name}!`); return; }
+            if (chain.includes(code)) { showToast(`${name} hast du schon besucht!`); return; }
+            if (!active.has(code)) {
+                wrongGuesses++; renderStatus();
+                showToast(`${name} liegt nicht in ${REGION_NAMES[gameRegion]}!`); return;
+            }
+            if (!countries[currentCca3].borders.includes(code)) {
+                wrongGuesses++; renderStatus();
+                showToast(`${name} grenzt nicht an ${countries[currentCca3].name}!`); return;
+            }
+
+            inp.value = '';
+            moveTo(code);
+
+            if (code === targetCca3) {
+                finishing = true; renderStatus();
+                setTimeout(() => triggerEnd(true), 600);
+            } else if (countries[code].borders.includes(targetCca3)) {
+                // Nachbarland von Lillys Land erreicht -> letzter Schritt automatisch
+                finishing = true; renderStatus();
+                showToast(`🐱 Lilly ist gleich nebenan in ${countries[targetCca3].name}!`);
+                setTimeout(() => {
+                    moveTo(targetCca3);
+                    setTimeout(() => triggerEnd(true), 800);
+                }, 600);
+            } else if (!hintNeighbors().length) {
+                showToast("Sackgasse! Nutze ↩️ Zurück.");
+            }
+        }
+
+        function moveTo(code) {
+            chain.push(code);
+            currentCca3 = code;
+            steps++;
+            hintLevel = 0;
+            renderAll();
+            if (!isHardcore) fitRoute(true);
+        }
+
+        function undoStep() {
+            if (!isGameActive || finishing || chain.length < 2) return;
+            chain.pop();
+            currentCca3 = chain[chain.length - 1];
+            steps++;            // Zurück kostet einen Schritt
+            undos++;
+            hintLevel = 0;
+            renderAll();
+            if (!isHardcore) fitRoute(true);
+        }
+
+        function useHint() {
+            if (!isGameActive || finishing || isHardcore || hintLevel >= 2) return;
+            hintLevel++;
+            hintsUsedTotal++;
+            renderStatus();
+            renderMap();
+        }
+
+        function giveUp() {
+            if (!isGameActive || finishing) return;
+            triggerEnd(false);
+        }
+
+        /* ================= Spielende ================= */
+        function triggerEnd(won) {
+            isGameActive = false; finishing = false;
+            hideSuggestions();
+            const inp = document.getElementById('country-input');
+            inp.blur();
+
+            const optimal = optimalPath.length - 1;
+            const extraSteps = steps - optimal;
+            const seconds = Math.round((Date.now() - gameStartMs) / 1000);
+            lastResult = { won, steps, optimal, extraSteps, seconds };
+
+            // Perfekt-Serie (pro Gerät)
+            let perfectStreak = parseInt(lsGet('reisezulilly_perfect_streak') || '0', 10) || 0;
+            perfectStreak = (won && extraSteps <= 0) ? perfectStreak + 1 : 0;
+            lsSet('reisezulilly_perfect_streak', String(perfectStreak));
+
+            if (isDaily) lsSet('reisezulilly_daily_' + todayKey(), JSON.stringify({ won, steps, optimal }));
+
+            renderStatus();
+            renderMap();
+            fillResultModal();
+            showResultModal();
+
+            const extra = {
+                hints_used_total: hintsUsedTotal,
+                wrong_guesses_sum: wrongGuesses,
+                undo_sum: undos,
+                ['diff_' + gameDiff + '_played']: 1,
+                ['region_' + gameRegion + '_played']: 1
+            };
+            if (won) {
+                extra.extra_steps_sum = Math.max(extraSteps, 0);
+                extra.optimal_steps_sum = optimal;
+                extra['diff_' + gameDiff + '_won'] = 1;
+                extra['umweg_' + (extraSteps >= 3 ? '3plus' : Math.max(extraSteps, 0))] = 1;
+                extra.fastest_win_seconds = seconds;
+                if (extraSteps <= 0) extra.perfect_routes = 1;
+                if (hintsUsedTotal === 0) extra.hintless_wins = 1;
+                if (isHardcore) extra.hardcore_wins = 1;
+            }
+            if (perfectStreak > 0) extra.best_perfect_streak = perfectStreak;
+            if (isHardcore) extra.hardcore_played = 1;
+            if (isDaily) {
+                extra.daily_played = 1;
+                if (won) extra.daily_won = 1;
+                if (won && extraSteps <= 0) extra.daily_perfect = 1;
+            }
+            new Set(chain).forEach(c => { extra['land_' + countries[c].cca2] = 1; });
+
+            try {
+                if (typeof recordGameResult === 'function') {
+                    recordGameResult('reisezulilly', { won: won, guesses: steps, maxGuesses: Math.max(optimal, steps), extra });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function fillResultModal() {
+            const r = lastResult;
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const content = document.querySelector('.modal-content');
+            if (r.won) {
+                title.innerText = "🎉 Yuppie! Du hast Lilly gefunden 🎉";
+                title.style.color = "var(--pink)";
+                desc.innerText = r.extraSteps <= 0 ? "Perfekte Route – kürzer geht's nicht!" : `Angekommen mit ${r.extraSteps} Schritt${r.extraSteps === 1 ? '' : 'en'} mehr als nötig.`;
+                content.style.borderColor = "var(--pink)";
+            } else {
+                title.innerText = "Reise abgebrochen 🏳️";
+                title.style.color = "#888";
+                desc.innerText = "Kein Problem, nächstes Mal klappt's!";
+                content.style.borderColor = "#888";
+            }
+            const cells = [
+                [r.steps, 'Schritte'], [r.optimal, 'Optimal'], [fmtSec(r.seconds), 'Zeit'],
+                [hintsUsedTotal, 'Hints'], [wrongGuesses, 'Fehler'], [undos, 'Zurück']
+            ];
+            document.getElementById('result-grid').innerHTML = cells.map(([v, l]) => `<div class="result-cell"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+            document.getElementById('your-route').innerHTML = chain.map(label).join(' → ');
+            document.getElementById('optimal-route').innerHTML = optimalPath.map(label).join(' → ');
+        }
+        function showResultModal() {
+            document.getElementById('win-modal').style.display = 'flex';
+        }
+        function showReview() {
+            document.getElementById('win-modal').style.display = 'none';
+            reviewMode = true;
+            document.getElementById('play-actions').style.display = 'none';
+            document.getElementById('input-area').style.display = 'none';
+            document.getElementById('review-actions').style.display = 'flex';
+            document.getElementById('map-wrap').style.display = 'block';
+            renderMap();
+            fitCodes([...chain, ...optimalPath], false);
+        }
+        function newJourney() {
+            startGame(false);
+        }
+
+        /* ================= Karte ================= */
+        let svgEl = null, overlay = null;
+        let baseVB = null, vb = null;
+        const elCache = {}, boxCache = {};
+
+        function setupSvg(svgText) {
+            const cont = document.getElementById('map-svg-container');
+            cont.innerHTML = svgText;
+            svgEl = cont.querySelector('svg');
+            svgEl.id = 'map-svg';
+            if (!svgEl.getAttribute('viewBox')) {
+                const w = parseFloat(svgEl.getAttribute('width')), h = parseFloat(svgEl.getAttribute('height'));
+                if (w && h) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            }
+            svgEl.removeAttribute('width');
+            svgEl.removeAttribute('height');
+            svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            overlay.id = 'map-overlay';
+            svgEl.appendChild(overlay);
+
+            const v = (svgEl.getAttribute('viewBox') || '0 0 1000 500').trim().split(/[\s,]+/).map(Number);
+            baseVB = { x: v[0], y: v[1], w: v[2], h: v[3] };
+            vb = { ...baseVB };
+        }
+
+        function countryEl(code) {
+            if (code in elCache) return elCache[code];
+            const cc = countries[code].cca2;
+            let el = null;
+            for (const id of [cc.toLowerCase(), cc.toUpperCase(), code, code.toLowerCase()]) {
+                el = svgEl.querySelector(`[id="${id}"]`);
+                if (el) break;
+            }
+            return elCache[code] = el;
+        }
+
+        // Zerlegt einen Pfad in Teilflächen (Inseln, Exklaven) und liefert deren Boxen
+        function subpathBoxes(d) {
+            const re = /([MmLlHhVvCcSsQqTtAaZz])|([+-]?(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?)/g;
+            const P = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
+            let m, cmd = null, args = [], x = 0, y = 0, sx = 0, sy = 0, cur = null;
+            const boxes = [];
+            const add = (px, py) => {
+                if (!cur) { cur = { x1: px, y1: py, x2: px, y2: py }; boxes.push(cur); }
+                else { cur.x1 = Math.min(cur.x1, px); cur.y1 = Math.min(cur.y1, py); cur.x2 = Math.max(cur.x2, px); cur.y2 = Math.max(cur.y2, py); }
+            };
+            const exec = (c, a) => {
+                const rel = c !== c.toUpperCase(), C = c.toUpperCase();
+                if (C === 'M') { x = rel ? x + a[0] : a[0]; y = rel ? y + a[1] : a[1]; sx = x; sy = y; cur = null; add(x, y); }
+                else if (C === 'L' || C === 'T') { x = rel ? x + a[0] : a[0]; y = rel ? y + a[1] : a[1]; add(x, y); }
+                else if (C === 'H') { x = rel ? x + a[0] : a[0]; add(x, y); }
+                else if (C === 'V') { y = rel ? y + a[0] : a[0]; add(x, y); }
+                else if (C === 'C') { x = rel ? x + a[4] : a[4]; y = rel ? y + a[5] : a[5]; add(x, y); }
+                else if (C === 'S' || C === 'Q') { x = rel ? x + a[2] : a[2]; y = rel ? y + a[3] : a[3]; add(x, y); }
+                else if (C === 'A') { x = rel ? x + a[5] : a[5]; y = rel ? y + a[6] : a[6]; add(x, y); }
+                else if (C === 'Z') { x = sx; y = sy; }
+            };
+            while ((m = re.exec(d))) {
+                if (m[1]) { cmd = m[1]; args = []; if (cmd === 'Z' || cmd === 'z') exec(cmd, []); continue; }
+                if (!cmd) return null;
+                args.push(parseFloat(m[2]));
+                const n = P[cmd.toUpperCase()];
+                if (n && args.length === n) {
+                    exec(cmd, args); args = [];
+                    if (cmd === 'M') cmd = 'L'; else if (cmd === 'm') cmd = 'l';
+                }
+            }
+            return boxes.map(b => ({ x: b.x1, y: b.y1, w: b.x2 - b.x1, h: b.y2 - b.y1 }));
+        }
+
+        // Box der größten Teilfläche eines Landes (in Karten-Koordinaten)
+        function mainBox(code) {
+            if (code in boxCache) return boxCache[code];
+            const el = countryEl(code);
+            if (!el) return boxCache[code] = null;
+            const oCtm = overlay.getCTM();
+            if (!oCtm) return null;   // Karte gerade nicht sichtbar -> nicht cachen
+            const inv = oCtm.inverse();
+            const shapes = el.matches('path,polygon,polyline,rect,circle,ellipse') ? [el] : [...el.querySelectorAll('path,polygon,polyline,rect,circle,ellipse')];
+            let best = null, bestA = -1;
+            shapes.forEach(sh => {
+                const ctm = sh.getCTM();
+                if (!ctm) return;
+                const mat = inv.multiply(ctm);
+                let boxes = null;
+                if (sh.tagName.toLowerCase() === 'path') { try { boxes = subpathBoxes(sh.getAttribute('d') || ''); } catch (e) { boxes = null; } }
+                if (!boxes || !boxes.length) { const b = sh.getBBox(); boxes = [{ x: b.x, y: b.y, w: b.width, h: b.height }]; }
+                boxes.forEach(b => {
+                    const pts = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map(([px, py]) => new DOMPoint(px, py).matrixTransform(mat));
+                    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+                    const tb = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+                    const a = tb.w * tb.h;
+                    if (a > bestA) { bestA = a; best = tb; }
+                });
+            });
+            return boxCache[code] = best;
+        }
+        function center(code) { const b = mainBox(code); return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : null; }
+        function isTiny(b) { return b.w < baseVB.w * 0.008 && b.h < baseVB.h * 0.012; }
+
+        function renderMap() {
+            if (!svgEl) return;
+            const classes = ['mark-hint', 'mark-optimal', 'mark-visited', 'mark-current', 'mark-target'];
+            svgEl.querySelectorAll('.' + classes.join(',.')).forEach(el => el.classList.remove(...classes));
+            const mark = (c, cls) => { const el = countryEl(c); if (el) el.classList.add(cls); };
+            if (reviewMode) optimalPath.forEach(c => mark(c, 'mark-optimal'));
+            if (hintLevel > 0 && isGameActive) hintNeighbors().forEach(c => mark(c, 'mark-hint'));
+            chain.forEach(c => mark(c, 'mark-visited'));
+            mark(currentCca3, 'mark-current');
+            mark(targetCca3, 'mark-target');
+            renderOverlay();
+        }
+
+        function unitsPerPx() {
+            const r = document.getElementById('map-svg-container').getBoundingClientRect();
+            if (!r.width || !r.height) return 0;
+            return Math.max(vb.w / r.width, vb.h / r.height);
+        }
+
+        function svgNode(tag, attrs, parent) {
+            const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+            (parent || overlay).appendChild(n);
+            return n;
+        }
+
+        function renderOverlay() {
+            if (!overlay || !startCca3) return;
+            while (overlay.firstChild) overlay.removeChild(overlay.firstChild);
+            const k = unitsPerPx();
+            if (!k) return;
+
+            const line = (codes, attrs) => {
+                const pts = codes.map(center).filter(Boolean);
+                if (pts.length > 1) svgNode('polyline', Object.assign({ points: pts.map(p => `${p.x},${p.y}`).join(' '), 'stroke-width': 2.5 * k }, attrs));
+            };
+            if (reviewMode) line(optimalPath, { stroke: '#ff4da6', 'stroke-dasharray': `${6 * k} ${4 * k}`, opacity: 0.95 });
+            line(chain, { stroke: '#ffffff', opacity: 0.8 });
+
+            // Mini-Länder (Luxemburg & Co.) bekommen einen Punkt, damit man sie sieht
+            const hints = (hintLevel > 0 && isGameActive) ? hintNeighbors() : [];
+            const color = c => c === targetCca3 ? '#ff4da6' : c === currentCca3 ? '#ffd700' : chain.includes(c) ? '#538d4e' : hints.includes(c) ? '#8a8ac0' : '#7a2b55';
+            const dotted = new Set([...chain, targetCca3, ...hints, ...(reviewMode ? optimalPath : [])]);
+            dotted.forEach(c => {
+                const b = mainBox(c);
+                if (b && isTiny(b)) svgNode('circle', { cx: b.x + b.w / 2, cy: b.y + b.h / 2, r: 4.5 * k, fill: color(c), stroke: '#fff', 'stroke-width': 1 * k });
+            });
+
+            hints.forEach(c => {
+                const b = mainBox(c);
+                if (!b) return;
+                const t = svgNode('text', { x: b.x + b.w / 2, y: b.y + b.h / 2 - (isTiny(b) ? 10 * k : 0), 'font-size': 11 * k, 'stroke-width': 3 * k });
+                t.textContent = hintLevel >= 2 ? countries[c].name : countries[c].name[0];
+            });
+
+            const tc = center(targetCca3);
+            if (tc) {
+                const cat = svgNode('text', { x: tc.x, y: tc.y, 'font-size': 18 * k, 'stroke-width': 0 });
+                cat.textContent = '🐱';
+            }
+        }
+
+        function applyVB() {
+            if (!svgEl) return;
+            svgEl.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+            renderOverlay();
+        }
+        function clampVB(v) {
+            let { w, h } = v;
+            const minW = baseVB.w / 30;
+            if (w < minW) { h *= minW / w; w = minW; }
+            if (w > baseVB.w || h > baseVB.h) { const s = Math.min(baseVB.w / w, baseVB.h / h); w *= s; h *= s; }
+            let cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+            cx = Math.min(baseVB.x + baseVB.w, Math.max(baseVB.x, cx));
+            cy = Math.min(baseVB.y + baseVB.h, Math.max(baseVB.y, cy));
+            return { x: cx - w / 2, y: cy - h / 2, w, h };
+        }
+
+        let animId = null;
+        function animateTo(target, animate) {
+            cancelAnimationFrame(animId);
+            target = clampVB(target);
+            if (!animate) { vb = target; applyVB(); return; }
+            const from = { ...vb }, t0 = performance.now(), dur = 350;
+            const step = (now) => {
+                const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+                vb = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e };
+                applyVB();
+                if (p < 1) animId = requestAnimationFrame(step);
+            };
+            animId = requestAnimationFrame(step);
+        }
+
+        function fitCodes(codes, animate) {
+            if (!svgEl) return;
+            const boxes = codes.map(mainBox).filter(Boolean);
+            if (!boxes.length) { resetMapView(animate); return; }
+            let x1 = Math.min(...boxes.map(b => b.x)), y1 = Math.min(...boxes.map(b => b.y));
+            let x2 = Math.max(...boxes.map(b => b.x + b.w)), y2 = Math.max(...boxes.map(b => b.y + b.h));
+            let w = x2 - x1, h = y2 - y1;
+            const padX = w * 0.25 + baseVB.w * 0.02, padY = h * 0.25 + baseVB.h * 0.03;
+            w += 2 * padX; h += 2 * padY;
+            const minW = baseVB.w * 0.1, minH = baseVB.h * 0.12;
+            const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+            w = Math.max(w, minW); h = Math.max(h, minH);
+            animateTo({ x: cx - w / 2, y: cy - h / 2, w, h }, animate);
+        }
+        function fitRoute(animate) {
+            fitCodes(reviewMode ? [...chain, ...optimalPath] : [...chain, targetCca3], animate);
+        }
+        function resetMapView(animate) {
+            if (!baseVB) return;
+            animateTo({ ...baseVB }, animate);
+        }
+
+        function zoomAt(px, py, f) {
+            const r = document.getElementById('map-svg-container').getBoundingClientRect();
+            const k = unitsPerPx();
+            if (!k) return;
+            const ux = vb.x + vb.w / 2 + (px - r.width / 2) * k;
+            const uy = vb.y + vb.h / 2 + (py - r.height / 2) * k;
+            const nv = clampVB({ x: 0, y: 0, w: vb.w / f, h: vb.h / f, });
+            const realF = vb.w / nv.w, nk = k / realF;
+            const cx = ux - (px - r.width / 2) * nk, cy = uy - (py - r.height / 2) * nk;
+            vb = clampVB({ x: cx - nv.w / 2, y: cy - nv.h / 2, w: nv.w, h: nv.h });
+            applyVB();
+        }
+        function panBy(dx, dy) {
+            const k = unitsPerPx();
+            vb = clampVB({ x: vb.x - dx * k, y: vb.y - dy * k, w: vb.w, h: vb.h });
+            applyVB();
+        }
+
+        function initMapGestures() {
+            const wrap = document.getElementById('map-wrap');
+            const cont = document.getElementById('map-svg-container');
+            const pts = new Map();
+            let last = null; // {x, y, dist}
+
+            const snapshot = () => {
+                const r = cont.getBoundingClientRect();
+                const arr = [...pts.values()];
+                if (arr.length === 1) return { x: arr[0].x - r.left, y: arr[0].y - r.top, dist: 0 };
+                const [a, b] = arr;
+                return { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+            };
+
+            wrap.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('button')) return;   // Karten-Buttons normal klicken lassen
+                cancelAnimationFrame(animId);
+                try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (pts.size > 2) return;
+                last = snapshot();
+            });
+            wrap.addEventListener('pointermove', (e) => {
+                if (!pts.has(e.pointerId)) return;
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (pts.size > 2 || !last) return;
+                const now = snapshot();
+                if (pts.size === 2 && last.dist > 0 && now.dist > 0) zoomAt(now.x, now.y, now.dist / last.dist);
+                panBy(now.x - last.x, now.y - last.y);
+                last = now;
+            });
+            const end = (e) => {
+                pts.delete(e.pointerId);
+                last = pts.size ? snapshot() : null;
+            };
+            wrap.addEventListener('pointerup', end);
+            wrap.addEventListener('pointercancel', end);
+
+            wrap.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const r = cont.getBoundingClientRect();
+                zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+            }, { passive: false });
+        }
+    </script>
+</body>
+</html>

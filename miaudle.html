@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Miaudle</title>
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* HEADER */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #f0a4d0; display: flex; align-items: center; gap: 10px; }
+        .menu-btn {
+            background: #333; color: white; border: 1px solid #555; text-decoration: none;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+
+        /* TOAST */
+        #msg-toast {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 12px 24px; border-radius: 8px;
+            font-weight: bold; display: none; z-index: 4000; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* --- EINGABE & AUTOCOMPLETE --- */
+        #input-section {
+            width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+        }
+        .autocomplete-wrapper { position: relative; width: 100%; }
+        #cat-input {
+            width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px;
+            border: 2px solid #f0a4d0; background: #1e1e1f; color: white; box-sizing: border-box;
+        }
+        .autocomplete-items {
+            position: absolute; border: 1px solid #555; border-top: none; z-index: 99;
+            top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto;
+            background-color: #1e1e1f; border-radius: 0 0 8px 8px; display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .autocomplete-item {
+            padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; font-weight: bold;
+        }
+        .autocomplete-item:hover { background-color: #333; }
+
+        .button-row { display: flex; gap: 10px; width: 100%; }
+        .action-btn {
+            flex: 1; background: #f0a4d0; color: #121213; border: none; padding: 12px 20px;
+            font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        .action-btn:active { filter: brightness(0.9); }
+        .give-up-btn { background: #ef4444; color: white; }
+
+        /* --- SPIELFELD (GRID) --- */
+        #game-board-container {
+            flex-grow: 1; width: 100%; max-width: 900px; padding: 0 10px 20px 10px;
+            box-sizing: border-box; overflow-y: auto; overflow-x: auto;
+        }
+
+        .grid-header {
+            display: grid; grid-template-columns: 1.45fr 1.25fr 1fr 0.9fr 0.85fr 1.15fr; gap: 4px;
+            font-size: 0.6rem; color: #aaa; font-weight: bold; text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .guess-row {
+            display: grid; grid-template-columns: 1.45fr 1.25fr 1fr 0.9fr 0.85fr 1.15fr; gap: 4px;
+            margin-bottom: 4px;
+            animation: popIn 0.3s ease-out forwards;
+        }
+        .guess-row .tile { padding: 6px 1px; font-size: 0.7rem; min-height: 46px; box-sizing: border-box; overflow-wrap: anywhere; hyphens: auto; }
+        .guess-row .tile-name { font-size: 0.72rem; }
+        .guess-row .arrow { font-size: 0.85rem; }
+        @media (min-width: 600px) { .guess-row .tile { font-size: 0.85rem; padding: 8px 2px; } .grid-header { font-size: 0.7rem; } }
+
+        .tile {
+            background-color: #3a3a3c; border: 2px solid #3a3a3c; border-radius: 5px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 8px 2px; font-size: 0.85rem; font-weight: bold; text-align: center;
+            word-wrap: break-word; color: white;
+        }
+
+        .tile-name { font-size: 0.9rem; }
+        .arrow { font-size: 1.1rem; margin-top: 2px; }
+
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .close { background-color: #b59f3b; border-color: #b59f3b; }
+        .wrong { background-color: #3a3a3c; border-color: #3a3a3c; }
+
+        /* MODAL & BILD */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #f0a4d0; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #f0a4d0; }
+
+        #win-cat-img {
+            max-width: 100%; height: 180px; object-fit: contain; margin: 15px 0;
+            border-radius: 10px; display: none;
+        }
+
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐱 Miaudle</h1>
+        <div style="display:flex;gap:8px;">
+            <a href="miaudex.html" class="menu-btn">📖 MIAU-DEX</a>
+            <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="input-section">
+        <div class="autocomplete-wrapper">
+            <input type="text" id="cat-input" placeholder="Katzenrasse suchen..." autocomplete="off">
+            <div id="autocomplete-list" class="autocomplete-items"></div>
+        </div>
+        <div class="button-row">
+            <button class="action-btn" id="guess-btn" onclick="submitGuess()">Raten</button>
+            <button class="action-btn give-up-btn" onclick="giveUp()">Aufgeben 🏳️</button>
+        </div>
+    </div>
+
+    <div id="game-board-container">
+        <div class="grid-header">
+            <div>KATZE</div>
+            <div>HERKUNFT</div>
+            <div>FELLART</div>
+            <div>GEWICHT</div>
+            <div>LEBENS&shy;ERW.</div>
+            <div>QUALZUCHT</div>
+        </div>
+        <div id="guesses-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Richtig! 🎉</h2>
+            <p id="modal-desc">Du hast die Katze erraten!</p>
+
+            <img id="win-cat-img" src="" alt="Katze">
+
+            <h3 id="win-name" style="font-size: 1.8rem; margin: 10px 0;">---</h3>
+            <button class="action-btn" onclick="location.reload()" style="width: 100%; margin-top: 15px;">Nächste Katze</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script src="dino-images.js"></script>
+    <script src="cat-images.js"></script>
+    <script>
+        let catDB = [];
+        let targetCat = null;
+        let guesses = [];
+        let isGameActive = false;
+
+        window.onload = loadDatabase;
+
+        async function loadDatabase() {
+            try {
+                const response = await fetch('catbreeds.json');
+                catDB = await response.json();
+
+                setupAutocomplete();
+                startNewGame();
+            } catch (e) {
+                console.error(e);
+                showToast("Fehler beim Laden der catbreeds.json!");
+            }
+        }
+
+        // --- AUTOCOMPLETE ---
+        function setupAutocomplete() {
+            const input = document.getElementById('cat-input');
+            const list = document.getElementById('autocomplete-list');
+
+            catDB.sort((a,b) => a.Name.localeCompare(b.Name));
+
+            function updateList() {
+                const val = input.value;
+                list.innerHTML = '';
+                list.style.display = 'block';
+
+                const q = catNorm(val);
+                // Treffer im deutschen Namen oder in einem Alias (z.B. englischer Name)
+                const matches = catDB.map(c => {
+                    const alias = (c.Alias || []).find(a => catNorm(a).includes(q));
+                    const hit = catNorm(c.Name).includes(q) ? 'name' : (alias ? 'alias' : null);
+                    return { c, alias, hit, start: catNorm(c.Name).startsWith(q) };
+                }).filter(m => m.hit).sort((a, b) => (b.start - a.start) || a.c.Name.localeCompare(b.c.Name, 'de'));
+
+                matches.forEach(({ c, alias, hit }) => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerText = hit === 'alias' && q ? `${c.Name} (${alias})` : c.Name;
+
+                    item.addEventListener('click', function(e) {
+                        input.value = c.Name;
+                        list.style.display = 'none';
+                        e.stopPropagation();
+                    });
+
+                    list.appendChild(item);
+                });
+            }
+
+            input.addEventListener('input', updateList);
+            input.addEventListener('focus', updateList);
+            input.addEventListener('click', updateList);
+
+            document.addEventListener('click', function (e) {
+                if (e.target !== input) list.style.display = 'none';
+            });
+        }
+
+        function catNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss').trim(); }
+        function findCat(text) {
+            const q = catNorm(text);
+            if (!q) return null;
+            const all = c => [c.Name, ...(c.Alias || [])].map(catNorm);
+            return catDB.find(c => all(c).includes(q))
+                || catDB.find(c => all(c).some(n => n.startsWith(q)))
+                || catDB.find(c => all(c).some(n => n.includes(q))) || null;
+        }
+
+        function startNewGame() {
+            targetCat = catDB[Math.floor(Math.random() * catDB.length)];
+            isGameActive = true;
+            //startGameTimer();
+        }
+
+        function submitGuess() {
+            if(!isGameActive) return;
+            const input = document.getElementById('cat-input');
+            const guessName = input.value.trim();
+            // Name oder Alias, exakt oder als Anfang (Teiltext + Enter)
+            const guessedCat = findCat(guessName);
+
+            if(!guessedCat) { showToast("Katzenrasse nicht gefunden!"); return; }
+            if(guesses.includes(guessedCat.Name)) { showToast("Schon geraten!"); return; }
+
+            document.getElementById('autocomplete-list').style.display = 'none';
+            input.value = "";
+
+            guesses.push(guessedCat.Name);
+            renderGuess(guessedCat);
+
+            if(guessedCat.Name === targetCat.Name) {
+                isGameActive = false; // sofort sperren, sonst Aufgeben während der Animation möglich
+                setTimeout(() => triggerEnd(true), 600);
+            }
+        }
+
+        // --- AUSWERTUNGS LOGIK ---
+        function evaluateNumber(guessVal, targetVal) {
+            if (guessVal === targetVal) return { status: 'correct', arrow: '' };
+
+            let margin = targetVal * 0.25;
+            let status = Math.abs(guessVal - targetVal) <= margin ? 'close' : 'wrong';
+            let arrow = guessVal < targetVal ? '⬆️' : '⬇️';
+
+            return { status, arrow };
+        }
+
+        function tokens(str) {
+            return str.toLowerCase().split(/[^a-zäöüß]+/).filter(t => t.length > 1);
+        }
+
+        function evaluateHerkunft(guessCat, targetCat) {
+            if (guessCat.Herkunft === targetCat.Herkunft) return 'correct';
+            const gt = tokens(guessCat.Herkunft), tt = tokens(targetCat.Herkunft);
+            if (gt.some(t => tt.includes(t))) return 'close';
+            return 'wrong';
+        }
+
+        function renderGuess(g) {
+            const container = document.getElementById('guesses-container');
+            const row = document.createElement('div');
+            row.className = 'guess-row';
+
+            let nameStat = g.Name === targetCat.Name ? 'correct' : 'wrong';
+            row.appendChild(createTile(g.Name, nameStat, '', 'tile-name'));
+
+            let herkunftStat = evaluateHerkunft(g, targetCat);
+            row.appendChild(createTile(g.Herkunft, herkunftStat, ''));
+
+            let fellStat = g.Fellart === targetCat.Fellart ? 'correct' : 'wrong';
+            row.appendChild(createTile(g.Fellart, fellStat, ''));
+
+            let weight = evaluateNumber(g.Gewicht_kg, targetCat.Gewicht_kg);
+            row.appendChild(createTile(g.Gewicht_kg + 'kg', weight.status, weight.arrow));
+
+            let life = evaluateNumber(g.Lebenserwartung_Jahre, targetCat.Lebenserwartung_Jahre);
+            row.appendChild(createTile(g.Lebenserwartung_Jahre + ' J.', life.status, life.arrow));
+
+            // Qualzucht: nur grün (gleich) oder grau (anders), kein Gelb
+            let qualStat = g.Qualzucht_Status === targetCat.Qualzucht_Status ? 'correct' : 'wrong';
+            row.appendChild(createTile(g.Qualzucht_Status, qualStat, ''));
+
+            container.insertBefore(row, container.firstChild);
+        }
+
+        function createTile(text, statusClass, arrowText, extraClass = '') {
+            const tile = document.createElement('div');
+            tile.className = `tile ${statusClass} ${extraClass}`;
+            tile.innerHTML = `<span>${text}</span>`;
+            if (arrowText) {
+                tile.innerHTML += `<span class="arrow">${arrowText}</span>`;
+            }
+            return tile;
+        }
+
+        function giveUp() {
+            if(!isGameActive) return;
+            triggerEnd(false);
+        }
+
+        let endShown = false;
+        async function triggerEnd(won) {
+            if (endShown) return;
+            endShown = true;
+            isGameActive = false;
+            //recordGameResult('miaudle', {won: won, guesses: guesses.length || 1, maxGuesses: Math.max(guesses.length, 8)});
+            // TODO Stats (letzter Schritt): recordCatStat in stats.js anlegen; bis dahin wird es übersprungen
+            if (typeof recordCatStat === 'function') recordCatStat(targetCat.Name, won, guesses.length || 1);
+            document.getElementById('win-name').innerText = targetCat.Name;
+
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const content = document.querySelector('.modal-content');
+            const imgEl = document.getElementById('win-cat-img');
+
+            imgEl.style.display = 'none';
+            imgEl.src = '';
+
+            if (won) {
+                title.innerText = "🎉 Super Leni! 🎉";
+                title.style.color = "#f0a4d0";
+                desc.innerText = `Leni hat die Katzenrasse in ${guesses.length} Versuchen erraten!`;
+                content.style.borderColor = "#f0a4d0";
+            } else {
+                title.innerText = "Schade! 🏳️";
+                title.style.color = "#ef4444";
+                desc.innerText = "Die gesuchte Rasse war:";
+                content.style.borderColor = "#ef4444";
+            }
+
+            document.getElementById('win-modal').style.display = 'flex';
+
+            const imageUrls = await fetchCatImages(targetCat.Name);
+            if (imageUrls.length) {
+                imgEl.referrerPolicy = 'no-referrer';
+                imgEl.src = imageUrls[0];
+                imgEl.style.display = 'block';
+                imgEl.style.cursor = 'pointer';
+                imgEl.onclick = () => openCatImageLightbox(imageUrls, 0);
+            }
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('msg-toast');
+            t.innerText = m; t.style.display = 'block';
+            setTimeout(() => t.style.display='none', 2500);
+        }
+
+        document.getElementById('cat-input').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                submitGuess();
+            }
+        });
+    </script>
+</body>
+</html>

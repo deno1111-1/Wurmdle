@@ -157,10 +157,19 @@
         let ladder = [], currentInput = "";
         let isGameActive = false;
         let adjacency = {}; 
+        let adjacencyKey = '', filteredSet = new Set(), hintCount = 0;
 
         const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
 
         window.onload = () => loadWords('de');
+        // Physische Tastatur
+        document.addEventListener('keydown', (e) => {
+            if (!isGameActive) return;
+            const k = e.key.toUpperCase();
+            if (k === 'ENTER') { handleInput('ENTER'); e.preventDefault(); }
+            else if (k === 'BACKSPACE') { handleInput('BACK'); e.preventDefault(); }
+            else if (/^[A-Z]$/.test(k) && !e.ctrlKey) handleInput(k);
+        });
 
         async function loadWords(lang) {
             currentLang = lang;
@@ -172,7 +181,9 @@
             try {
                 const r = await fetch(lang + '.txt');
                 const t = await r.text();
-                dictionary = t.split('\n').map(w => w.trim().toUpperCase()).filter(w => /^[A-ZÄÖÜ]+$/.test(w));
+                // nur A-Z: Ä/Ö/Ü gibt es nicht auf der Tastatur (sonst evtl. unlösbar)
+                dictionary = t.split('\n').map(w => w.trim().toUpperCase()).filter(w => /^[A-Z]+$/.test(w));
+                adjacencyKey = '';
                 document.getElementById('loading-msg').innerText = "Bereit zum Spielen!";
                 document.getElementById('start-btn').disabled = false;
             } catch(e) {
@@ -183,6 +194,7 @@
         function startGame() {
             wordLength = parseInt(document.getElementById('letter-count').value) || 4;
             filteredDict = dictionary.filter(w => w.length === wordLength);
+            filteredSet = new Set(filteredDict);
             
             if(filteredDict.length < 20) { alert("Zu wenige Wörter!"); return; }
 
@@ -206,6 +218,7 @@
 
                 ladder = [startWord];
                 currentInput = "";
+                hintCount = 0;
                 isGameActive = true;
                 startGameTimer();
 
@@ -219,16 +232,26 @@
             }, 50);
         }
 
+        // Schnell über Platzhalter-Gruppen (K_TZE) statt jedes Wort mit jedem zu vergleichen
         function buildAdjacency() {
+            const key = currentLang + wordLength;
+            if (adjacencyKey === key) return; // schon berechnet
             adjacency = {};
-            for(let w of filteredDict) adjacency[w] = [];
-            for(let i=0; i<filteredDict.length; i++) {
-                for(let j=i+1; j<filteredDict.length; j++) {
-                    let w1 = filteredDict[i], w2 = filteredDict[j], diff = 0;
-                    for(let k=0; k<wordLength; k++) if(w1[k] !== w2[k]) diff++;
-                    if(diff === 1) { adjacency[w1].push(w2); adjacency[w2].push(w1); }
+            const buckets = new Map();
+            for (const w of filteredDict) {
+                adjacency[w] = [];
+                for (let k = 0; k < wordLength; k++) {
+                    const pat = w.slice(0, k) + '_' + w.slice(k + 1);
+                    let b = buckets.get(pat);
+                    if (!b) { b = []; buckets.set(pat, b); }
+                    b.push(w);
                 }
             }
+            for (const b of buckets.values()) {
+                if (b.length < 2) continue;
+                for (let i = 0; i < b.length; i++) for (let j = i + 1; j < b.length; j++) { adjacency[b[i]].push(b[j]); adjacency[b[j]].push(b[i]); }
+            }
+            adjacencyKey = key;
         }
 
         function findRandomPath(start) {
@@ -322,7 +345,7 @@
 
         function submitWord() {
             if(currentInput.length !== wordLength) { showToast("Zu kurz!"); return; }
-            if(!filteredDict.includes(currentInput)) { showToast("Wort unbekannt!"); return; }
+            if(!filteredSet.has(currentInput)) { showToast("Wort unbekannt!"); return; }
             let d = 0, last = ladder[ladder.length - 1];
             for(let i=0; i<wordLength; i++) if(currentInput[i] !== last[i]) d++;
             if(d !== 1) { showToast("Genau 1 Buchstabe!"); return; }
@@ -335,7 +358,11 @@
             document.getElementById('user-steps').innerText = ladder.length - 1;
             document.getElementById('opt-steps').innerText = optPath.length - 1;
             document.getElementById('optimal-path-box').innerText = optPath.join(" ➔ ");
-            recordGameResult('lillyleiter', {won: true, guesses: ladder.length - 1, maxGuesses: (optPath.length - 1) + 5});
+            const steps = ladder.length - 1, optimal = optPath.length - 1;
+            const extra = { optimal_steps_sum: optimal, extra_steps_sum: Math.max(0, steps - optimal), hint_sum: hintCount };
+            if (steps <= optimal) extra.perfect_count = 1;
+            if (hintCount === 0) extra.hintless_wins = 1;
+            recordGameResult('lillyleiter', {won: true, guesses: steps, maxGuesses: optimal + 5, extra});
             setTimeout(() => document.getElementById('win-modal').style.display = 'flex', 600);
         }
 
@@ -347,13 +374,14 @@
         function showHint() {
             if(!isGameActive) return;
             let path = findShortestPath(ladder[ladder.length - 1], targetWord);
+            hintCount++;
             if (path && path.length > 1) showToast("💡 Probier '" + path[1] + "'");
             else showToast("Geh einen Schritt zurück!");
         }
 
         function showToast(m) {
             const t = document.getElementById('msg-toast'); t.innerText = m; t.style.display = 'block';
-            setTimeout(()=>t.style.display='none', 2000);
+            (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));
         }
     </script>
 </body>

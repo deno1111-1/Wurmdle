@@ -436,7 +436,7 @@
         "GRAND", "GRANT", "GRASS", "GREAT", "GREEN", "GROUP", "GUARD", "GUESS", "GUEST", "GUIDE",
         "HAPPY", "HEART", "HEAVY", "HORSE", "HOTEL", "HOUSE", "HUMAN", "IMAGE", "INDEX", "INNER",
         "INPUT", "ISSUE", "JOINT", "JUDGE", "JUICE", "KNIFE", "LABEL", "LARGE", "LAUGH", "LAYER",
-        "HELLO", "WORLD", "SMART", "QUICK", "BROWN", "DOWEL", "WEARY", "RAPES", "VOTED", "COVEN", 
+        "HELLO", "WORLD", "SMART", "QUICK", "BROWN", "DOWEL", "WEARY", "VOTED", "COVEN", 
         "MODEM", "DOXED"
     ];
 
@@ -469,6 +469,8 @@
     let currentGuess = "";
     let hasWon = false;
     let usedLetters = new Set(); // Speichert alle bereits getippten Buchstaben
+    let solutionPool = [];        // aus dieser Liste wird das Lösungswort gezogen
+    let hintCount = 0, gameEnded = false;
 
     // --- SETTINGS (LOCAL STORAGE) ---
     function loadSettings() {
@@ -528,7 +530,8 @@
             const res = await fetch(currentLanguage + '.txt');
             if (res.ok) {
                 const text = await res.text();
-                dictionary = text.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+                // nur A-Z (die Tastatur hat kein Ä/Ö/Ü/ß)
+                dictionary = text.split('\n').map(w => w.trim().toUpperCase()).filter(w => /^[A-Z]{5}$/.test(w));
             } else {
                 throw new Error("File not found");
             }
@@ -538,7 +541,19 @@
         
         if (!dictionary || dictionary.length === 0) dictionary = FALLBACK_EN;
 
-        secretWord = dictionary[Math.floor(Math.random() * dictionary.length)];
+        solutionPool = dictionary;
+        if (currentLanguage === 'en') {
+            // Englisch: Lösung aus der bereinigten Liste (keine komischen/unpassenden Wörter), Eingabe aus der großen Liste
+            try {
+                const r2 = await fetch('en_5letter_ohnekomische.txt');
+                if (r2.ok) {
+                    const clean = (await r2.text()).split('\n').map(w => w.trim().toUpperCase()).filter(w => /^[A-Z]{5}$/.test(w));
+                    if (clean.length) { solutionPool = clean; dictionary = [...new Set([...dictionary, ...clean])]; }
+                }
+            } catch (e) {}
+        }
+        secretWord = solutionPool[Math.floor(Math.random() * solutionPool.length)];
+        hintCount = 0; gameEnded = false;
         revealedHints = [false, false, false, false, false];
         history = [];
         currentGuess = "";
@@ -679,6 +694,7 @@
         if (hiddenIndices.length > 0) {
             const randIdx = hiddenIndices[Math.floor(Math.random() * hiddenIndices.length)];
             revealedHints[randIdx] = true;
+            hintCount++;
             renderTargetWord();
         } else {
             showToast(currentLanguage === 'de' ? "Keine Tipps mehr übrig!" : "No hints left!");
@@ -691,6 +707,7 @@
     }
 
     function giveUp() {
+        if (hasWon || gameEnded || guessesLeft <= 0) return;
         guessesLeft = 0;
         document.getElementById('guessesLeftDisplay').innerText = guessesLeft;
         revealAllHints();
@@ -838,7 +855,7 @@
         const toast = document.getElementById('toast');
         toast.innerText = msg;
         toast.style.opacity = 1;
-        setTimeout(() => toast.style.opacity = 0, 2000);
+        (clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>toast.style.opacity=0,2000));
     }
 
     function showEndScreen(win) {
@@ -846,7 +863,12 @@
         const title = document.getElementById('end-title');
         const wordDisp = document.getElementById('end-word');
         
-        recordGameResult('miaucode', {won: win, guesses: history.length || 1, maxGuesses: maxGuesses});
+        if (gameEnded) return;
+        gameEnded = true;
+        const extra = { hint_sum: hintCount };
+        if (win && hintCount === 0) extra.hintless_wins = 1;
+        if (isHardmode) { extra.hardmode_played = 1; if (win) extra.hardmode_won = 1; }
+        recordGameResult('miaucode', {won: win, guesses: history.length || 1, maxGuesses: maxGuesses, extra});
         
         if (win) {
             title.innerText = currentLanguage === 'de' ? "Super Leni hat gewonnen!" : "You Won!";

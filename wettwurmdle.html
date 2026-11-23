@@ -233,6 +233,8 @@
             secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
 
             rows=[]; curCol=0; keyboardStatus={};
+            currentRowLetters=new Array(wordLength).fill(''); // Reste aus der letzten Runde löschen
+            startGameTimer();
 
             document.documentElement.style.setProperty('--col-count', wordLength);
             document.getElementById('setup-area').style.display='none';
@@ -493,14 +495,19 @@
             document.getElementById('win-word').innerText=secret;
             document.getElementById('win-modal').style.display='flex';
 
-            const extra = { [`mode_${gameMode}`]: 1 };
-            if(gameMode==='bot') extra[`difficulty_${botDifficulty}`] = 1;
-
-            const won = (gameMode==='bot') ? humanWon : (result==='win');
-            recordGameResult('wettwurmdle', {won: won, guesses: rows.length, maxGuesses: maxGuesses, extra});
+            if(gameMode==='bot'){
+                const extra = { mode_bot: 1, [`difficulty_${botDifficulty}`]: 1 };
+                if(humanWon) extra[`difficulty_${botDifficulty}_won`] = 1;
+                if(result!=='win') extra.draws = 1;
+                recordGameResult('wettwurmdle', {won: humanWon, guesses: rows.length, maxGuesses: maxGuesses, extra});
+            } else {
+                // 2 Spieler an einem Gerät: eigener Eintrag ohne Win-Rate
+                const extra = result==='win' ? { [`${winner}_won`]: 1 } : { draws: 1 };
+                recordGameResult('wettwurmdle_2p', {won: null, guesses: rows.length, maxGuesses: maxGuesses, extra});
+            }
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>

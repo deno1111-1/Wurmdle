@@ -216,14 +216,16 @@
     }
 
     function startGame() {
-        GRID_W = parseInt(document.getElementById('inputW').value);
-        GRID_H = parseInt(document.getElementById('inputH').value);
+        GRID_W = Math.min(25, Math.max(3, parseInt(document.getElementById('inputW').value) || 6));
+        GRID_H = Math.min(25, Math.max(3, parseInt(document.getElementById('inputH').value) || 8));
+        document.getElementById('inputW').value = GRID_W;
+        document.getElementById('inputH').value = GRID_H;
         document.getElementById('setup-overlay').style.display = 'none';
         saveMenuSettings();
         generateLevel();
     }
 
-    function generateLevel() {
+    function generateLevel(attempt = 0) {
         const gridEl = document.getElementById('grid');
         const zoomLayer = document.getElementById('zoom-layer');
         gridEl.style.gridTemplateColumns = `repeat(${GRID_W}, var(--size))`;
@@ -263,6 +265,8 @@
 
         // 2. Golden Path + Quaki, Lilly & Extras
         const path = buildGoldenPath();
+        // Zufällige Lücken können Start und Ziel trennen -> dann neu würfeln statt abzustürzen
+        if (path.length < 3 && attempt < 50) return generateLevel(attempt + 1);
         
         const quakiIndex = Math.floor(path.length * 0.4); 
         path[quakiIndex].hasQuaki = true;

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Schneckis Schneidespaß</title>
+    <style>
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; box-sizing: border-box;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #f0a4d0; text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 80%; }
+
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; flex-wrap: wrap; justify-content: center; gap: 2px; }
+        .opt-btn { background: transparent; border: none; color: #aaa; padding: 10px 14px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        .opt-btn.active { background: #f0a4d0; color: #3c1f30; }
+        .start-btn { background-color: #f0a4d0; padding: 15px 50px; font-size: 1.4rem; border: none; color: #3c1f30; border-radius: 30px; margin-top: 10px; font-weight: bold; cursor: pointer; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 340px; }
+
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #target-bar { padding: 8px; color: #ccc; font-size: 0.95rem; text-align: center; flex-shrink: 0; }
+        #target-bar b { color: #f0a4d0; }
+
+        #canvas-wrap { position: relative; width: 300px; height: 300px; margin: 5px auto; touch-action: none; flex-shrink: 0; }
+        #canvas-wrap canvas { position: absolute; top: 0; left: 0; width: 300px; height: 300px; border-radius: 14px; }
+        #shape-canvas { background: #1c1c1e; }
+        #overlay-canvas { background: transparent; }
+
+        #tool-row { display: flex; gap: 10px; padding: 10px; flex-shrink: 0; }
+        .tool-btn { background: #333; color: #ccc; border: 2px solid #555; padding: 8px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .tool-btn.active { background: #f0a4d0; color: #3c1f30; border-color: #f0a4d0; }
+
+        #action-row { display: flex; gap: 10px; padding-bottom: 10px; flex-shrink: 0; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 10px 18px; font-size: 0.9rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .skip-btn { background: #444; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 26px; border-radius: 15px; border: 2px solid #f0a4d0; text-align: center; max-width: 340px; width: 100%; box-sizing: border-box; }
+        #result-panel { display: none; flex-direction: column; align-items: center; text-align: center; padding: 4px 16px 14px; max-width: 340px; flex-shrink: 0; }
+        .result-btns { display: flex; gap: 10px; margin-top: 12px; }
+        .result-btns .next-btn { background: #f0a4d0; color: #3c1f30; border-color: #f0a4d0; }
+        #result-rating { font-size: 1.3rem; margin-bottom: 4px; }
+        #result-split { font-size: 1.6rem; color: #f0a4d0; font-weight: bold; margin: 8px 0; }
+        #result-detail { color: #aaa; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐌✂️ Schneckis Schneidespaß</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Einstellungen</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Setup</h2>
+        <div class="info-text">Schnecki will das Blatt teilen! Zieh mit dem Finger eine Linie (oder freihand) quer durch die Form. Ziel: die Teile sollen genau im angezeigten Verhältnis stehen.</div>
+
+        <div class="setting-row">
+            <span class="label">Formen</span>
+            <div class="toggle-group">
+                <button class="opt-btn" id="shape-emoji" onclick="setShapeMode('emoji')">😀 Nur Emojis</button>
+                <button class="opt-btn" id="shape-generated" onclick="setShapeMode('generated')">🌀 Nur generiert</button>
+                <button class="opt-btn active" id="shape-mix" onclick="setShapeMode('mix')">🎲 Mix</button>
+            </div>
+        </div>
+
+        <div class="setting-row">
+            <span class="label">Zielverhältnis</span>
+            <div class="toggle-group">
+                <button class="opt-btn active" id="target-fifty" onclick="setTargetMode('fifty')">50 / 50</button>
+                <button class="opt-btn" id="target-random" onclick="setTargetMode('random')">🎲 Zufällig</button>
+            </div>
+        </div>
+
+        <button class="start-btn" onclick="startRound()">STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="target-bar">Ziel: <b id="target-label">50% / 50%</b></div>
+        <div id="canvas-wrap">
+            <canvas id="shape-canvas" width="300" height="300"></canvas>
+            <canvas id="overlay-canvas" width="300" height="300"></canvas>
+        </div>
+        <div id="tool-row">
+            <button class="tool-btn active" id="tool-linie" onclick="setTool('linie')">📏 Linie</button>
+            <button class="tool-btn" id="tool-freihand" onclick="setTool('freihand')">✍️ Freihand</button>
+        </div>
+        <div id="action-row">
+            <button class="action-btn skip-btn" onclick="skipRound()">🔄 Neue Form</button>
+        </div>
+        <!-- Ergebnis direkt unter der Form, damit man die geschnittenen Teile sieht -->
+        <div id="result-panel">
+            <div id="result-rating">🎯</div>
+            <div id="result-split">50% / 50%</div>
+            <div id="result-detail">Ziel war 50% / 50%</div>
+            <div class="result-btns">
+                <button class="action-btn" onclick="retrySameShape()">🔁 Nochmal</button>
+                <button class="action-btn next-btn" onclick="closeResult()">🐌 Nächste Form</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        const EMOJIS = ["🍕", "🍩", "🍪", "🍎", "🍉", "🥑", "🍄", "🐘", "🐢", "🐙", "🦑", "🦋", "🐬", "🍒", "🍇", "🌸", "🦖", "🐧", "🦥", "🐨", "🍊", "🥝", "🪱", "🍑", "🐝", "🦉", "🐳", "🍁", "🦕", "💩", "👾", "☃️", "😺", "🧚‍♀️", "🌹", "🥀", "🌷", "🪴", "🌵", "🌾", "🌿", "🌻", "🪾", "🌳", "🔥", "🌪️", "⚡", "🌈", "💧", "🪐", "🐴", "🫎", "🐲", "🦎", "🐉", "🐊", "🐍", "🐸", "🐇", "🐁", "🐈", "🐈‍⬛", "🐩", "🐕", "🐖", "🐎", "🐄", "🐂", "🐃", "🦬", "🐏", "🦘", "🐿️", "🐫", "🐪", "🦔", "🦡", "🦨", "🐦", "🐦‍⬛", "🐓", "🐔", "🐣", "🐥", "🐤", "🦜", "🦤", "🐋", "🐟", "🐠", "🐡", "🦐", "🦞", "🐦‍🔥", "🦃", "🦭", "🦈", "🦩", "🦀", "🪼", "🦪", "🪸", "🦟", "🦂", "🕷️", "🐌", "🐚", "🐛", "🦠", "🥦", "🍌", "🫑", "🌭", "🍔", "🍖", "🍗", "🥩", "🥓", "🍙", "🍥", "🫖", "🍸", "🫗", "🍷", "🧂", "🍾", "🚲", "🛵", "🚙", "🛻", "🚚", "🛩️", "🎺", "🪊", "🎸", "🪕", "🎻", "🎷"];
+;
+        const SIZE = 300;
+
+        let shapeModeSetting = 'mix';
+        let targetModeSetting = 'fifty';
+        let currentTool = 'linie';
+
+        let shapeMask = null;       // Bool-Array Länge SIZE*SIZE: true = gehört zur Form
+        let currentShapeType = '';  // 'emoji' oder 'generated'
+        let targetPct = 50;         // Zielprozentsatz (eine Seite)
+
+        let isDrawing = false, startPt = null, freehandPoints = [];
+
+        const shapeCanvas = document.getElementById('shape-canvas');
+        const overlayCanvas = document.getElementById('overlay-canvas');
+        const sctx = shapeCanvas.getContext('2d');
+        const octx = overlayCanvas.getContext('2d');
+
+        function setShapeMode(m){
+            shapeModeSetting = m;
+            ['emoji','generated','mix'].forEach(id=>{
+                document.getElementById('shape-'+id).className = (id===m) ? 'opt-btn active' : 'opt-btn';
+            });
+        }
+        function setTargetMode(m){
+            targetModeSetting = m;
+            ['fifty','random'].forEach(id=>{
+                document.getElementById('target-'+id).className = (id===m) ? 'opt-btn active' : 'opt-btn';
+            });
+        }
+        function setTool(t){
+            currentTool = t;
+            document.getElementById('tool-linie').className = t==='linie' ? 'tool-btn active' : 'tool-btn';
+            document.getElementById('tool-freihand').className = t==='freihand' ? 'tool-btn active' : 'tool-btn';
+        }
+
+        /* ---------- Formen generieren ---------- */
+        function drawBlobPath(ctx, cx, cy, baseR){
+            const N = 8 + Math.floor(Math.random()*4);
+            const pts = [];
+            for(let i=0;i<N;i++){
+                const angle = (i/N)*Math.PI*2;
+                const r = baseR*(0.6+Math.random()*0.55);
+                pts.push({x: cx+Math.cos(angle)*r, y: cy+Math.sin(angle)*r});
+            }
+            ctx.beginPath();
+            const mid0 = {x:(pts[N-1].x+pts[0].x)/2, y:(pts[N-1].y+pts[0].y)/2};
+            ctx.moveTo(mid0.x, mid0.y);
+            for(let i=0;i<N;i++){
+                const p0=pts[i], p1=pts[(i+1)%N];
+                const mx=(p0.x+p1.x)/2, my=(p0.y+p1.y)/2;
+                ctx.quadraticCurveTo(p0.x,p0.y,mx,my);
+            }
+            ctx.closePath();
+            ctx.fillStyle = '#000';
+            ctx.fill();
+        }
+
+        function renderShape(){
+            sctx.clearRect(0,0,SIZE,SIZE);
+            sctx.save();
+
+            let type = shapeModeSetting;
+            if(type==='mix') type = Math.random()<0.5 ? 'emoji' : 'generated';
+            currentShapeType = type;
+
+            if(type==='emoji'){
+                const em = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+                sctx.font = `${SIZE*0.78}px serif`;
+                sctx.textAlign = 'center';
+                sctx.textBaseline = 'middle';
+                sctx.fillText(em, SIZE/2, SIZE/2 + SIZE*0.04);
+            } else {
+                drawBlobPath(sctx, SIZE/2, SIZE/2, SIZE*0.38);
+            }
+            sctx.restore();
+
+            /* Blatt-Einfärbung: nur dort, wo die Form schon Pixel hat (source-atop) */
+            sctx.globalCompositeOperation = 'source-atop';
+            const grad = sctx.createLinearGradient(0,0,0,SIZE);
+            grad.addColorStop(0, '#8bc34a');
+            grad.addColorStop(1, '#33691e');
+            sctx.fillStyle = grad;
+            sctx.fillRect(0,0,SIZE,SIZE);
+
+            /* Blattadern */
+            sctx.strokeStyle = 'rgba(255,255,255,0.30)';
+            sctx.lineWidth = 2;
+            sctx.beginPath();
+            sctx.moveTo(SIZE/2, SIZE*0.08);
+            sctx.lineTo(SIZE/2, SIZE*0.92);
+            sctx.stroke();
+            for(let i=1;i<=4;i++){
+                const y = SIZE*0.08 + i*(SIZE*0.84/5);
+                sctx.beginPath(); sctx.moveTo(SIZE/2, y); sctx.lineTo(SIZE/2 - SIZE*0.22, y - SIZE*0.12); sctx.stroke();
+                sctx.beginPath(); sctx.moveTo(SIZE/2, y); sctx.lineTo(SIZE/2 + SIZE*0.22, y - SIZE*0.12); sctx.stroke();
+            }
+            sctx.globalCompositeOperation = 'source-over';
+
+            /* Maske extrahieren (Alpha > Schwelle) - komplette Form behalten, nichts wird abgeschnitten */
+            const data = sctx.getImageData(0,0,SIZE,SIZE).data;
+            shapeMask = new Uint8Array(SIZE*SIZE);
+            let filled = 0;
+            for(let i=0;i<SIZE*SIZE;i++){
+                shapeMask[i] = data[i*4+3] > 100 ? 1 : 0;
+                filled += shapeMask[i];
+            }
+            shapePixelCount = filled;
+            // Teile, aus denen die Form schon VOR dem Schnitt besteht (z.B. 🍒) -> zum Vergleich
+            basePieces = labelComponents(shapeMask, new Uint8Array(SIZE*SIZE), SIZE, SIZE).filter(c => c.length > 30).length;
+        }
+        let shapePixelCount = 0, basePieces = 1;
+
+        /* Findet alle getrennten Bereiche einer Maske (ohne Wand-Pixel) */
+        function labelComponents(mask, wall, w, h){
+            const visited = new Uint8Array(w*h);
+            const components = [];
+            for(let i=0;i<w*h;i++){
+                if(mask[i] && !wall[i] && !visited[i]){
+                    const comp=[]; const stack=[i]; visited[i]=1;
+                    while(stack.length){
+                        const idx=stack.pop();
+                        comp.push(idx);
+                        const x=idx%w, y=Math.floor(idx/w);
+                        if(x>0 && mask[idx-1] && !wall[idx-1] && !visited[idx-1]){ visited[idx-1]=1; stack.push(idx-1); }
+                        if(x<w-1 && mask[idx+1] && !wall[idx+1] && !visited[idx+1]){ visited[idx+1]=1; stack.push(idx+1); }
+                        if(y>0 && mask[idx-w] && !wall[idx-w] && !visited[idx-w]){ visited[idx-w]=1; stack.push(idx-w); }
+                        if(y<h-1 && mask[idx+w] && !wall[idx+w] && !visited[idx+w]){ visited[idx+w]=1; stack.push(idx+w); }
+                    }
+                    components.push(comp);
+                }
+            }
+            return components;
+        }
+        function componentCentroid(comp, w){
+            let sx=0, sy=0;
+            comp.forEach(idx=>{ sx += idx%w; sy += Math.floor(idx/w); });
+            return {x: sx/comp.length, y: sy/comp.length};
+        }
+
+        function pickTarget(){
+            if(targetModeSetting==='fifty'){ targetPct = 50; }
+            else {
+                const options = [20,25,30,35,40,60,65,70,75,80];
+                targetPct = options[Math.floor(Math.random()*options.length)];
+            }
+            document.getElementById('target-label').innerText = `${targetPct}% / ${100-targetPct}%`;
+        }
+
+        function startRound(){
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            document.getElementById('settings-btn').style.display='inline-block';
+            newRound();
+        }
+        function backToSettings(){
+            hideResult();
+            document.getElementById('game-view').style.display='none';
+            document.getElementById('settings-btn').style.display='none';
+            document.getElementById('setup-area').style.display='flex';
+        }
+        function skipRound(){ hideResult(); newRound(); }
+
+        function newRound(){
+            // Emojis, die das Handy nicht kennt, werden leer/winzig gezeichnet -> neu würfeln
+            for(let t=0; t<15; t++){ renderShape(); if(shapePixelCount > 3000) break; }
+            if(typeof startGameTimer==='function') startGameTimer();
+            pickTarget();
+            octx.clearRect(0,0,SIZE,SIZE);
+            isDrawing=false; startPt=null; freehandPoints=[];
+        }
+
+        /* ---------- Zeichnen / Schneiden ---------- */
+        function getPos(e){
+            const rect = overlayCanvas.getBoundingClientRect();
+            const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            return {x: cx*(SIZE/rect.width), y: cy*(SIZE/rect.height)};
+        }
+
+        function extendLineFull(x0,y0,x1,y1){
+            const dx=x1-x0, dy=y1-y0;
+            if(Math.abs(dx)<0.0001 && Math.abs(dy)<0.0001) return null;
+            const cands=[];
+            if(Math.abs(dx)>0.0001){
+                [0,SIZE].forEach(xEdge=>{
+                    const t=(xEdge-x0)/dx, y=y0+t*dy;
+                    if(y>=-2 && y<=SIZE+2) cands.push({t,x:xEdge,y});
+                });
+            }
+            if(Math.abs(dy)>0.0001){
+                [0,SIZE].forEach(yEdge=>{
+                    const t=(yEdge-y0)/dy, x=x0+t*dx;
+                    if(x>=-2 && x<=SIZE+2) cands.push({t,x,y:yEdge});
+                });
+            }
+            if(cands.length<2) return null;
+            cands.sort((a,b)=>a.t-b.t);
+            return [cands[0], cands[cands.length-1]];
+        }
+
+        function drawTrailPreview(){
+            octx.clearRect(0,0,SIZE,SIZE);
+            octx.strokeStyle = 'rgba(240,164,208,0.85)';
+            octx.lineWidth = 3;
+            octx.setLineDash([2,6]);
+            octx.lineCap = 'round';
+
+            let lastPt = startPt;
+            if(currentTool==='linie' && startPt){
+                const cur = freehandPoints[freehandPoints.length-1];
+                if(cur){
+                    const ext = extendLineFull(startPt.x, startPt.y, cur.x, cur.y);
+                    if(ext){
+                        octx.beginPath();
+                        octx.moveTo(ext[0].x, ext[0].y);
+                        octx.lineTo(ext[1].x, ext[1].y);
+                        octx.stroke();
+                        lastPt = cur;
+                    }
+                }
+            } else if(currentTool==='freihand' && freehandPoints.length>1){
+                octx.beginPath();
+                octx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
+                for(let i=1;i<freehandPoints.length;i++) octx.lineTo(freehandPoints[i].x, freehandPoints[i].y);
+                octx.stroke();
+                lastPt = freehandPoints[freehandPoints.length-1];
+            }
+            octx.setLineDash([]);
+
+            if(lastPt){
+                octx.save();
+                octx.font = '26px serif';
+                octx.textAlign='center'; octx.textBaseline='middle';
+                octx.fillText('🐌', lastPt.x, lastPt.y);
+                octx.restore();
+            }
+        }
+
+        let resultShown = false;
+        function onPointerDown(e){
+            e.preventDefault();
+            if(resultShown) return; // erst "Nochmal" oder "Nächste Form" wählen
+            isDrawing=true;
+            startPt = getPos(e);
+            freehandPoints = [startPt];
+            drawTrailPreview();
+        }
+        function onPointerMove(e){
+            if(!isDrawing) return;
+            e.preventDefault();
+            freehandPoints.push(getPos(e));
+            drawTrailPreview();
+        }
+        function onPointerUp(e){
+            if(!isDrawing) return;
+            isDrawing=false;
+            finalizeCut();
+        }
+
+        overlayCanvas.addEventListener('mousedown', onPointerDown);
+        overlayCanvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        overlayCanvas.addEventListener('touchstart', onPointerDown, {passive:false});
+        overlayCanvas.addEventListener('touchmove', onPointerMove, {passive:false});
+        overlayCanvas.addEventListener('touchend', onPointerUp);
+
+        function finalizeCut(){
+            const endPt = freehandPoints[freehandPoints.length-1];
+            const dist = startPt ? Math.hypot(endPt.x-startPt.x, endPt.y-startPt.y) : 0;
+            if(dist < 8){
+                showToast("Schnitt zu kurz - nochmal versuchen!");
+                octx.clearRect(0,0,SIZE,SIZE);
+                return;
+            }
+
+            /* Wand-Maske zeichnen */
+            const wallCanvas = document.createElement('canvas');
+            wallCanvas.width=SIZE; wallCanvas.height=SIZE;
+            const wctx = wallCanvas.getContext('2d');
+            wctx.strokeStyle='#fff'; wctx.lineWidth=3; wctx.lineCap='round'; wctx.lineJoin='round';
+
+            if(currentTool==='linie'){
+                const ext = extendLineFull(startPt.x, startPt.y, endPt.x, endPt.y);
+                if(!ext){ showToast("Schnitt ungültig - nochmal versuchen!"); octx.clearRect(0,0,SIZE,SIZE); return; }
+                // Gerade Linie: jedes Pixel der Form gehört zur Seite links oder rechts der Linie
+                // (funktioniert auch bei Formen aus mehreren Teilen, z.B. 🍒)
+                const dx = endPt.x - startPt.x, dy = endPt.y - startPt.y, len = Math.hypot(dx, dy);
+                let sideA = 0, sideB = 0;
+                const partMap = new Uint8Array(SIZE*SIZE);
+                for(let i=0;i<SIZE*SIZE;i++){
+                    if(!shapeMask[i]) continue;
+                    const px = (i % SIZE) + 0.5, py = Math.floor(i / SIZE) + 0.5;
+                    const d = (dx * (py - startPt.y) - dy * (px - startPt.x)) / len;
+                    if(d > 1.5) { sideA++; partMap[i] = 1; } else if(d < -1.5) { sideB++; partMap[i] = 2; }
+                }
+                if(sideA === 0 || sideB === 0){
+                    showToast("Schnitt hat die Form nicht getrennt - nochmal versuchen!");
+                    octx.clearRect(0,0,SIZE,SIZE);
+                    startPt=null; freehandPoints=[];
+                    return;
+                }
+                const pA = sideA / (sideA + sideB) * 100;
+                showResult(pA, 100 - pA, partMap);
+                return;
+                wctx.beginPath(); wctx.moveTo(ext[0].x, ext[0].y); wctx.lineTo(ext[1].x, ext[1].y); wctx.stroke();
+            } else {
+                wctx.beginPath();
+                wctx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
+                for(let i=1;i<freehandPoints.length;i++) wctx.lineTo(freehandPoints[i].x, freehandPoints[i].y);
+                wctx.stroke();
+            }
+
+            const wallData = wctx.getImageData(0,0,SIZE,SIZE).data;
+            const wallMask = new Uint8Array(SIZE*SIZE);
+            for(let i=0;i<SIZE*SIZE;i++) wallMask[i] = wallData[i*4+3] > 50 ? 1 : 0;
+
+            /* Flood-Fill: ALLE getrennten Bereiche finden (keine Pixel gehen verloren) */
+            const components = labelComponents(shapeMask, wallMask, SIZE, SIZE).filter(c => c.length > 30);
+            // Freihand muss die Form wirklich zerteilen (mehr Teile als vorher)
+            if(components.length < 2 || components.length <= basePieces){
+                showToast("Schnitt hat die Form nicht getrennt - nochmal versuchen!");
+                octx.clearRect(0,0,SIZE,SIZE);
+                startPt=null; freehandPoints=[];
+                return;
+            }
+            components.sort((a,b)=>b.length-a.length);
+            let countA = components[0].length;
+            let countB = components[1].length;
+            const partMap = new Uint8Array(SIZE*SIZE);
+            components[0].forEach(i => partMap[i] = 1);
+            components[1].forEach(i => partMap[i] = 2);
+            /* Weitere kleine Inseln (z.B. Auge/Fleck eines Emojis) der jeweils
+               näheren Hauptseite zuordnen - nichts wird verworfen */
+            if(components.length > 2){
+                const cA = componentCentroid(components[0], SIZE);
+                const cB = componentCentroid(components[1], SIZE);
+                for(let k=2;k<components.length;k++){
+                    const c = componentCentroid(components[k], SIZE);
+                    const dA = Math.hypot(c.x-cA.x, c.y-cA.y);
+                    const dB = Math.hypot(c.x-cB.x, c.y-cB.y);
+                    if(dA <= dB) { countA += components[k].length; components[k].forEach(i => partMap[i] = 1); }
+                    else { countB += components[k].length; components[k].forEach(i => partMap[i] = 2); }
+                }
+            }
+
+            const totalNonWall = countA + countB;
+            const pctA = (countA/totalNonWall)*100;
+            const pctB = 100-pctA;
+            showResult(pctA, pctB, partMap);
+        }
+
+        /* Die zwei Teile farbig einfärben und ihre Prozente direkt draufschreiben */
+        function drawParts(partMap, pctA, pctB){
+            const img = octx.createImageData(SIZE, SIZE);
+            const d = img.data, sum = {1:[0,0,0], 2:[0,0,0]};
+            for(let i=0;i<SIZE*SIZE;i++){
+                const p = partMap[i];
+                if(!p) continue;
+                const o = i*4;
+                if(p === 1){ d[o]=240; d[o+1]=110; d[o+2]=180; } else { d[o]=80; d[o+1]=190; d[o+2]=250; }
+                d[o+3] = 175;
+                sum[p][0] += i % SIZE; sum[p][1] += Math.floor(i / SIZE); sum[p][2]++;
+            }
+            octx.putImageData(img, 0, 0);
+            // Schnittlinie
+            octx.strokeStyle = '#fff'; octx.lineWidth = 3; octx.lineCap = 'round';
+            octx.beginPath();
+            if(currentTool === 'linie'){
+                const endPt = freehandPoints[freehandPoints.length-1];
+                const ext = extendLineFull(startPt.x, startPt.y, endPt.x, endPt.y);
+                if(ext){ octx.moveTo(ext[0].x, ext[0].y); octx.lineTo(ext[1].x, ext[1].y); }
+            } else {
+                octx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
+                freehandPoints.forEach(p => octx.lineTo(p.x, p.y));
+            }
+            octx.stroke();
+            // Prozent-Schilder
+            octx.font = 'bold 22px sans-serif'; octx.textAlign = 'center'; octx.textBaseline = 'middle';
+            octx.lineWidth = 5; octx.strokeStyle = 'rgba(0,0,0,0.75)'; octx.fillStyle = '#fff';
+            [[1, pctA], [2, pctB]].forEach(([p, pct]) => {
+                if(!sum[p][2]) return;
+                const x = Math.min(SIZE-35, Math.max(35, sum[p][0]/sum[p][2])), y = Math.min(SIZE-15, Math.max(15, sum[p][1]/sum[p][2]));
+                const t = pct.toFixed(1) + '%';
+                octx.strokeText(t, x, y); octx.fillText(t, x, y);
+            });
+        }
+
+        function showResult(pctA, pctB, partMap){
+            const deviation = Math.min(Math.abs(pctA-targetPct), Math.abs(pctA-(100-targetPct)));
+            const won = deviation <= 10;
+
+            let rating;
+            if(deviation<0.05) rating="💯PERSCHNECKT! Schnecki kann es kaum glauben"; // wird als 0.0% angezeigt
+            else if(deviation<=2) rating="🎯 Vollschnecker!";
+            else if(deviation<=5) rating="😄 Richtig gut geschneckt!";
+            else if(deviation<=10) rating="🙂 Akschnecktabel";
+            else if(deviation<=20) rating="😅 Naja...";
+            else rating="😰 Komplett vorbeigeschneckt";
+
+            document.getElementById('result-rating').innerText = rating;
+            document.getElementById('result-split').innerText = `${pctA.toFixed(1)}% / ${pctB.toFixed(1)}%`;
+            document.getElementById('result-detail').innerText = `Ziel war ${targetPct}% / ${100-targetPct}% · Abweichung: ${deviation.toFixed(1)}%`;
+            if(partMap) drawParts(partMap, pctA, pctB);
+            resultShown = true;
+            document.getElementById('tool-row').style.display='none';
+            document.getElementById('action-row').style.display='none';
+            document.getElementById('result-panel').style.display='flex';
+
+            const extra = {
+                [`shape_${currentShapeType}`]: 1,
+                [`tool_${currentTool}`]: 1,
+                deviation_sum: deviation,
+                fastest_deviation: deviation
+            };
+            if(targetModeSetting==='random') extra.variable_target_used = 1;
+            if(won) extra.hit_count = 1;          // Treffer = höchstens 10 % daneben
+            if(deviation <= 2) extra.perfect_count = 1;
+
+            // Punkte-Spiel: kein Sieg/keine Niederlage, gemessen wird die Abweichung
+            recordGameResult('schneckischneidespass', {won: null, guesses: 1, maxGuesses: 1, extra});
+        }
+
+        function hideResult(){
+            resultShown = false;
+            document.getElementById('result-panel').style.display='none';
+            document.getElementById('tool-row').style.display='flex';
+            document.getElementById('action-row').style.display='flex';
+        }
+        function closeResult(){
+            hideResult();
+            newRound();
+        }
+        // Gleiche Form, gleiches Ziel - nur der Schnitt wird gelöscht
+        function retrySameShape(){
+            hideResult();
+            octx.clearRect(0,0,SIZE,SIZE);
+            isDrawing=false; startPt=null; freehandPoints=[];
+            if(typeof startGameTimer==='function') startGameTimer();
+        }
+
+        function showToast(txt){
+            const t=document.getElementById('msg-toast');
+            t.innerText=txt; t.style.display='block';
+            setTimeout(()=>t.style.display='none', 2200);
+        }
+    </script>
+</body>
+</html>

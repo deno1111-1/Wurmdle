@@ -76,6 +76,7 @@
         let kDots=8, kH_lines=[], kV_lines=[], kBoxes=[], kTurn=1, kScoreP=0, kScoreB=0, kCanvas=null, kCtx=null, kScale=1;
         const K_SIZE=50;
         let isGameActive = true;
+        let gameToken = 0; // verhindert, dass ein alter Kloßi-Zug ins neue Spielfeld funkt
 
         window.onload = () => {
             startKlossiGame();
@@ -83,6 +84,7 @@
 
         function startKlossiGame(){
             isGameActive = true;
+            gameToken++;
             startGameTimer();
             generateRandomBoard(); 
             
@@ -240,24 +242,28 @@
                 isGameActive = false;
                 const won = kScoreP > kScoreB;
                 const diff = Math.abs(kScoreP - kScoreB);
+                const draw = kScoreP === kScoreB;
                 if(won) showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉"); 
                 else if(kScoreB>kScoreP) showToast("KLOẞI HAT GEWONNEN! Er kriegt ein Leckerli!"); 
                 else showToast("UNENTSCHIEDEN!"); 
-                recordGameResult('klossi', {won: won, guesses: 1, maxGuesses: 1, extra: {point_diff_sum: diff}});
+                const extra = {point_diff_sum: diff, points_sum: kScoreP, bot_points_sum: kScoreB};
+                if(draw) extra.draws = 1;
+                recordGameResult('klossi', {won: won, guesses: 1, maxGuesses: 1, extra});
                 return;
             }
             
+            const token = gameToken;
             if(madePoint){
-                if(who===2) setTimeout(botMove, 700);
+                if(who===2) setTimeout(()=>{ if(token===gameToken) botMove(); }, 700);
             } else {
                 kTurn = (who===1)?2:1; 
                 updateKlossiUI(); 
-                if(kTurn===2) setTimeout(botMove, 700);
+                if(kTurn===2) setTimeout(()=>{ if(token===gameToken) botMove(); }, 700);
             }
         }
 
         function botMove(){
-            if(!isGameActive) return;
+            if(!isGameActive || kTurn!==2) return;
             let moves=[];
             for(let r=0;r<kDots;r++)for(let c=0;c<kDots-1;c++)if(kH_lines[r][c]===0) moves.push({t:'h',r:r,c:c});
             for(let r=0;r<kDots-1;r++)for(let c=0;c<kDots;c++)if(kV_lines[r][c]===0) moves.push({t:'v',r:r,c:c});
@@ -389,7 +395,7 @@
             document.getElementById('turn-indicator').innerText = kTurn===1 ? "Du bist dran!" : "Kloßi denkt...";
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2500));}
     </script>
 </body>
 </html>

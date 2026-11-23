@@ -425,6 +425,7 @@
         let wordList = [];
         let activeWords = [];
         let guessedLetters = new Set();
+        let hintCount = 0, gameEnded = false;
 
         // --- Init LocalStorage ---
         window.onload = () => {
@@ -450,6 +451,7 @@
         async function startGame() {
             maxMistakes = parseInt(document.getElementById('input-mistakes').value) || 8;
             mistakes = 0;
+            hintCount = 0; gameEnded = false;
             activeWords = [];
             guessedLetters.clear();
             startGameTimer();
@@ -470,7 +472,7 @@
                 const text = await response.text();
                 wordList = text.split('\n')
                             .map(w => w.trim().toUpperCase())
-                            .filter(w => w.length >= 4 && w.length <= 8 && /^[A-ZÄÖÜß]+$/.test(w));
+                            .filter(w => w.length >= 4 && w.length <= 8 && /^[A-Z]+$/.test(w)); // nur A-Z: Ä/Ö/Ü/ß gibt es nicht auf der Tastatur
                 if (wordList.length === 0) throw new Error("Empty list");
             } catch (e) {
                 wordList = [...fallbacks[currentLang]];
@@ -486,7 +488,7 @@
         }
 
         function handleGuess(letter) {
-            if (guessedLetters.has(letter) || mistakes >= maxMistakes) return;
+            if (gameEnded || guessedLetters.has(letter) || mistakes >= maxMistakes) return;
 
             guessedLetters.add(letter);
             
@@ -510,6 +512,7 @@
         }
 
         function useHint() {
+            if (gameEnded) return;
             let validHintLetters = [];
             activeWords.forEach(word => {
                 for (let char of word) {
@@ -519,6 +522,7 @@
 
             if (validHintLetters.length > 0) {
                 const randomHint = validHintLetters[Math.floor(Math.random() * validHintLetters.length)];
+                hintCount++;
                 guessedLetters.add(randomHint);
                 const keyEl = document.querySelector(`.key[data-letter="${randomHint}"]`);
                 if (keyEl) keyEl.classList.add('correct');
@@ -547,8 +551,12 @@
         }
 
         function endGame(isWin) {
+            if (gameEnded) return;
+            gameEnded = true;
             const title = document.getElementById('result-title');
-            recordGameResult('miaumultiplikation', {won: isWin, guesses: 1, maxGuesses: 1, extra: {mistake_sum: mistakes, words_solved: activeWords.length}});
+            const extra = {mistake_sum: mistakes, hint_sum: hintCount};
+            if (isWin) { extra.words_solved = activeWords.length; if (hintCount === 0) extra.hintless_wins = 1; }
+            recordGameResult('miaumultiplikation', {won: isWin, guesses: 1, maxGuesses: 1, extra});
             if (isWin) {
                 title.textContent = currentLang === 'de' ? "SUPER LENI HAT GEWONNEN!" : "YOU WIN!";
                 title.className = "result-title win-text";

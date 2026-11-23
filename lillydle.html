@@ -62,7 +62,7 @@
     <div id="win-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="modal-title">🌸 Es war Lilly! 🌸</h2>
-            <p>Erraten in <b id="win-guesses">-</b> Versuchen!</p>
+            <p id="win-guesses-row">Erraten in <b id="win-guesses">-</b> Versuchen!</p>
             <button class="restart-btn" onclick="startGame()">Nochmal spielen</button>
         </div>
     </div>
@@ -92,6 +92,7 @@
 
         function startGame(){
             document.getElementById('win-modal').style.display='none';
+            document.getElementById('win-guesses-row').style.display='';
             guessesUsed=0; currentGuess=""; isGameActive=true; keyStatus={};
             startGameTimer();
             document.documentElement.style.setProperty('--col-count', wordLength);
@@ -175,6 +176,10 @@
             if(guessesUsed>=maxGuesses){
                 isGameActive=false;
                 showToast(`Vorbei! Es war LILLY 🌸`);
+                // Auch bei Niederlage das Modal zeigen, damit man neu starten kann
+                document.getElementById('modal-title').innerText = `Schade! Es war LILLY 🌸`;
+                document.getElementById('win-guesses-row').style.display='none';
+                setTimeout(()=>{document.getElementById('win-modal').style.display='flex';},900);
                 recordGameResult('lillydle', {won:false, guesses:guessesUsed, maxGuesses:maxGuesses});
             }
         }
@@ -192,7 +197,7 @@
             }
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>

@@ -104,6 +104,7 @@
     </div>
     
     <div id="game-scroll-area"><div id="game-container"></div></div>
+    <button id="restart-btn" class="start-btn" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:150; margin:0; padding:12px 40px; font-size:1.1rem;" onclick="location.reload()">🔄 Neues Spiel</button>
     <div id="keyboard-container"></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -114,6 +115,7 @@
         const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
         
         let gameWords=[], games=[], wordLength=5, maxGuesses=6, currentGuess="", totalGames=4, isGameActive=false, totalGuessesMade=0;
+        let wordSet=new Set(), hintCount=0;
 
         window.onload=()=>{
             // Einstellungen aus dem LocalStorage laden (falls vorhanden)
@@ -151,6 +153,7 @@
                 cleanWordList=[];
                 const l=t.split('\n');
                 for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))cleanWordList.push(w);}
+                wordSet=new Set(cleanWordList);
                 document.getElementById('loading-msg').innerText="Bereit.";
                 document.querySelector('.start-btn').disabled = false;
             }catch(e){
@@ -166,14 +169,15 @@
             localStorage.setItem('w_extra', document.getElementById('extra-guesses').value);
             localStorage.setItem('w_lang', currentLang);
             
-            isGameActive=true;
-            startGameTimer();
-            totalGames=parseInt(document.getElementById('board-count').value);
-            wordLength=parseInt(document.getElementById('letter-count').value);
-            const extra=parseInt(document.getElementById('extra-guesses').value)||0;
+            totalGames=Math.min(64, Math.max(1, parseInt(document.getElementById('board-count').value)||4));
+            wordLength=Math.min(12, Math.max(3, parseInt(document.getElementById('letter-count').value)||5));
+            const extra=Math.max(0, parseInt(document.getElementById('extra-guesses').value)||0);
             const wList=cleanWordList.filter(w=>w.length===wordLength);
             gameWords=wList;
             if(gameWords.length<totalGames){alert("Zu wenige Wörter für diese Einstellung!");return;}
+            isGameActive=true;
+            startGameTimer();
+            hintCount=0;
             maxGuesses=wordLength+totalGames+extra;
             if(totalGames>10&&extra===0)maxGuesses+=2;
             document.documentElement.style.setProperty('--col-count', wordLength);
@@ -186,8 +190,11 @@
             
             games=[]; currentGuess=""; totalGuessesMade=0;
             const c=document.getElementById('game-container');c.innerHTML='';
+            const usedWords=new Set();
             for(let i=0;i<totalGames;i++){
-                const w=gameWords[Math.floor(Math.random()*gameWords.length)];
+                let w;
+                do { w=gameWords[Math.floor(Math.random()*gameWords.length)]; } while(usedWords.has(w)); // kein Wort doppelt
+                usedWords.add(w);
                 games.push({id:i,word:w,guesses:[],solved:false});
                 let h=`<div class="board-card" id="card-${i}"><div class="board-header"><span>SPIEL ${i+1}</span><button class="help-btn" onclick="giveHint(${i})">💡</button></div><div class="board" id="board-${i}">`;
                 for(let r=0;r<maxGuesses*wordLength;r++)h+=`<div class="tile" id="tile-${i}-${r}"></div>`;
@@ -198,8 +205,9 @@
         }
 
         function giveHint(id){
-            const g=games[id]; if(g.solved||g.guesses.length>=maxGuesses)return;
+            const g=games[id]; if(!isGameActive||g.solved||g.guesses.length>=maxGuesses)return;
             const idx=Math.floor(Math.random()*wordLength);
+            hintCount++;
             showToast(`Tipp: "${g.word[idx]}" an Pos ${idx+1}`);
         }
 
@@ -265,7 +273,7 @@
 
         function submitGuess(){
             if(currentGuess.length!==wordLength){showToast("Zu kurz!");return;}
-            if(!cleanWordList.includes(currentGuess)){showToast("Wort unbekannt!");shakeRows();return;}
+            if(!wordSet.has(currentGuess)){showToast("Wort unbekannt!");shakeRows();return;}
             games.forEach(g=>{
                 if(g.solved||g.guesses.length>=maxGuesses)return;
                 const w=g.word.split(''); const u=currentGuess.split('');
@@ -287,7 +295,10 @@
                 if(allSolved)showToast("🎉 SUPER LENI HAT GEWONNEN! 🎉");
                 else{showToast("Vorbei!");games.forEach(g=>{if(!g.solved){const el=document.getElementById(`sol-${g.id}`);el.innerText=g.word;el.style.display="block";}});}
                 isGameActive=false;
-                recordGameResult('wurmdle', {won: allSolved, guesses: games[0].guesses.length, maxGuesses: maxGuesses});
+                document.getElementById('restart-btn').style.display='block';
+                const extra={hint_sum: hintCount, [`boards_${totalGames}_played`]: 1, boards_solved_sum: games.filter(g=>g.solved).length};
+                if(allSolved) extra[`boards_${totalGames}_won`]=1;
+                recordGameResult('wurmdle', {won: allSolved, guesses: totalGuessesMade, maxGuesses: maxGuesses, extra});
             }
         }
 
@@ -302,7 +313,7 @@
             if(r<(totalGames-s)){st.innerText="NICHT SCHAFFBAR";st.className="status-bad";}else{st.innerText="SIEG MÖGLICH";st.className="status-good";}
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Wurmdle500</title>
+    <style>
+        :root { --col-count: 5; }
+        body {
+            background-color: #121213; color: white;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+        }
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 10px 15px; background: #121213; box-sizing: border-box;
+            border-bottom: 1px solid #333; height: 60px; z-index: 10; flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.0rem; color: #f0a4d0; text-shadow: 1px 1px 0 #000; }
+        .header-btns { display: flex; gap: 8px; }
+        .menu-btn { background: #333; color: white; border: 1px solid #555; text-decoration: none; padding: 8px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+
+        #msg-toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 20px; font-weight: bold; display: none; z-index: 2000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 80%; }
+
+        #setup-area { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; width: 100%; box-sizing: border-box; overflow-y: auto; }
+        .setting-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; flex-wrap: wrap; justify-content: center; }
+        .opt-btn { background: transparent; border: none; color: #aaa; padding: 10px 14px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        .opt-btn.active { background: #f0a4d0; color: #3c1f30; }
+        input[type="number"] { padding: 10px; font-size: 1.3rem; width: 100px; text-align: center; background: #222; border: 2px solid #f0a4d0; color: white; border-radius: 10px; }
+        .start-btn { background-color: #f0a4d0; padding: 15px 50px; font-size: 1.5rem; border: none; color: #3c1f30; border-radius: 30px; margin-top: 15px; font-weight: bold; cursor: pointer; }
+        .info-text { color: #888; font-size: 0.85rem; text-align: center; max-width: 340px; }
+
+        #game-view { flex-grow: 1; width: 100%; display: none; flex-direction: column; align-items: center; overflow: hidden; }
+        #info-bar { padding: 8px; color: #aaa; font-size: 0.85rem; flex-shrink: 0; }
+        #info-bar b { color: white; }
+
+        #board-scroll { flex-grow: 1; width: 100%; overflow-y: auto; display: flex; justify-content: center; }
+        #board-container { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 10px; }
+        .board-row-wrap { display: flex; align-items: center; gap: 8px; }
+        .board-row { display: grid; grid-template-columns: repeat(var(--col-count), 1fr); gap: 5px; }
+        .tile { width: 38px; height: 38px; border: 2px solid #3a3a3c; background-color: #1c1c1e; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; border-radius: 4px; box-sizing: border-box; cursor: pointer; }
+        .tile.mark-green { background-color: #538d4e; border-color: #538d4e; }
+        .tile.mark-yellow { background-color: #b59f3b; border-color: #b59f3b; }
+        .tile.mark-red { background-color: #7a3535; border-color: #7a3535; }
+        .active-tile { border-color: #f0a4d0; cursor: default; }
+
+        .count-boxes { display: flex; gap: 4px; flex-shrink: 0; }
+        .count-box { width: 32px; height: 38px; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.1rem; color: white; box-sizing: border-box; }
+        .box-green { background: #538d4e; } .box-yellow { background: #b59f3b; } .box-red { background: #7a3535; }
+
+        .shake-effect { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        #action-row { display: flex; gap: 8px; padding: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: center; }
+        .action-btn { background: #333; color: white; border: 1px solid #555; padding: 8px 14px; font-size: 0.85rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .give-up-btn { background: #ef4444; border-color: #ef4444; }
+        .hint-btn { background: #f0a4d0; color: #3c1f30; border-color: #f0a4d0; }
+
+        #keyboard-container { width: 100%; max-width: 500px; padding: 5px; box-sizing: border-box; flex-shrink: 0; padding-bottom: 15px; }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 6px; width: 100%; gap: 4px; }
+        .key { font-weight: bold; border: 0; padding: 0; height: 48px; border-radius: 4px; cursor: pointer; background-color: #818384; color: white; flex: 1; font-size: 1rem; display: flex; justify-content: center; align-items: center; text-transform: uppercase; }
+        .key-large { flex: 1.5; font-size: 0.75rem; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: #1e1e1f; padding: 30px; border-radius: 15px; border: 2px solid #f0a4d0; text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; color: #f0a4d0; }
+        #win-word { font-size: 2rem; margin: 10px 0; letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐛5️⃣0️⃣0️⃣ Wurmdle500</h1>
+        <div class="header-btns">
+            <button class="menu-btn" id="settings-btn" style="display:none;" onclick="backToSettings()">⚙️ Einstellungen</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
+    </header>
+
+    <div id="msg-toast">Nachricht</div>
+
+    <div id="setup-area">
+        <h2 style="margin: 0;">Wurmdle500 Setup</h2>
+        <div class="info-text">Du bekommst nur Zahlen als Hinweis: wie viele Buchstaben sind richtig, wie viele nur enthalten, wie viele falsch - aber nicht welche! Klick auf abgeschickte Kacheln, um dir selbst Notizen zu machen.</div>
+
+        <div class="setting-row"><span class="label">Sprache</span><div class="toggle-group"><button class="opt-btn active" id="btn-de" onclick="loadWords('de')">DEUTSCH</button><button class="opt-btn" id="btn-en" onclick="loadWords('en')">ENGLISH</button></div></div>
+        <div class="setting-row"><span class="label">Wortlänge</span><input type="number" id="letter-count" value="5" min="4" max="7"></div>
+        <div class="setting-row"><span class="label">Versuche</span><input type="number" id="max-guesses" value="8" min="4" max="15"></div>
+        <div class="setting-row"><span class="label">Schwierigkeit</span><div class="toggle-group"><button class="opt-btn active" id="diff-standard" onclick="setDifficulty('standard')">Standard (keine Doppelbuchstaben)</button><button class="opt-btn" id="diff-frei" onclick="setDifficulty('frei')">Alle Wörter</button></div></div>
+
+        <div id="loading-msg" style="color:#555; margin-top:10px;">Lade Wörterbuch...</div>
+        <button class="start-btn" id="start-btn" onclick="startGame()" disabled>STARTEN</button>
+    </div>
+
+    <div id="game-view">
+        <div id="info-bar">Versuch <b id="info-row">1</b> / <b id="info-max">8</b></div>
+        <div id="board-scroll"><div id="board-container"></div></div>
+        <div id="action-row">
+            <button class="action-btn hint-btn" onclick="useHint()">💡 Hint</button>
+            <button class="action-btn" onclick="clearMarks()">🧹 Clear</button>
+            <button class="action-btn give-up-btn" onclick="giveUp()">Aufgeben 🏳️</button>
+        </div>
+        <div id="keyboard-container"></div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">🎉 Gelöst! 🎉</h2>
+            <p id="modal-desc">Geschafft!</p>
+            <div id="win-word">---</div>
+            <button class="action-btn" onclick="location.reload()" style="width: 100%; margin-top: 15px;">Neues Spiel</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="stats.js"></script>
+    <script>
+        let currentLang='de', deList=[], enFullList=[], en5List=[], inputValidSet=new Set(), targetPool=[];
+        const keysDE=["QWERTZUIOP","ASDFGHJKL","YXCVBNM"], keysEN=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+
+        let difficulty='standard';
+        let wordLength=5, secret='', maxGuesses=8;
+        let rows=[]; // {letters, counts:{green,yellow,red}, marks: array of 'none'/'red'/'yellow'/'green'}
+        let currentRowLetters=[], curCol=0, isGameActive=false;
+        let hintsUsed=0;
+
+        window.onload=()=>{
+            try {
+                if(localStorage.getItem('w5_letters')) document.getElementById('letter-count').value = localStorage.getItem('w5_letters');
+                if(localStorage.getItem('w5_max')) document.getElementById('max-guesses').value = localStorage.getItem('w5_max');
+                if(localStorage.getItem('w5_diff')) setDifficulty(localStorage.getItem('w5_diff'));
+            } catch(e) {}
+            const savedLang = (()=>{ try { return localStorage.getItem('w5_lang'); } catch(e) { return null; } })() || 'de';
+            setTimeout(()=>loadWords(savedLang), 100);
+            document.addEventListener('keydown', handleGlobalKey);
+        };
+
+        function handleGlobalKey(e){
+            if(!isGameActive) return;
+            const k=e.key.toUpperCase();
+            if(k==='ENTER'){handleKey('ENTER');e.preventDefault();}
+            else if(k==='BACKSPACE'){handleKey('BACK');e.preventDefault();}
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)handleKey(k);
+        }
+
+        function setDifficulty(d){
+            difficulty=d;
+            try { localStorage.setItem('w5_diff', d); } catch(e) {}
+            document.getElementById('diff-standard').className = d==='standard' ? 'opt-btn active':'opt-btn';
+            document.getElementById('diff-frei').className = d==='frei' ? 'opt-btn active':'opt-btn';
+        }
+
+        function cleanList(t){
+            const out=[]; const l=t.split('\n');
+            for(let i=0;i<l.length;i++){let w=l[i].trim().toUpperCase();if(w.length>=3&&/^[A-Z]+$/.test(w))out.push(w);}
+            return out;
+        }
+
+        async function loadWords(lang){
+            currentLang=lang;
+            try { localStorage.setItem('w5_lang', lang); } catch(e) {}
+            document.getElementById('loading-msg').innerText="Lade Wörterbuch...";
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('btn-de').className=lang==='de'?'opt-btn active':'opt-btn';
+            document.getElementById('btn-en').className=lang==='en'?'opt-btn active':'opt-btn';
+            try{
+                if(lang==='de'){
+                    const r=await fetch('de.txt'); if(!r.ok)throw new Error("Offline");
+                    deList=cleanList(await r.text());
+                } else {
+                    const [r1,r2]=await Promise.all([fetch('en.txt'),fetch('en_5letter_ohnekomische.txt')]);
+                    if(!r1.ok||!r2.ok)throw new Error("Offline");
+                    enFullList=cleanList(await r1.text());
+                    en5List=cleanList(await r2.text());
+                }
+                document.getElementById('loading-msg').innerText="Bereit.";
+                document.getElementById('start-btn').disabled=false;
+            }catch(e){
+                document.getElementById('loading-msg').innerText="Fehler beim Laden!";
+                alert("Fehler beim Laden: "+e.message);
+            }
+        }
+
+        function evaluateWord(guess, secretWord){
+            const w=secretWord.split(''), u=guess.split('');
+            let st=new Array(u.length).fill(0);
+            for(let i=0;i<u.length;i++){if(u[i]===w[i]){st[i]=2;w[i]=null;u[i]=null;}}
+            for(let i=0;i<u.length;i++){if(u[i]!==null&&w.indexOf(u[i])>-1){st[i]=1;w[w.indexOf(u[i])]=null;}}
+            return st;
+        }
+        function countsFromPattern(pattern){
+            let green=0, yellow=0, red=0;
+            pattern.forEach(p=>{ if(p===2)green++; else if(p===1)yellow++; else red++; });
+            return {green, yellow, red};
+        }
+        function hasUniqueLetters(w){ return new Set(w.split('')).size === w.length; }
+
+        function startGame(){
+            wordLength=parseInt(document.getElementById('letter-count').value)||5;
+            maxGuesses=parseInt(document.getElementById('max-guesses').value)||8;
+            if(wordLength<4||wordLength>7){alert("Bitte 4-7 Buchstaben wählen!");return;}
+            if(maxGuesses<4){alert("Mindestens 4 Versuche!");return;}
+            try { localStorage.setItem('w5_letters', wordLength); localStorage.setItem('w5_max', maxGuesses); } catch(e) {}
+
+            let solutionPool, validSet;
+            if(currentLang==='de'){
+                const pool=deList.filter(w=>w.length===wordLength);
+                solutionPool=pool; validSet=new Set(pool);
+            } else {
+                if(wordLength===5){
+                    solutionPool=en5List.filter(w=>w.length===5);
+                    validSet=new Set([...enFullList.filter(w=>w.length===5), ...en5List]);
+                } else {
+                    const pool=enFullList.filter(w=>w.length===wordLength);
+                    solutionPool=pool; validSet=new Set(pool);
+                }
+            }
+            if(difficulty==='standard') solutionPool = solutionPool.filter(hasUniqueLetters);
+            if(solutionPool.length<5){alert("Zu wenige Wörter für diese Einstellung!");return;}
+            inputValidSet=validSet;
+            targetPool=solutionPool;
+            secret=solutionPool[Math.floor(Math.random()*solutionPool.length)];
+
+            rows=[]; curCol=0; hintsUsed=0; redLetters=new Set();
+            currentRowLetters=new Array(wordLength).fill('');
+
+            document.documentElement.style.setProperty('--col-count', wordLength);
+            document.getElementById('setup-area').style.display='none';
+            document.getElementById('game-view').style.display='flex';
+            document.getElementById('settings-btn').style.display='inline-block';
+            document.getElementById('info-max').innerText=maxGuesses;
+
+            isGameActive=true;
+            if(typeof startGameTimer==='function') startGameTimer();
+            createKeyboard();
+            renderBoard();
+            updateInfoBar();
+        }
+
+        function backToSettings(){
+            isGameActive=false;
+            document.getElementById('game-view').style.display='none';
+            document.getElementById('settings-btn').style.display='none';
+            document.getElementById('setup-area').style.display='flex';
+        }
+
+        function updateInfoBar(){
+            document.getElementById('info-row').innerText = Math.min(rows.length+1, maxGuesses);
+        }
+
+        function renderBoard(){
+            const c=document.getElementById('board-container');
+            c.innerHTML='';
+            for(let ri=0; ri<maxGuesses; ri++){
+                const row=rows[ri];
+                const wrap=document.createElement('div');
+                wrap.className='board-row-wrap';
+
+                const rd=document.createElement('div');
+                rd.className='board-row';
+                for(let ci=0;ci<wordLength;ci++){
+                    const t=document.createElement('div');
+                    let cls='tile';
+                    let letter='';
+                    if(row){
+                        letter = row.letters[ci];
+                        const mark = effectiveMark(row, ci);
+                        if(mark && mark!=='none') cls+=' mark-'+mark;
+                        t.onclick=()=>cycleMark(ri, ci);
+                    } else if(ri===rows.length){
+                        letter = currentRowLetters[ci]||'';
+                        if(ci===curCol) cls+=' active-tile';
+                    }
+                    t.className=cls;
+                    t.innerText=letter;
+                    rd.appendChild(t);
+                }
+                wrap.appendChild(rd);
+
+                if(row){
+                    const badges=document.createElement('div');
+                    badges.className='count-boxes';
+                    badges.innerHTML=`
+                        <div class="count-box box-green">${row.counts.green}</div>
+                        <div class="count-box box-yellow">${row.counts.yellow}</div>
+                        <div class="count-box box-red">${row.counts.red}</div>
+                    `;
+                    wrap.appendChild(badges);
+                } else if(ri===0){
+                    const badges=document.createElement('div');
+                    badges.className='count-boxes';
+                    badges.innerHTML=`
+                        <div class="count-box box-green">–</div>
+                        <div class="count-box box-yellow">–</div>
+                        <div class="count-box box-red">–</div>
+                    `;
+                    wrap.appendChild(badges);
+                }
+                c.appendChild(wrap);
+            }
+            paintKeyboardMarks();
+        }
+
+        // Rot = Buchstabe kommt nicht vor -> gilt in ALLEN Zeilen und auf der Tastatur.
+        // Gelb/Grün beziehen sich auf eine Position -> gelten nur für dieses Feld.
+        let redLetters = new Set();
+        function effectiveMark(row, ci){
+            const own = row.marks[ci] || 'none';
+            if(own !== 'none') return own;
+            return redLetters.has(row.letters[ci]) ? 'red' : 'none';
+        }
+        function cycleMark(ri, ci){
+            const row=rows[ri];
+            if(!row)return;
+            const ch=row.letters[ci];
+            const order=['none','red','yellow','green'];
+            const next=order[(order.indexOf(effectiveMark(row, ci))+1)%order.length];
+            if(next==='red'){ redLetters.add(ch); row.marks[ci]='none'; }
+            else { redLetters.delete(ch); row.marks[ci]=next; } // Gelb/Grün heißt: Buchstabe ist drin
+            renderBoard();
+        }
+        function clearMarks(){
+            rows.forEach(row=>{ row.marks = new Array(wordLength).fill('none'); });
+            redLetters = new Set();
+            renderBoard();
+        }
+        function paintKeyboardMarks(){
+            const best={};
+            rows.forEach(row=>row.letters.forEach((ch,ci)=>{
+                const m=row.marks[ci];
+                if(m==='green') best[ch]='green';
+                else if(m==='yellow' && best[ch]!=='green') best[ch]='yellow';
+            }));
+            document.querySelectorAll('.key').forEach(k=>{
+                const ch=k.id.replace('key-','');
+                if(ch.length!==1) return;
+                k.style.backgroundColor = redLetters.has(ch) ? '#7a3535' : best[ch]==='green' ? '#538d4e' : best[ch]==='yellow' ? '#b59f3b' : '';
+            });
+        }
+
+        function handleKey(k){
+            if(!isGameActive)return;
+            if(k==='ENTER'){submitRow();return;}
+            if(k==='BACK'){
+                if(currentRowLetters[curCol]){
+                    currentRowLetters[curCol]='';
+                } else if(curCol>0){
+                    curCol--; currentRowLetters[curCol]='';
+                }
+                renderBoard();return;
+            }
+            if(curCol<wordLength){
+                currentRowLetters[curCol]=k;
+                if(curCol<wordLength-1)curCol++;
+                renderBoard();
+            }
+        }
+
+        function submitRow(){
+            const word=currentRowLetters.join('').toUpperCase();
+            if(word.length<wordLength){
+                showToast("Zeile unvollständig!"); shakeCurrentRow(); return;
+            }
+            if(!inputValidSet.has(word)){
+                showToast("Wort nicht im Wörterbuch!"); shakeCurrentRow(); return;
+            }
+
+            const pattern=evaluateWord(word, secret);
+            const counts=countsFromPattern(pattern);
+            rows.push({letters: word.split(''), counts, marks: new Array(wordLength).fill('none')});
+            currentRowLetters=new Array(wordLength).fill('');
+            curCol=0;
+            renderBoard();
+            updateInfoBar();
+
+            if(word===secret){
+                isGameActive=false; // sofort sperren -> kein doppeltes Ergebnis
+                setTimeout(()=>triggerEnd(true), 400);
+                return;
+            }
+            if(rows.length>=maxGuesses){
+                isGameActive=false;
+                setTimeout(()=>triggerEnd(false), 400);
+                return;
+            }
+        }
+
+        function shakeCurrentRow(){
+            const wrap=document.getElementById('board-container').children[rows.length];
+            if(!wrap)return;
+            const tiles=wrap.querySelectorAll('.tile');
+            tiles.forEach(t=>{t.classList.remove('shake-effect');void t.offsetWidth;t.classList.add('shake-effect');});
+        }
+
+        function giveUp(){
+            if(!isGameActive)return;
+            triggerEnd(false);
+        }
+
+        /* ---------- Hint ---------- */
+        function useHint(){
+            if(!isGameActive)return;
+            if(rows.length===0){ showToast("Erst einen Versuch abschicken, dann gibt's Hints!"); return; }
+            const candidates = targetPool.filter(cand=>{
+                for(const row of rows){
+                    const guessWord = row.letters.join('');
+                    const simCounts = countsFromPattern(evaluateWord(guessWord, cand));
+                    if(simCounts.green!==row.counts.green || simCounts.yellow!==row.counts.yellow || simCounts.red!==row.counts.red) return false;
+                }
+                return true;
+            });
+            if(candidates.length===0){ showToast("Kein passendes Wort mehr gefunden!"); return; }
+            const pick = candidates[Math.floor(Math.random()*candidates.length)];
+            currentRowLetters = pick.split('');
+            curCol = wordLength-1;
+            hintsUsed++;
+            renderBoard();
+        }
+
+        function appKey(p,t,c,a){const b=document.createElement('button');b.className='key '+c;b.innerText=t;b.onclick=a;p.appendChild(b);}
+        function createKeyboard(){
+            const kb=document.getElementById('keyboard-container');
+            kb.innerHTML='';
+            const lay=(currentLang==='de')?keysDE:keysEN;
+            lay.forEach((row,i)=>{
+                const d=document.createElement('div');d.className='keyboard-row';
+                if(i===lay.length-1)appKey(d,'⌫','key-large',()=>handleKey('BACK'));
+                for(let c of row){
+                    const k=document.createElement('div');k.className='key';k.id='key-'+c;k.innerText=c;
+                    k.onclick=()=>handleKey(c);
+                    d.appendChild(k);
+                }
+                if(i===lay.length-1)appKey(d,'ENTER','key-large',()=>handleKey('ENTER'));
+                kb.appendChild(d);
+            });
+        }
+
+        function triggerEnd(won){
+            isGameActive=false;
+            const title=document.getElementById('modal-title');
+            const desc=document.getElementById('modal-desc');
+            const content=document.querySelector('.modal-content');
+
+            if(won){
+                title.innerText="🎉 Gelöst! 🎉";
+                title.style.color="#f0a4d0";
+                desc.innerText=`Erraten in Versuch ${rows.length} von ${maxGuesses}!`;
+                content.style.borderColor="#f0a4d0";
+            } else {
+                title.innerText="Schade! 🏳️";
+                title.style.color="#ef4444";
+                desc.innerText="Das gesuchte Wort war:";
+                content.style.borderColor="#ef4444";
+            }
+            document.getElementById('win-word').innerText=secret;
+            document.getElementById('win-modal').style.display='flex';
+
+            const extra = { [`diff_${difficulty}`]: 1, hints_used_total: hintsUsed };
+            if(won) extra[`diff_${difficulty}_won`] = 1;
+            if(hintsUsed===0 && won) extra.hintless_wins = 1;
+
+            recordGameResult('wurmdle500', {won: won, guesses: rows.length, maxGuesses: maxGuesses, extra});
+        }
+
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+    </script>
+</body>
+</html>

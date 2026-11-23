@@ -116,7 +116,7 @@
     <div id="results-modal">
         <div class="res-header" id="res-header-text">SPIEL BEENDET</div>
         <div class="res-score-circle" id="res-final-score">0</div>
-        <div style="color:#aaa; margin-bottom:20px;">PUNKTE (MAX <span id="res-max-pts">0</span>)</div>
+        <div style="color:#aaa; margin-bottom:20px;"><span id="res-pts">0</span> VON <span id="res-max-pts">0</span> PUNKTEN</div>
         <div class="res-cols">
             <div class="res-col" style="border-color:#538d4e;"><h3 style="color:#538d4e;">GEFUNDEN (<span id="count-found">0</span>)</h3><div class="res-list" id="list-found"></div></div>
             <div class="res-col" style="border-color:#ff5555;"><h3 style="color:#ff5555;">VERPASST (<span id="count-missed">0</span>)</h3><div class="res-list" id="list-missed"></div></div>
@@ -131,7 +131,13 @@
     <script>
         let currentLang='de', cleanWordList=[], activeMode='';
         let lillyLetters=[], lillyCenter="", lillyFound=[], lillyScore=0, validLillyWords=[], maxLillyPoints=0;
-        let lillyPangramCount=0;
+        let lillyPangramCount=0, lillyRecorded=false;
+        let wordMasks=null, wordLens=null; // Bitmasken für schnelle Rätselsuche
+        const bitOf=c=>1<<(c.charCodeAt(0)-65);
+        function buildMasks(){
+            wordMasks=new Int32Array(cleanWordList.length); wordLens=new Uint8Array(cleanWordList.length);
+            cleanWordList.forEach((w,i)=>{let m=0;for(const c of w)m|=bitOf(c);wordMasks[i]=m;wordLens[i]=Math.min(w.length,255);});
+        }
 
         window.onload=()=>{
             document.addEventListener('keydown', handleGlobalKey);
@@ -143,7 +149,7 @@
             const k=e.key.toUpperCase();
             if(k==='ENTER'){lillySubmit();e.preventDefault();}
             else if(k==='BACKSPACE'){lillyDelete();e.preventDefault();}
-            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey)lillyType(k);
+            else if(/^[A-Z]$/.test(k)&&!e.ctrlKey&&lillyLetters.includes(k))lillyType(k); // nur Buchstaben aus der Wabe
         }
 
         async function loadWords(lang){
@@ -165,6 +171,7 @@
             document.querySelectorAll('.lang-card').forEach(c => c.style.display = 'none');
             await loadWords(l);
             if(cleanWordList.length > 0){
+                buildMasks();
                 document.getElementById('lang-modal').style.display='none';
                 startLillyGame();
             }
@@ -200,7 +207,7 @@
             u=[chosen.center, ...u];
 
             lillyCenter=chosen.center; lillyLetters=u; lillyFound=[]; lillyScore=0;
-            maxLillyPoints=chosen.maxPts; lillyPangramCount=0;
+            maxLillyPoints=chosen.maxPts; lillyPangramCount=0; lillyRecorded=false;
             validLillyWords=chosen.valid;
             startGameTimer();
             
@@ -226,11 +233,12 @@
 
         function computePangramStats(src, center){
             const uniqueLetters=Array.from(new Set(src.split('')));
-            const valid=cleanWordList.filter(w=>{
-                if(w.length<4||!w.includes(center))return false;
-                for(let c of w)if(!uniqueLetters.includes(c))return false;
-                return true;
-            });
+            let pm=0; uniqueLetters.forEach(c=>pm|=bitOf(c));
+            const cb=bitOf(center), notPm=~pm, valid=[];
+            for(let i=0;i<wordMasks.length;i++){
+                const m=wordMasks[i];
+                if(wordLens[i]>=4 && (m&cb) && !(m&notPm)) valid.push(cleanWordList[i]);
+            }
             let maxPts=0; valid.forEach(w=>maxPts+=calcWordScore(w));
             return {uniqueLetters, center, valid, maxPts};
         }
@@ -256,27 +264,36 @@
 
         function updateLillyScore(){document.getElementById('lilly-score').innerText=`${lillyScore} / ${maxLillyPoints}`;}
 
-        function goHome(){
-            if(activeMode==='lilly') recordLillyResult(false);
+        async function goHome(){
+            if(activeMode==='lilly') await recordLillyResult(false);
             window.location.href='index.html';
         }
 
-        function recordLillyResult(win){
+        // Punkte-Spiel: es gibt keinen Sieg/keine Niederlage (won:null), gemessen wird der Anteil der Punkte
+        async function recordLillyResult(allFound){
             activeMode='';
+            if(lillyRecorded || lillyFound.length===0) return; // leere Runden nicht zählen
+            lillyRecorded=true;
             const pct = maxLillyPoints>0 ? Math.round((lillyScore/maxLillyPoints)*100) : 0;
-            recordGameResult('lilly', {won: win, guesses: 1, maxGuesses: 1, extra: {
+            const extra = {
                 score_sum: lillyScore, pangram_count: lillyPangramCount,
-                pct_sum: pct, best_single_score: lillyScore
-            }});
+                pct_sum: pct, best_single_score: lillyScore, best_pct: pct,
+                words_sum: lillyFound.length
+            };
+            if(allFound) extra.all_found = 1;
+            try { await recordGameResult('lilly', {won: null, guesses: 1, maxGuesses: 1, extra}); } catch(e) {}
         }
 
         function finishLillyGame(win=false){
+            if(activeMode!=='lilly') return;
             recordLillyResult(win);
             const m=document.getElementById('results-modal');
             document.getElementById('res-header-text').innerText=win?"SUPER LENI HAT GEWONNEN!":"SPIEL BEENDET";
             document.getElementById('res-header-text').style.color=win?"#538d4e":"#ffd700";
-            document.getElementById('res-final-score').innerText=Math.round((lillyScore/maxLillyPoints)*100);
+            document.getElementById('res-final-score').innerText=Math.round((lillyScore/maxLillyPoints)*100)+'%';
+            document.getElementById('res-final-score').style.fontSize='2rem';
             document.getElementById('res-max-pts').innerText=maxLillyPoints;
+            document.getElementById('res-pts').innerText=lillyScore;
             document.getElementById('count-found').innerText=lillyFound.length;
             document.getElementById('count-missed').innerText=validLillyWords.length-lillyFound.length;
             
@@ -301,7 +318,7 @@
             document.getElementById('two-letter-container').innerHTML=tH; document.getElementById('hint-modal').style.display='flex';
         }
 
-        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';setTimeout(()=>t.style.display='none',2000);}
+        function showToast(txt){const t=document.getElementById('msg-toast');t.innerText=txt;t.style.display='block';(clearTimeout(window.__toastT),window.__toastT=setTimeout(()=>t.style.display='none',2000));}
     </script>
 </body>
 </html>
