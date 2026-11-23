@@ -295,17 +295,23 @@ function clearCatImageCache() {
 const catImgPromises = new Map(); // verhindert doppelte Anfragen für dieselbe Rasse
 
 /* Liefert eine Liste von Bild-URLs (erstes = Vorschaubild, bis zu 6). Leere Liste = kein Bild gefunden. */
+const EIGENE_KATZEN = {
+    'Norwegische Waldkatze': ['eigene/waldkatze1.jpg', 'eigene/waldkatze2.jpg'],
+    'Europäisch Kurzhaar':   ['eigene/kurzhaar1.jpg', 'eigene/kurzhaar2.jpg']
+};
+
 function fetchCatImages(name) {
     if (catImgPromises.has(name)) return catImgPromises.get(name);
     const p = (async () => {
+        const eigene = EIGENE_KATZEN[name] || [];
         const e = catLsRead()[name];
-        if (e && e.urls && e.urls.length && Date.now() - (e.t || 0) < CAT_IMG_POS_TTL) return e.urls;
-        if (e && (!e.urls || !e.urls.length) && Date.now() - (e.t || 0) < CAT_IMG_NEG_TTL) return [];
+        if (e && e.urls && e.urls.length && Date.now() - (e.t || 0) < CAT_IMG_POS_TTL) return [...eigene, ...e.urls];
+        if (e && (!e.urls || !e.urls.length) && Date.now() - (e.t || 0) < CAT_IMG_NEG_TTL) return eigene;
 
         const res = await resolveCatImages(name);
         if (res.urls.length) catLsSet(name, res.urls);
         else if (!res.failed) catLsSet(name, []); // wirklich nichts gefunden -> 1 Tag nicht erneut suchen
-        return res.urls;
+        return [...eigene, ...res.urls];
     })();
     catImgPromises.set(name, p);
     return p;
