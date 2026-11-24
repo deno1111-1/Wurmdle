@@ -3,680 +3,783 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Lilly vs Kloßi</title>
+    <title>Miauern</title>
     <style>
-        /* --- GLOBAL --- */
         body {
             background-color: #121213; color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0; display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
+            height: 100vh; height: 100dvh; overflow: hidden; user-select: none; touch-action: none;
         }
-
         header {
             display: flex; align-items: center; justify-content: space-between;
             width: 100%; padding: 10px 15px; background: #1a1a1c; box-sizing: border-box;
-            border-bottom: 2px solid #333; height: 60px; flex-shrink: 0;
+            border-bottom: 2px solid #333; height: 56px; flex-shrink: 0;
         }
-        h1 { margin: 0; font-size: 1.2rem; color: #fff; }
+        h1 { margin: 0; font-size: 1.15rem; color: #fff; }
+        .header-btns { display: flex; gap: 8px; }
         .menu-btn {
             background: #333; color: white; border: 1px solid #555; text-decoration: none;
-            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem; font-family: inherit;
         }
 
-        /* --- MENÜ --- */
+        /* ---------- Menü ---------- */
         #main-menu {
-            position: absolute; inset: 0; background: rgba(18, 18, 19, 0.95);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 2000; padding: 20px; text-align: center;
+            position: absolute; inset: 0; background: rgba(18, 18, 19, 0.97);
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 2000; padding: 16px; box-sizing: border-box; overflow-y: auto; touch-action: pan-y;
         }
         .menu-box {
-            background: #222; padding: 30px; border-radius: 15px; border: 2px solid #555;
-            max-width: 350px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background: #222; padding: 20px; border-radius: 15px; border: 2px solid #555;
+            max-width: 380px; width: 100%; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin: auto 0;
         }
-        select, button {
-            width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px; font-size: 1rem;
-            border: none; font-weight: bold; cursor: pointer;
-        }
-        select { background: #333; color: white; border: 1px solid #777; outline: none; }
-        button { background: #0ea5e9; color: white; }
-        button:active { filter: brightness(0.9); }
+        .menu-box h2 { margin: 0 0 4px; color: #ec4899; text-align: center; }
+        .rules { color: #aaa; font-size: 0.85rem; text-align: center; margin: 4px 0 12px; line-height: 1.4; }
+        .label { display: block; font-weight: bold; margin: 14px 0 6px; font-size: 0.9rem; }
+        .toggle-group { display: flex; background: #333; border-radius: 10px; padding: 4px; gap: 2px; }
+        .opt-btn { flex: 1; background: transparent; border: none; color: #aaa; padding: 9px 4px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+        .opt-btn.active { background: #0ea5e9; color: white; }
+        select { width: 100%; padding: 11px; border-radius: 8px; font-size: 0.95rem; background: #333; color: white; border: 1px solid #777; outline: none; font-family: inherit; }
+        .seat-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
+        .seat-name { font-weight: bold; font-size: 0.95rem; }
+        .seat-row .toggle-group { width: 150px; }
+        .start-btn { width: 100%; padding: 13px; margin-top: 18px; border-radius: 10px; font-size: 1.05rem; border: none; font-weight: bold; cursor: pointer; background: #0ea5e9; color: white; font-family: inherit; }
 
-        /* --- SPIEL-UI --- */
+        /* ---------- Spiel ---------- */
         #game-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-            width: 100%; max-width: 400px; height: calc(100vh - 60px); padding: 10px 0; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; max-width: 440px; flex: 1; padding: 8px 0; box-sizing: border-box; min-height: 0; gap: 6px;
         }
-
-        .player-hud {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 90%; background: #222; padding: 10px 15px; border-radius: 10px; border: 2px solid #444;
-            box-sizing: border-box; transition: 0.3s;
+        #players-bar { display: flex; gap: 6px; width: 96%; justify-content: center; flex-wrap: wrap; }
+        .p-chip {
+            flex: 1; min-width: 0; background: #222; border: 2px solid #444; border-radius: 10px;
+            padding: 5px 6px; text-align: center; font-size: 0.75rem; line-height: 1.25; transition: 0.2s;
         }
-        .hud-p2 { border-color: #9333ea; }
-        .hud-p1 { border-color: #ec4899; }
-        .active-hud { box-shadow: 0 0 15px rgba(255,255,255,0.2); background: #2a2a2c; }
-        
-        .hud-info { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 10px;}
-        .wall-count { font-size: 1rem; color: #aaa; }
+        .p-chip .nm { font-weight: bold; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-chip .sub { color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-chip.active { box-shadow: 0 0 14px rgba(255,255,255,0.25); background: #2c2c2e; transform: translateY(-2px); }
+        #status-msg { font-size: 1rem; font-weight: bold; min-height: 24px; text-align: center; padding: 0 8px; }
 
-        /* Wände im HUD */
-        .drag-walls { display: flex; gap: 15px; }
-        .drag-item {
-            background: #555; border-radius: 4px;
-            display: flex; justify-content: center; align-items: center;
-            touch-action: none; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            transition: 0.2s;
-        }
-        .drag-item.p1 { background: #ec4899; }
-        .drag-item.p2 { background: #9333ea; }
-        
-        .drag-h { width: 40px; height: 15px; }
-        .drag-v { width: 15px; height: 40px; }
-        
-        /* Wenn man eine Wand antippt */
-        .drag-item.selected { transform: scale(1.1); box-shadow: 0 0 10px white; border: 2px solid white; }
-
-        /* --- SPIELFELD --- */
-        #board {
-            position: relative; display: block; background: #111; border: 3px solid #555; 
-            border-radius: 5px; width: 340px; height: 340px; touch-action: none;
-        }
-
+        #board { position: relative; background: #111; border: 6px solid #555; border-radius: 6px; touch-action: none; box-sizing: content-box; }
         .cell {
             position: absolute; background: #333; border-radius: 4px;
-            display: flex; justify-content: center; align-items: center; font-size: 1.5rem;
-            transition: background 0.2s; z-index: 1; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: background 0.15s; z-index: 1; cursor: pointer;
         }
+        .cell.goal-row { background: #3b3b46; }
+        .cell.center-goal { background: #5b4a12; box-shadow: inset 0 0 0 2px #facc15; }
         .cell.highlight { background: #4ade80 !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        
-        .wall-slot { position: absolute; background: transparent; z-index: 10; cursor: pointer; }
-        .wall-slot.h { height: 16px; transform: translateY(-4px); }
-        .wall-slot.v { width: 16px; transform: translateX(-4px); }
-        
-        .wall-slot.highlight-slot { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
-        .wall-slot.hover { background: rgba(255, 255, 255, 0.5); }
-        
-        .wall-placed { position: absolute; z-index: 5; border-radius: 2px; }
-        .wall-placed.p1 { background: #ec4899; box-shadow: 0 0 8px #ec4899; }
-        .wall-placed.p2 { background: #9333ea; box-shadow: 0 0 8px #9333ea; }
+        .pawn { pointer-events: none; line-height: 1; }
+        .wall-placed { position: absolute; z-index: 5; border-radius: 2px; pointer-events: none; }
+        .wall-preview { position: absolute; z-index: 6; border-radius: 2px; pointer-events: none; opacity: 0.85; }
 
-        #drag-ghost {
-            position: fixed; pointer-events: none; z-index: 9999; display: none;
-            border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        #action-bar { display: flex; gap: 8px; width: 96%; justify-content: center; }
+        .act-btn {
+            flex: 1; background: #333; color: white; border: 2px solid #555; border-radius: 10px;
+            padding: 10px 4px; font-weight: bold; font-size: 0.9rem; cursor: pointer; font-family: inherit;
         }
-        
-        #status-msg { font-size: 1.1rem; font-weight: bold; color: #fff; height: 25px; margin: 5px 0;}
+        .act-btn.active { border-color: #fff; background: #444; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .act-btn:disabled { opacity: 0.35; cursor: default; }
+
+        /* ---------- Ergebnis ---------- */
+        #end-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .end-box { background: #222; border: 2px solid #ec4899; border-radius: 15px; padding: 22px; max-width: 340px; width: 100%; text-align: center; }
+        .end-box h2 { margin: 0 0 12px; }
+        .rank-row { display: flex; justify-content: space-between; padding: 7px 10px; border-radius: 8px; margin: 4px 0; background: #2c2c2e; font-size: 0.95rem; }
+        .rank-row.me { outline: 2px solid #fff; }
+        .end-btns { display: flex; gap: 8px; margin-top: 14px; }
+        .end-btns button { flex: 1; padding: 11px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 0.95rem; }
     </style>
 </head>
 <body>
 
     <div id="main-menu">
         <div class="menu-box">
-            <h2 style="margin-top: 0; color: #ec4899;">🐈‍⬛ Lilly vs Kloßi 🐈</h2>
-            <p style="color: #aaa; font-size: 0.9rem;">Erreiche die andere Seite!</p>
-            
-            <label style="display:block; text-align: left; margin-top: 15px; font-weight: bold;">Gegner auswählen:</label>
-            <select id="mode-select">
-                <option value="random">🎲 Zufällige KI</option>
-                <option value="human">🤜🤛 Pass & Play (2 Spieler)</option>
-                <option value="sprinter">🏃 KI: Sprinter</option>
-                <option value="builder">🧱 KI: Baumeister</option>
-                <option value="trapper">🪤 KI: Fallenleger</option>
-                <option value="shadow">👤 KI: Schatten</option>
-                <option value="super">👑 KI: Super Kloßi</option>
-            </select>
-            
-            <button onclick="startGame()">Spiel Starten</button>
+            <h2>🧱 Miauern</h2>
+            <div class="rules" id="rules-text"></div>
+
+            <span class="label">Modus</span>
+            <div class="toggle-group" id="grp-mode">
+                <button class="opt-btn" data-v="duell">⚔️ Duell</button>
+                <button class="opt-btn" data-v="mitte">🎯 Zur Mitte</button>
+                <button class="opt-btn" data-v="klassik4">🏁 Zu viert</button>
+            </div>
+
+            <div id="duel-settings">
+                <span class="label">Gegner</span>
+                <select id="opponent-select"></select>
+            </div>
+
+            <div id="four-settings">
+                <span class="label">Spieler</span>
+                <div id="seat-list"></div>
+            </div>
+
+            <div id="diff-settings">
+                <span class="label">KI-Stärke <span style="color:#888; font-weight:normal; font-size:0.8rem;">(Persönlichkeit wird zufällig gelost)</span></span>
+                <div class="toggle-group" id="grp-diff">
+                    <button class="opt-btn" data-v="1">🐣 Leicht</button>
+                    <button class="opt-btn" data-v="2">😼 Mittel</button>
+                    <button class="opt-btn" data-v="3">🦁 Schwer</button>
+                </div>
+            </div>
+
+            <button class="start-btn" onclick="startGame()">Spiel starten</button>
         </div>
     </div>
 
     <header>
-        <h1>🧱Miauern</h1>
-        <a href="index.html" class="menu-btn">HAUPTMENÜ</a>
+        <h1>🧱 Miauern</h1>
+        <div class="header-btns">
+            <button class="menu-btn" onclick="openMenu()">⚙️ Menü</button>
+            <a href="index.html" class="menu-btn">🏠 Hauptmenü</a>
+        </div>
     </header>
 
     <div id="game-container">
-        <!-- Spieler 2 (Oben) -->
-        <div class="player-hud hud-p2" id="hud-p2">
-            <div class="hud-info">🐈 Kloßi <span class="wall-count" id="walls-p2">10</span></div>
-            <div class="drag-walls" id="drag-zone-p2">
-                <div class="drag-item drag-h p2" data-dir="h" data-player="2" onclick="selectWallType('h', 2)"></div>
-                <div class="drag-item drag-v p2" data-dir="v" data-player="2" onclick="selectWallType('v', 2)"></div>
-            </div>
-        </div>
-
+        <div id="players-bar"></div>
         <div id="status-msg">Spiel startet...</div>
-
         <div id="board"></div>
-
-        <!-- Spieler 1 (Unten) -->
-        <div class="player-hud hud-p1" id="hud-p1">
-            <div class="hud-info">🐈‍⬛ Lilly <span class="wall-count" id="walls-p1">10</span></div>
-            <div class="drag-walls" id="drag-zone-p1">
-                <div class="drag-item drag-h p1" data-dir="h" data-player="1" onclick="selectWallType('h', 1)"></div>
-                <div class="drag-item drag-v p1" data-dir="v" data-player="1" onclick="selectWallType('v', 1)"></div>
-            </div>
+        <div id="action-bar">
+            <button class="act-btn" id="btn-move" onclick="setTool('move')">🚶 Laufen</button>
+            <button class="act-btn" id="btn-h" onclick="setTool('h')">━ Wand</button>
+            <button class="act-btn" id="btn-v" onclick="setTool('v')">┃ Wand</button>
         </div>
     </div>
 
-    <div id="drag-ghost"></div>
+    <div id="end-overlay">
+        <div class="end-box">
+            <h2 id="end-title">🎉</h2>
+            <div id="end-ranking"></div>
+            <div class="end-btns">
+                <button style="background:#444; color:white;" onclick="openMenu()">⚙️ Menü</button>
+                <button style="background:#0ea5e9; color:white;" onclick="startGame()">🔁 Nochmal</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <script src="stats.js"></script>
     <script>
-        const BOARD_SIZE = 9;
-        const CELL_SIZE = 30;
-        const WALL_THICK = 8;
-        const GAP = WALL_THICK;
-        
-        let boardEl = document.getElementById('board');
-        let ghost = document.getElementById('drag-ghost');
-        
-        let state = {
-            mode: 'human',
-            turn: 1,
-            p1: { r: 8, c: 4, walls: 10, icon: '🐈‍⬛' },
-            p2: { r: 0, c: 4, walls: 10, icon: '🐈' },
-            h_walls: Array(8).fill(0).map(() => Array(8).fill(false)),
-            v_walls: Array(8).fill(0).map(() => Array(8).fill(false)),
-            gameOver: false,
-            selectedWallDir: null
+    /* =====================================================================
+       MIAUERN – Quoridor mit Lilly & Freunden
+       Modi:  duell    9x9,  2 Spieler, 10 Wände, Ziel: gegenüberliegende Seite
+              mitte    11x11, 4 Spieler, 7 Wände, Ziel: das Mittelfeld
+              klassik4 9x9,  4 Spieler, 5 Wände, Ziel: gegenüberliegende Seite
+       Wände liegen zwischen den Feldern und sind 2 Felder lang:
+         h[r][c] = waagrechte Wand unter Reihe r, über den Spalten c und c+1
+         v[r][c] = senkrechte Wand rechts von Spalte c, neben den Reihen r und r+1
+       ===================================================================== */
+
+    const MODES = {
+        duell:    { n: 9,  walls: 10, seats: 2, goal: 'side',   label: '⚔️ Duell',
+                    rules: 'Lilly gegen Kloßi: Wer zuerst die andere Seite erreicht, gewinnt. Jeder hat 10 Wände, um dem anderen den Weg zu verbauen – aber nie ganz zu!' },
+        mitte:    { n: 11, walls: 7,  seats: 4, goal: 'center', label: '🎯 Zur Mitte',
+                    rules: 'Vier Katzen starten an den Seiten. Wer zuerst das goldene Mittelfeld 🐟 erreicht, gewinnt! Jeder hat 7 Wände.' },
+        klassik4: { n: 9,  walls: 5,  seats: 4, goal: 'side',   label: '🏁 Zu viert',
+                    rules: 'Vier Katzen, jede muss auf die gegenüberliegende Seite. Wer zuerst ankommt, gewinnt. Jeder hat nur 5 Wände.' }
+    };
+
+    const SEATS = [
+        { name: 'Lilly',    icon: '🐈‍⬛', color: '#ec4899' },
+        { name: 'Kloßi',    icon: '🐈',  color: '#9333ea' },
+        { name: 'Schnecki', icon: '🐌',  color: '#22c55e' },
+        { name: 'Quaki',    icon: '🐥',  color: '#eab308' }
+    ];
+
+    /* ---------- KI-Persönlichkeiten ----------
+       lvl: 1 = leicht, 2 = mittel, 3 = schwer
+       p:   Verhaltens-Parameter, siehe aiDecide()                         */
+    const AIS = {
+        tollpatsch:   { name: 'Tollpatsch',      icon: '🐣', lvl: 1, desc: 'macht oft Quatsch',              p: { rand: 0.35, minGain: 1, sample: 12 } },
+        schlafmuetze: { name: 'Schlafmütze',     icon: '😴', lvl: 1, desc: 'baut nie Wände',                 p: { noWalls: true } },
+        sprinter:     { name: 'Sprinter',        icon: '🏃', lvl: 1, desc: 'rennt lieber',                   p: { minGain: 3, sample: 30 } },
+        mitlaeufer:   { name: 'Mitläufer',       icon: '🤝', lvl: 1, desc: 'bremst nur den Führenden kurz vorm Ziel', p: { target: 'leader', onlyIfTargetWithin: 2, minGain: 2, sample: 40 } },
+        builder:      { name: 'Baumeister',      icon: '🧱', lvl: 2, desc: 'baut gern',                      p: { minGain: 1, loves: true, sample: 40, selfW: 1 } },
+        trapper:      { name: 'Fallenleger',     icon: '🪤', lvl: 2, desc: 'wartet und schlägt spät zu',     p: { waitUntil: 3, minGain: 1, all: true } },
+        shadow:       { name: 'Schatten',        icon: '👤', lvl: 2, desc: 'kopiert deine Wände spiegelverkehrt', p: { mirror: true, minGain: 1, sample: 50 } },
+        geizhals:     { name: 'Geizhals',        icon: '🧀', lvl: 2, desc: 'spart Wände für große Umwege',   p: { minGain: 3, panicWithin: 2, all: true } },
+        launisch:     { name: 'Launisch',        icon: '🎲', lvl: 2, desc: 'jede Runde eine andere Laune',   p: { moody: true } },
+        abwarter:     { name: 'Abwarter',        icon: '🐢', lvl: 2, desc: 'hebt alle Wände fürs Ende auf',  p: { waitUntil: 2, minGain: 1, all: true, selfW: 1 } },
+        verteidiger:  { name: 'Verteidiger',     icon: '🛡️', lvl: 2, desc: 'schützt den eigenen Weg',        p: { onlyIfBehind: true, minGain: 1, selfW: 4, all: true } },
+        raecher:      { name: 'Rächer',          icon: '🎯', lvl: 2, desc: 'mauert zurück',                  p: { target: 'avenge', minGain: 1, all: true } },
+        super:        { name: 'Super Kloßi',     icon: '👑', lvl: 3, desc: 'stark und gerissen',             p: { minGain: 2, panicWithin: 2, center: true, all: true, selfW: 1.2 } },
+        architekt:    { name: 'Architekt',       icon: '📐', lvl: 3, desc: 'baut lange Mauern',              p: { minGain: 1, chain: 1.5, all: true, selfW: 1.5 } },
+        opportunist:  { name: 'Opportunist',     icon: '👀', lvl: 3, desc: 'bremst immer den Führenden',     p: { target: 'leader', minGain: 1, all: true, selfW: 1.5 } },
+        fuchs:        { name: 'Fuchs',           icon: '🦊', lvl: 3, desc: 'denkt einen Zug voraus',         p: { look: 6 } },
+        grosser:      { name: 'Kloßi der Große', icon: '🦁', lvl: 3, desc: 'denkt am weitesten voraus',      p: { look: 16 } }
+    };
+    const AI_KEYS = Object.keys(AIS);
+
+    /* ---------- Einstellungen ---------- */
+    let settings = { mode: 'duell', opponent: 'random', diff: '2', seats: ['human', 'ai', 'ai', 'ai'] };
+    try { Object.assign(settings, JSON.parse(localStorage.getItem('miauern_settings') || '{}')); } catch (e) {}
+    function saveSettings() { try { localStorage.setItem('miauern_settings', JSON.stringify(settings)); } catch (e) {} }
+
+    /* ---------- Spielzustand ---------- */
+    let N = 9, MODE = MODES.duell, modeKey = 'duell';
+    let H = [], V = [];                 // Wände
+    let wallOwner = {};                 // "h,r,c" -> Spieler-Index (Farbe)
+    let players = [];                   // {seat, name, icon, color, r, c, walls, human, ai, aiKey, goal}
+    let order = [], turnIdx = 0;        // Zugreihenfolge
+    let gameOver = true, gameToken = 0;
+    let tool = 'move', preview = null;  // preview: {dir, r, c}
+    let lastAttacker = {};              // wer hat mir zuletzt eine Wand vor die Nase gesetzt (für den Rächer)
+    let duelAiKey = null;
+    let lastWall = null;                // zuletzt gesetzte Wand (für den Schatten)
+
+    const cur = () => players[order[turnIdx]];
+    const inB = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+    const occupied = (r, c, except) => players.some(p => p !== except && p.r === r && p.c === c);
+
+    /* =================== Menü =================== */
+    function initMenu() {
+        // Gegner-Auswahl fürs Duell
+        const sel = document.getElementById('opponent-select');
+        let html = '<option value="random">🎲 Zufällige KI (Stärke unten wählen)</option><option value="human">🤜🤛 Pass & Play (2 Spieler)</option>';
+        [[1, '🐣 Leicht'], [2, '😼 Mittel'], [3, '🦁 Schwer']].forEach(([l, t]) => {
+            html += `<optgroup label="${t}">` + AI_KEYS.filter(k => AIS[k].lvl === l).map(k => `<option value="${k}">${AIS[k].icon} ${AIS[k].name} – ${AIS[k].desc}</option>`).join('') + '</optgroup>';
+        });
+        sel.innerHTML = html;
+        sel.value = AIS[settings.opponent] || ['random', 'human'].includes(settings.opponent) ? settings.opponent : 'random';
+        sel.onchange = () => { settings.opponent = sel.value; saveSettings(); updateMenu(); };
+
+        document.querySelectorAll('#grp-mode .opt-btn').forEach(b => b.onclick = () => { settings.mode = b.dataset.v; saveSettings(); updateMenu(); });
+        document.querySelectorAll('#grp-diff .opt-btn').forEach(b => b.onclick = () => { settings.diff = b.dataset.v; saveSettings(); updateMenu(); });
+        updateMenu();
+    }
+    function updateMenu() {
+        const m = MODES[settings.mode] || MODES.duell;
+        document.getElementById('rules-text').innerText = m.rules;
+        document.querySelectorAll('#grp-mode .opt-btn').forEach(b => b.classList.toggle('active', b.dataset.v === settings.mode));
+        document.querySelectorAll('#grp-diff .opt-btn').forEach(b => b.classList.toggle('active', b.dataset.v === String(settings.diff)));
+        const duel = settings.mode === 'duell';
+        document.getElementById('duel-settings').style.display = duel ? 'block' : 'none';
+        document.getElementById('four-settings').style.display = duel ? 'none' : 'block';
+        const needsDiff = duel ? settings.opponent === 'random' : settings.seats.some(s => s === 'ai');
+        document.getElementById('diff-settings').style.display = needsDiff ? 'block' : 'none';
+
+        document.getElementById('seat-list').innerHTML = SEATS.map((s, i) => `
+            <div class="seat-row">
+                <span class="seat-name" style="color:${s.color}">${s.icon} ${s.name}</span>
+                <div class="toggle-group">
+                    <button class="opt-btn ${settings.seats[i] === 'human' ? 'active' : ''}" onclick="setSeat(${i}, 'human')">🙋 Mensch</button>
+                    <button class="opt-btn ${settings.seats[i] === 'ai' ? 'active' : ''}" onclick="setSeat(${i}, 'ai')">🤖 KI</button>
+                </div>
+            </div>`).join('');
+    }
+    function setSeat(i, v) { settings.seats[i] = v; saveSettings(); updateMenu(); }
+    function openMenu() {
+        gameOver = true; gameToken++;
+        document.getElementById('end-overlay').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
+        updateMenu();
+    }
+
+    /* =================== Spielstart =================== */
+    function pickAis(count, lvl) {
+        const pool = AI_KEYS.filter(k => AIS[k].lvl === lvl).sort(() => Math.random() - 0.5);
+        const out = [];
+        for (let i = 0; i < count; i++) out.push(pool[i % pool.length]);
+        return out;
+    }
+
+    function startGame() {
+        modeKey = settings.mode in MODES ? settings.mode : 'duell';
+        MODE = MODES[modeKey]; N = MODE.n;
+        H = Array.from({ length: N - 1 }, () => Array(N - 1).fill(false));
+        V = Array.from({ length: N - 1 }, () => Array(N - 1).fill(false));
+        wallOwner = {}; lastAttacker = {}; lastWall = null; preview = null; tool = 'move';
+        gameToken++;
+        const mid = (N - 1) / 2, last = N - 1;
+        // Startfelder: Seitenmitten. Ziel je nach Modus.
+        const starts = [
+            { r: last, c: mid, side: r => r === 0 },          // Lilly unten -> nach oben
+            { r: 0,    c: mid, side: r => r === last },       // Kloßi oben -> nach unten
+            { r: mid,  c: 0,   side: (r, c) => c === last },  // Schnecki links -> nach rechts
+            { r: mid,  c: last, side: (r, c) => c === 0 }     // Quaki rechts -> nach links
+        ];
+        const lvl = parseInt(settings.diff, 10) || 2;
+        let seatTypes, aiKeys;
+        duelAiKey = null;
+        if (modeKey === 'duell') {
+            const opp = settings.opponent;
+            seatTypes = ['human', opp === 'human' ? 'human' : 'ai'];
+            duelAiKey = opp === 'human' ? null : (opp === 'random' ? pickAis(1, lvl)[0] : opp);
+            aiKeys = [null, duelAiKey];
+        } else {
+            seatTypes = settings.seats.slice(0, 4);
+            const picks = pickAis(seatTypes.filter(t => t === 'ai').length, lvl);
+            aiKeys = seatTypes.map(t => t === 'ai' ? picks.shift() : null);
+        }
+        players = seatTypes.map((t, i) => ({
+            idx: i, ...SEATS[i], r: starts[i].r, c: starts[i].c, walls: MODE.walls,
+            human: t === 'human', aiKey: aiKeys[i],
+            goal: MODE.goal === 'center' ? ((r, c) => r === mid && c === mid) : starts[i].side
+        }));
+        // Zugreihenfolge im Uhrzeigersinn (unten, links, oben, rechts), Startspieler zufällig
+        const clock = players.length === 2 ? [0, 1] : [0, 2, 1, 3];
+        const s = Math.floor(Math.random() * clock.length);
+        order = clock.slice(s).concat(clock.slice(0, s));
+        turnIdx = 0;
+        gameOver = false;
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('end-overlay').style.display = 'none';
+        if (typeof startGameTimer === 'function') startGameTimer();
+        layoutBoard();
+        nextTurn(true);
+    }
+
+    /* =================== Wände & Wege =================== */
+    // Liegt zwischen (r,c) und (r+dr,c+dc) eine Wand?
+    function blocked(r, c, dr, dc) {
+        const h = (rr, cc) => rr >= 0 && rr < N - 1 && cc >= 0 && cc < N - 1 && H[rr][cc];
+        const v = (rr, cc) => rr >= 0 && rr < N - 1 && cc >= 0 && cc < N - 1 && V[rr][cc];
+        if (dr === -1) return h(r - 1, c) || h(r - 1, c - 1);
+        if (dr === 1)  return h(r, c) || h(r, c - 1);
+        if (dc === -1) return v(r, c - 1) || v(r - 1, c - 1);
+        if (dc === 1)  return v(r, c) || v(r - 1, c);
+        return false;
+    }
+    const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const distBuf = new Int16Array(11 * 11), queueBuf = new Int16Array(11 * 11);
+    // Kürzester Weg zum Ziel (Figuren werden ignoriert, wie im Original), -1 = kein Weg
+    function dist(p) {
+        distBuf.fill(-1, 0, N * N);
+        let qh = 0, qt = 0;
+        const s = p.r * N + p.c;
+        distBuf[s] = 0; queueBuf[qt++] = s;
+        while (qh < qt) {
+            const cur = queueBuf[qh++], r = (cur / N) | 0, c = cur % N;
+            if (p.goal(r, c)) return distBuf[cur];
+            for (const [dr, dc] of DIRS) {
+                const nr = r + dr, nc = c + dc;
+                if (!inB(nr, nc) || blocked(r, c, dr, dc)) continue;
+                const ni = nr * N + nc;
+                if (distBuf[ni] === -1) { distBuf[ni] = distBuf[cur] + 1; queueBuf[qt++] = ni; }
+            }
+        }
+        return -1;
+    }
+    function wallFits(dir, r, c) {
+        if (r < 0 || r >= N - 1 || c < 0 || c >= N - 1) return false;
+        if (H[r][c] || V[r][c]) return false; // gleiche Stelle oder Kreuzung
+        if (dir === 'h' && ((c > 0 && H[r][c - 1]) || (c < N - 2 && H[r][c + 1]))) return false;
+        if (dir === 'v' && ((r > 0 && V[r - 1][c]) || (r < N - 2 && V[r + 1][c]))) return false;
+        return true;
+    }
+    function setWall(w, val) { (w.dir === 'h' ? H : V)[w.r][w.c] = val; }
+    // Gültig = passt hin UND jeder Spieler hat danach noch einen Weg
+    function isValidWall(dir, r, c) {
+        if (!wallFits(dir, r, c)) return false;
+        const w = { dir, r, c };
+        setWall(w, true);
+        const ok = players.every(p => dist(p) !== -1);
+        setWall(w, false);
+        return ok;
+    }
+    function allValidWalls() {
+        const out = [];
+        for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++)
+            for (const dir of ['h', 'v']) if (isValidWall(dir, r, c)) out.push({ dir, r, c });
+        return out;
+    }
+
+    /* =================== Züge =================== */
+    function validMoves(p) {
+        const moves = [];
+        const add = (r, c) => { if (!moves.some(m => m.r === r && m.c === c)) moves.push({ r, c }); };
+        for (const [dr, dc] of DIRS) {
+            const nr = p.r + dr, nc = p.c + dc;
+            if (!inB(nr, nc) || blocked(p.r, p.c, dr, dc)) continue;
+            if (!occupied(nr, nc, p)) { add(nr, nc); continue; }
+            // Figur im Weg: drüberspringen, sonst schräg vorbei (Quoridor-Regel)
+            const jr = nr + dr, jc = nc + dc;
+            if (inB(jr, jc) && !blocked(nr, nc, dr, dc) && !occupied(jr, jc, p)) { add(jr, jc); continue; }
+            const sides = dr !== 0 ? [[0, -1], [0, 1]] : [[-1, 0], [1, 0]];
+            for (const [sr, sc] of sides) {
+                const tr = nr + sr, tc = nc + sc;
+                if (inB(tr, tc) && !blocked(nr, nc, sr, sc) && !occupied(tr, tc, p) && !(tr === p.r && tc === p.c)) add(tr, tc);
+            }
+        }
+        return moves;
+    }
+
+    function doMove(p, r, c) {
+        p.r = r; p.c = c;
+        afterAction();
+    }
+    function doWall(p, w) {
+        // Für den Rächer merken, wen die Wand ausbremst
+        const before = players.map(o => dist(o));
+        setWall(w, true);
+        wallOwner[`${w.dir},${w.r},${w.c}`] = p.idx;
+        lastWall = { w, by: p.idx, mirrored: false };
+        p.walls--;
+        players.forEach((o, i) => { if (o !== p && dist(o) > before[i]) lastAttacker[o.idx] = p.idx; });
+        afterAction();
+    }
+    function afterAction() {
+        preview = null;
+        const p = cur();
+        if (p.goal(p.r, p.c)) { render(); finishGame(p); return; }
+        turnIdx = (turnIdx + 1) % order.length;
+        nextTurn(false);
+    }
+    function nextTurn(first) {
+        const p = cur();
+        tool = 'move'; preview = null;
+        render();
+        if (gameOver) return;
+        if (!p.human) {
+            setStatus(`${p.icon} ${p.name} (${AIS[p.aiKey].icon} ${AIS[p.aiKey].name}) denkt nach...`, p.color);
+            const token = gameToken;
+            setTimeout(() => { if (token === gameToken && !gameOver && cur() === p) aiTurn(p); }, first ? 900 : 700);
+        } else {
+            const humans = players.filter(x => x.human).length;
+            setStatus(humans > 1 ? `${p.icon} ${p.name} ist dran!` : 'Du bist dran!', p.color);
+        }
+    }
+    function setStatus(t, color) { const s = document.getElementById('status-msg'); s.innerText = t; s.style.color = color || '#fff'; }
+
+    /* =================== Menschliche Eingabe =================== */
+    function setTool(t) {
+        const p = cur();
+        if (gameOver || !p || !p.human) return;
+        if ((t === 'h' || t === 'v') && p.walls <= 0) return;
+        tool = t; preview = null;
+        if (t === 'move') setStatus('Tippe ein grünes Feld an', p.color);
+        else setStatus('Tippe aufs Feld, wo die Wand hin soll – nochmal tippen zum Bauen', p.color);
+        render();
+    }
+    // Nächster Wand-Ankerpunkt (Kreuzung zwischen 4 Feldern) zu einer Bildschirmposition
+    function anchorAt(x, y) {
+        const c = Math.min(N - 2, Math.max(0, Math.round((x + GAP / 2) / PITCH) - 1));
+        const r = Math.min(N - 2, Math.max(0, Math.round((y + GAP / 2) / PITCH) - 1));
+        return { r, c };
+    }
+    function boardPoint(e) {
+        const rect = document.getElementById('board').getBoundingClientRect();
+        const bw = 6; // Rahmenbreite des Spielfelds
+        return { x: e.clientX - rect.left - bw, y: e.clientY - rect.top - bw };
+    }
+    function onBoardPointer(e) {
+        const p = cur();
+        if (gameOver || !p || !p.human) return;
+        const { x, y } = boardPoint(e);
+        if (tool === 'move') {
+            const c = Math.floor(x / PITCH), r = Math.floor(y / PITCH);
+            if (validMoves(p).some(m => m.r === r && m.c === c)) doMove(p, r, c);
+            return;
+        }
+        const a = anchorAt(x, y);
+        if (preview && preview.r === a.r && preview.c === a.c && preview.dir === tool) {
+            if (isValidWall(tool, a.r, a.c)) { doWall(p, { dir: tool, r: a.r, c: a.c }); return; }
+            setStatus('Hier geht keine Wand hin!', '#ef4444');
+            return;
+        }
+        preview = { dir: tool, r: a.r, c: a.c };
+        render();
+    }
+
+    /* =================== Darstellung =================== */
+    let CELL = 30, GAP = 8, PITCH = 38;
+    function layoutBoard() {
+        const avail = Math.min(window.innerWidth - 24, 420, window.innerHeight - 270);
+        CELL = Math.floor(avail / (N + (N - 1) * 0.28));
+        GAP = Math.max(5, Math.round(CELL * 0.28));
+        PITCH = CELL + GAP;
+        const size = N * CELL + (N - 1) * GAP;
+        const b = document.getElementById('board');
+        b.style.width = size + 'px'; b.style.height = size + 'px';
+        b.onpointerdown = onBoardPointer;
+    }
+    window.addEventListener('resize', () => { if (!gameOver) { layoutBoard(); render(); } });
+
+    // Richtung, in die ein Spieler muss (für die Spieler-Leiste)
+    function goalArrow(p) {
+        if (MODE.goal === 'center') return '🐟';
+        const last = N - 1;
+        if (p.goal(0, p.c) && !p.goal(last, p.c)) return '⬆️';
+        if (p.goal(last, p.c) && !p.goal(0, p.c)) return '⬇️';
+        if (p.goal(p.r, 0) && !p.goal(p.r, last)) return '⬅️';
+        return '➡️';
+    }
+    // Rahmen des Spielfelds: jede Seite in der Farbe dessen, der dort ankommen muss
+    function paintBorder() {
+        const b = document.getElementById('board');
+        const last = N - 1, mid = (N - 1) / 2;
+        const sideColor = (r, c) => { const o = players.find(pl => MODE.goal === 'side' && pl.goal(r, c)); return o ? o.color : '#555'; };
+        b.style.borderTopColor = sideColor(0, mid);
+        b.style.borderBottomColor = sideColor(last, mid);
+        b.style.borderLeftColor = sideColor(mid, 0);
+        b.style.borderRightColor = sideColor(mid, last);
+    }
+    function wallRect(w) {
+        const len = CELL * 2 + GAP;
+        return w.dir === 'h'
+            ? { left: w.c * PITCH, top: w.r * PITCH + CELL, width: len, height: GAP }
+            : { left: w.c * PITCH + CELL, top: w.r * PITCH, width: GAP, height: len };
+    }
+    function render() {
+        const b = document.getElementById('board');
+        const p = cur();
+        const moves = (!gameOver && p && p.human && tool === 'move') ? validMoves(p) : [];
+        const mid = (N - 1) / 2;
+        let html = '';
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+            let cls = 'cell';
+            if (MODE.goal === 'center' && r === mid && c === mid) cls += ' center-goal';
+            // Zielseiten in der Farbe des Spielers einfärben, der dort hin muss
+            let goalTint = '';
+            if (MODE.goal === 'side') {
+                const owners = players.filter(pl => pl.goal(r, c));
+                if (owners.length) goalTint = `background:${owners.length > 1
+                    ? `linear-gradient(135deg, ${owners[0].color}55 50%, ${owners[1].color}55 50%)`
+                    : owners[0].color + '55'};`;
+            }
+            if (moves.some(m => m.r === r && m.c === c)) cls += ' highlight';
+            const pawn = players.find(x => x.r === r && x.c === c);
+            const content = pawn ? `<span class="pawn" style="font-size:${Math.round(CELL * 0.75)}px">${pawn.icon}</span>`
+                : (MODE.goal === 'center' && r === mid && c === mid ? `<span class="pawn" style="font-size:${Math.round(CELL * 0.6)}px">🐟</span>` : '');
+            const ring = (pawn ? `box-shadow: inset 0 0 0 2px ${pawn.color};` : '') + goalTint;
+            html += `<div class="${cls}" style="left:${c * PITCH}px; top:${r * PITCH}px; width:${CELL}px; height:${CELL}px; ${ring}">${content}</div>`;
+        }
+        for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) for (const dir of ['h', 'v']) {
+            if (!(dir === 'h' ? H : V)[r][c]) continue;
+            const rc = wallRect({ dir, r, c }), col = players[wallOwner[`${dir},${r},${c}`]]?.color || '#aaa';
+            html += `<div class="wall-placed" style="left:${rc.left}px; top:${rc.top}px; width:${rc.width}px; height:${rc.height}px; background:${col}; box-shadow:0 0 8px ${col};"></div>`;
+        }
+        if (preview) {
+            const rc = wallRect(preview), ok = isValidWall(preview.dir, preview.r, preview.c);
+            html += `<div class="wall-preview" style="left:${rc.left}px; top:${rc.top}px; width:${rc.width}px; height:${rc.height}px; background:${ok ? '#fff' : '#ef4444'};"></div>`;
+        }
+        b.innerHTML = html;
+        paintBorder();
+
+        // Spieler-Leiste
+        document.getElementById('players-bar').innerHTML = order.map(i => players[i]).map(x => {
+            const who = x.human ? '🙋 Mensch' : `${AIS[x.aiKey].icon} ${AIS[x.aiKey].name}`;
+            return `<div class="p-chip ${x === p && !gameOver ? 'active' : ''}" style="border-color:${x.color}">
+                <div class="nm" style="color:${x.color}">${x.icon} ${x.name}</div>
+                <div class="sub">${who}</div><div class="sub">${goalArrow(x)} 🧱 ${x.walls} · 👣 ${dist(x)}</div></div>`;
+        }).join('');
+
+        // Aktions-Leiste
+        const humanTurn = !gameOver && p && p.human;
+        document.getElementById('action-bar').style.visibility = humanTurn ? 'visible' : 'hidden';
+        ['move', 'h', 'v'].forEach(t => {
+            const btn = document.getElementById('btn-' + t);
+            btn.classList.toggle('active', tool === t);
+            btn.disabled = !humanTurn || (t !== 'move' && p.walls <= 0);
+            btn.style.borderColor = tool === t && p ? p.color : '';
+        });
+    }
+
+    /* =================== KI =================== */
+    function aiTurn(p) {
+        const d = aiDecide(p, AIS[p.aiKey].p);
+        if (d.type === 'wall' && p.walls > 0 && isValidWall(d.w.dir, d.w.r, d.w.c)) doWall(p, d.w);
+        else {
+            const m = d.type === 'move' ? d : bestMove(p);
+            doMove(p, m.r, m.c);
+        }
+    }
+    // Zug, der mich am weitesten Richtung Ziel bringt
+    function bestMove(p) {
+        const moves = validMoves(p);
+        if (!moves.length) return { type: 'move', r: p.r, c: p.c };
+        const or = p.r, oc = p.c;
+        let best = null;
+        for (const m of moves) {
+            p.r = m.r; p.c = m.c;
+            const d = p.goal(m.r, m.c) ? 0 : dist(p);
+            p.r = or; p.c = oc;
+            if (d >= 0 && (!best || d < best.d || (d === best.d && Math.random() < 0.5))) best = { type: 'move', r: m.r, c: m.c, d };
+        }
+        return best || { type: 'move', ...moves[0] };
+    }
+    function randomAction(p) {
+        if (p.walls > 0 && Math.random() < 0.2) {
+            const ws = allValidWalls();
+            if (ws.length) return { type: 'wall', w: ws[Math.floor(Math.random() * ws.length)] };
+        }
+        const ms = validMoves(p);
+        const m = ms[Math.floor(Math.random() * ms.length)];
+        return { type: 'move', r: m.r, c: m.c };
+    }
+    // Wand, die an eine bestehende Wand anschließt (für den Architekten)
+    function touchesWall(w) {
+        const near = w.dir === 'h' ? [['h', w.r, w.c - 2], ['h', w.r, w.c + 2], ['v', w.r - 1, w.c - 1], ['v', w.r - 1, w.c + 1], ['v', w.r + 1, w.c - 1], ['v', w.r + 1, w.c + 1]]
+                                   : [['v', w.r - 2, w.c], ['v', w.r + 2, w.c], ['h', w.r - 1, w.c - 1], ['h', w.r - 1, w.c + 1], ['h', w.r + 1, w.c - 1], ['h', w.r + 1, w.c + 1]];
+        return near.some(([d, r, c]) => r >= 0 && c >= 0 && r < N - 1 && c < N - 1 && (d === 'h' ? H : V)[r][c]);
+    }
+
+    function aiDecide(me, P) {
+        if (P.moody) { // Launisch: jede Runde eine andere Persönlichkeit
+            const pool = AI_KEYS.filter(k => !AIS[k].p.moody && !AIS[k].p.look);
+            return aiDecide(me, AIS[pool[Math.floor(Math.random() * pool.length)]].p);
+        }
+        if (P.look) return lookaheadDecide(me, P.look);
+        if (P.rand && Math.random() < P.rand) return randomAction(me);
+
+        const mv = bestMove(me);
+        if (mv.d === 0) return mv; // Sieg möglich
+        if (P.noWalls || me.walls <= 0) return mv;
+
+        const others = players.filter(o => o !== me);
+        const myD = dist(me);
+        const ds = others.map(o => dist(o));
+        const minOther = Math.min(...ds);
+        const leader = others[ds.indexOf(minOther)];
+        let target = leader;
+        if (P.target === 'avenge' && lastAttacker[me.idx] !== undefined && players[lastAttacker[me.idx]] !== me) target = players[lastAttacker[me.idx]];
+        const tD = dist(target);
+
+        // Wann wird überhaupt gebaut?
+        if (P.waitUntil && minOther > P.waitUntil) return mv;
+        if (P.onlyIfTargetWithin && tD > P.onlyIfTargetWithin) return mv;
+        if (P.onlyIfBehind && minOther >= myD) return mv;
+        // Schatten: setzt die letzte gegnerische Wand gespiegelt nach (wenn sie ihm nicht selbst schadet)
+        if (P.mirror && lastWall && lastWall.by !== me.idx && !lastWall.mirrored) {
+            lastWall.mirrored = true;
+            const m = { dir: lastWall.w.dir, r: N - 2 - lastWall.w.r, c: N - 2 - lastWall.w.c };
+            if (isValidWall(m.dir, m.r, m.c)) {
+                setWall(m, true); const selfCost = dist(me) - myD; setWall(m, false);
+                if (selfCost <= 0) return { type: 'wall', w: m };
+            }
+        }
+        // Ich gewinne das Rennen sowieso (ich bin dran) -> laufen, außer Baumeister
+        if (myD <= minOther && !P.loves) return mv;
+
+        let cands = allValidWalls();
+        if (!P.all && P.sample) cands = cands.sort(() => Math.random() - 0.5).slice(0, P.sample);
+        const selfW = P.selfW ?? 2;
+        let best = null;
+        for (const w of cands) {
+            setWall(w, true);
+            const gain = dist(target) - tD;
+            const selfCost = dist(me) - myD;
+            setWall(w, false);
+            let score = gain - selfW * selfCost;
+            if (P.center) score += 0.15 * ((N / 2 - Math.abs((N - 2) / 2 - w.r)) + (N / 2 - Math.abs((N - 2) / 2 - w.c))) / N;
+            if (P.chain && touchesWall(w)) score += P.chain;
+            if (gain <= 0) continue;
+            if (!best || score > best.score) best = { w, score, gain };
+        }
+        let need = P.minGain ?? 1;
+        if (P.panicWithin && tD <= P.panicWithin) need = 1;
+        if (best && best.gain >= need && best.score > 0) return { type: 'wall', w: best.w };
+        return mv;
+    }
+
+    // Fuchs / Kloßi der Große: probieren die besten Züge aus und schauen,
+    // wie gefährlich die beste Antwort der Gegner wäre (Rennen um den Vorsprung)
+    function lookaheadDecide(me, K) {
+        const deep = K >= 10;
+        const others = players.filter(o => o !== me);
+        const myD0 = dist(me);
+        const mv = bestMove(me);
+        if (mv.d === 0) return mv;
+
+        const actions = [mv];
+        if (me.walls > 0) {
+            const ds0 = others.map(o => dist(o));
+            const scored = allValidWalls().map(w => {
+                setWall(w, true);
+                const gain = Math.max(...others.map((o, i) => dist(o) - ds0[i]));
+                const self = dist(me) - myD0;
+                setWall(w, false);
+                return { type: 'wall', w, s: gain - 1.5 * self, gain };
+            }).filter(a => a.s > 0).sort((a, b) => b.s - a.s).slice(0, K);
+            actions.push(...scored);
+        }
+        // Wie stark könnte mich der Gegner danach ausbremsen?
+        const worstWallAgainst = (who) => {
+            if (!others.some(o => o.walls > 0)) return 0;
+            const base = dist(who);
+            let inc = 0;
+            for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) for (const dir of ['h', 'v']) {
+                if (!wallFits(dir, r, c)) continue;
+                const w = { dir, r, c };
+                setWall(w, true);
+                if (players.every(p => dist(p) !== -1)) inc = Math.max(inc, dist(who) - base);
+                setWall(w, false);
+            }
+            return inc;
         };
+        let best = null;
+        for (const a of actions) {
+            const or = me.r, oc = me.c;
+            if (a.type === 'move') { me.r = a.r; me.c = a.c; } else setWall(a.w, true);
+            const myD = dist(me);
+            const inc = worstWallAgainst(me);
+            // Vorsprung gegen jeden Gegner, der nach mir dran ist: er läuft (-1) oder mauert mich zu (+inc)
+            let margin = Infinity;
+            for (const o of others) margin = Math.min(margin, dist(o) - myD - Math.max(1, o.walls > 0 ? inc : 0));
+            if (a.type === 'move') { me.r = or; me.c = oc; } else setWall(a.w, false);
+            // Liege ich vorn, lieber laufen und Wände sparen. Liege ich hinten, hilft Laufen nicht -> lieber mauern.
+            let val = margin * 10 - myD * 0.1;
+            if (a.type === 'wall') val += (margin < 0 ? 2 : -1) + a.gain * 0.5;
+            if (deep && a.type === 'wall') val += 0.3 * (me.walls - 1); // der Große setzt seine Wände großzügiger ein
+            if (margin >= 0 && a.type === 'move' && others.every(o => dist(o) > myD)) val += 5; // sicherer Sieg: einfach laufen
+            if (!best || val > best.val) best = { a, val };
+        }
+        return best ? best.a : mv;
+    }
 
-        // --- RENDER BOARD ---
-        function createBoard() {
-            boardEl.innerHTML = '';
-            for(let r=0; r<BOARD_SIZE; r++) {
-                for(let c=0; c<BOARD_SIZE; c++) {
-                    let cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.id = `cell-${r}-${c}`;
-                    cell.style.width = CELL_SIZE + 'px';
-                    cell.style.height = CELL_SIZE + 'px';
-                    cell.style.left = (c * (CELL_SIZE + GAP)) + 'px';
-                    cell.style.top = (r * (CELL_SIZE + GAP)) + 'px';
-                    // Sicherer Click-Listener
-                    cell.onclick = (e) => { e.stopPropagation(); handleCellClick(r, c); };
-                    boardEl.appendChild(cell);
+    /* =================== Spielende =================== */
+    function finishGame(winner) {
+        gameOver = true; gameToken++;
+        // Platzierung: Sieger zuerst, dann nach kürzestem Restweg (bei Gleichstand nach Zugreihenfolge)
+        const rest = order.map(i => players[i]).filter(p => p !== winner)
+            .map((p, k) => ({ p, d: dist(p), k })).sort((a, b) => a.d - b.d || a.k - b.k).map(x => x.p);
+        const ranking = [winner, ...rest];
+        const humans = players.filter(p => p.human);
+        render();
+        setStatus(`🎉 ${winner.icon} ${winner.name} gewinnt!`, winner.color);
+
+        const medals = ['🥇', '🥈', '🥉', '4.'];
+        const me = humans.length === 1 ? humans[0] : null;
+        document.getElementById('end-title').innerText = me ? (winner === me ? '🎉 Gewonnen! 🎉' : `${winner.icon} ${winner.name} gewinnt!`) : `🎉 ${winner.icon} ${winner.name} gewinnt!`;
+        document.getElementById('end-title').style.color = winner.color;
+        document.getElementById('end-ranking').innerHTML = ranking.map((p, i) => `
+            <div class="rank-row ${p === me ? 'me' : ''}" style="border-left: 5px solid ${p.color}">
+                <span>${medals[i]} ${p.icon} ${p.name}</span>
+                <span style="color:#aaa">${p.human ? '🙋' : AIS[p.aiKey].icon + ' ' + AIS[p.aiKey].name}${i > 0 ? ' · noch ' + dist(p) : ''}</span>
+            </div>`).join('');
+        setTimeout(() => { if (gameOver) document.getElementById('end-overlay').style.display = 'flex'; }, 900);
+
+        recordStats(winner, ranking);
+    }
+
+    function recordStats(winner, ranking) {
+        if (typeof recordGameResult !== 'function') return;
+        try {
+            if (modeKey === 'duell') {
+                const lilly = players[0];
+                if (players[1].human) {
+                    recordGameResult('miauern_pvp', { won: null, guesses: 1, maxGuesses: 1, extra: winner === lilly ? { lilly_won: 1 } : { klossi_won: 1 } });
+                } else {
+                    const extra = { [`ai_${duelAiKey}_played`]: 1, as_lilly_played: 1, [`diff_${AIS[duelAiKey].lvl}_played`]: 1 };
+                    if (winner === lilly) { extra[`ai_${duelAiKey}_lilly_won`] = 1; extra.as_lilly_won = 1; extra[`diff_${AIS[duelAiKey].lvl}_won`] = 1; }
+                    else extra[`ai_${duelAiKey}_klossi_won`] = 1;
+                    recordGameResult('miauern', { won: winner === lilly, guesses: 1, maxGuesses: 1, extra });
                 }
-            }
-            
-            for(let r=0; r<BOARD_SIZE-1; r++) {
-                for(let c=0; c<BOARD_SIZE-1; c++) {
-                    // Horizontal slot
-                    let wh = document.createElement('div');
-                    wh.className = `wall-slot h`;
-                    wh.id = `slot-h-${r}-${c}`;
-                    wh.dataset.r = r; wh.dataset.c = c; wh.dataset.dir = 'h';
-                    wh.style.width = (CELL_SIZE * 2 + GAP) + 'px';
-                    wh.style.left = (c * (CELL_SIZE + GAP)) + 'px';
-                    wh.style.top = (r * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
-                    wh.onclick = (e) => { e.stopPropagation(); handleSlotClick(r, c, 'h'); };
-                    boardEl.appendChild(wh);
-
-                    // Vertical slot
-                    let wv = document.createElement('div');
-                    wv.className = `wall-slot v`;
-                    wv.id = `slot-v-${r}-${c}`;
-                    wv.dataset.r = r; wv.dataset.c = c; wv.dataset.dir = 'v';
-                    wv.style.height = (CELL_SIZE * 2 + GAP) + 'px';
-                    wv.style.left = (c * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
-                    wv.style.top = (r * (CELL_SIZE + GAP)) + 'px';
-                    wv.onclick = (e) => { e.stopPropagation(); handleSlotClick(r, c, 'v'); };
-                    boardEl.appendChild(wv);
-                }
-            }
-        }
-
-        function selectWallType(dir, pNum) {
-            if(state.turn !== pNum || state.gameOver || (state.turn === 2 && state.mode !== 'human')) return;
-            if(pNum === 1 && state.p1.walls <= 0) return;
-            if(pNum === 2 && state.p2.walls <= 0) return;
-
-            if(state.selectedWallDir === dir) {
-                state.selectedWallDir = null; 
-            } else {
-                state.selectedWallDir = dir; 
-            }
-            updateView();
-        }
-
-        function handleSlotClick(r, c, dir) {
-            if(!state.selectedWallDir || state.selectedWallDir !== dir) return;
-            if(isValidWall(dir, r, c)) {
-                placeWall(state.turn, dir, r, c);
-                state.selectedWallDir = null; 
-            } else {
-                showMsg("Ungültige Position!", "#ef4444");
-            }
-        }
-
-        function updateView() {
-            for(let r=0; r<BOARD_SIZE; r++) {
-                for(let c=0; c<BOARD_SIZE; c++) {
-                    let cell = document.getElementById(`cell-${r}-${c}`);
-                    cell.innerText = '';
-                    cell.classList.remove('highlight');
-                }
-            }
-            
-            document.getElementById(`cell-${state.p1.r}-${state.p1.c}`).innerText = state.p1.icon;
-            document.getElementById(`cell-${state.p2.r}-${state.p2.c}`).innerText = state.p2.icon;
-
-            if(!state.gameOver && (state.mode === 'human' || state.turn === 1)) {
-                let moves = getValidMoves(state.turn);
-                moves.forEach(m => {
-                    document.getElementById(`cell-${m.r}-${m.c}`).classList.add('highlight');
-                });
-            }
-
-            document.getElementById('walls-p1').innerText = state.p1.walls;
-            document.getElementById('walls-p2').innerText = state.p2.walls;
-            
-            let p1Active = state.turn === 1 && !state.gameOver;
-            let p2Active = state.turn === 2 && !state.gameOver && state.mode === 'human';
-
-            document.getElementById('hud-p1').classList.toggle('active-hud', p1Active);
-            document.getElementById('hud-p2').classList.toggle('active-hud', p2Active);
-
-            document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('selected'));
-            document.querySelectorAll('.wall-slot').forEach(el => el.classList.remove('highlight-slot'));
-
-            if(state.selectedWallDir) {
-                let activeP = state.turn === 1 ? 'p1' : 'p2';
-                let selectedItem = document.querySelector(`.drag-item.drag-${state.selectedWallDir}.${activeP}`);
-                if(selectedItem) selectedItem.classList.add('selected');
-                document.querySelectorAll(`.wall-slot.${state.selectedWallDir}`).forEach(el => el.classList.add('highlight-slot'));
-            }
-
-            if(!state.gameOver && !state.selectedWallDir) {
-                let name = state.turn === 1 ? "Lilly ist dran!" : "Kloßi ist dran!";
-                let color = state.turn === 1 ? "#ec4899" : "#9333ea";
-                if(state.turn === 2 && state.mode !== 'human') name = "Kloßi denkt nach...";
-                showMsg(name, color);
-            } else if (state.selectedWallDir) {
-                showMsg("Tippe aufs Spielfeld zum Bauen", "#facc15");
-            }
-        }
-
-        function showMsg(txt, color) {
-            let msg = document.getElementById('status-msg');
-            msg.innerText = txt; msg.style.color = color;
-        }
-
-        function renderWall(r, c, dir, player) {
-            let w = document.createElement('div');
-            w.className = `wall-placed p${player}`;
-            if(dir === 'h') {
-                w.style.width = (CELL_SIZE * 2 + GAP) + 'px'; w.style.height = GAP + 'px';
-                w.style.left = (c * (CELL_SIZE + GAP)) + 'px'; w.style.top = (r * (CELL_SIZE + GAP) + CELL_SIZE) + 'px';
-            } else {
-                w.style.height = (CELL_SIZE * 2 + GAP) + 'px'; w.style.width = GAP + 'px';
-                w.style.left = (c * (CELL_SIZE + GAP) + CELL_SIZE) + 'px'; w.style.top = (r * (CELL_SIZE + GAP)) + 'px';
-            }
-            boardEl.appendChild(w);
-        }
-
-        // --- GAME LOGIC ---
-        function startGame() {
-            let select = document.getElementById('mode-select').value;
-            if(select === 'random') {
-                let ais = ['sprinter', 'builder', 'trapper', 'shadow', 'super'];
-                state.mode = ais[Math.floor(Math.random()*ais.length)];
-            } else {
-                state.mode = select;
-            }
-            startGameTimer();
-            
-            state.p1 = { r: 8, c: 4, walls: 10, icon: '🐈‍⬛' };
-            state.p2 = { r: 0, c: 4, walls: 10, icon: '🐈' };
-            state.h_walls = Array(8).fill(0).map(() => Array(8).fill(false));
-            state.v_walls = Array(8).fill(0).map(() => Array(8).fill(false));
-            
-            // 🎲 50/50 Chance, wer beginnt
-            state.turn = Math.random() < 0.5 ? 1 : 2; 
-            
-            state.gameOver = false; 
-            state.selectedWallDir = null;
-            
-            document.querySelectorAll('.wall-placed').forEach(e => e.remove());
-            document.getElementById('main-menu').style.display = 'none';
-            
-            createBoard(); 
-            updateView(); 
-            initDragAndDrop();
-
-            // Wenn Kloßi (KI) das Los gewinnt, startet er nach einer kurzen Pause
-            if(state.turn === 2 && state.mode !== 'human') {
-                setTimeout(doAITurn, 800);
-            }
-        }
-
-        function handleCellClick(r, c) {
-            if(state.gameOver || state.selectedWallDir) return; 
-            if(state.turn === 2 && state.mode !== 'human') return; 
-
-            let moves = getValidMoves(state.turn);
-            if(moves.some(m => m.r === r && m.c === c)) {
-                executeMove(state.turn, r, c);
-            }
-        }
-
-        function executeMove(playerNum, r, c) {
-            let p = playerNum === 1 ? state.p1 : state.p2;
-            p.r = r; p.c = c;
-            
-            checkWin();
-            if(!state.gameOver) {
-                state.turn = state.turn === 1 ? 2 : 1;
-                updateView();
-                if(state.turn === 2 && state.mode !== 'human') setTimeout(doAITurn, 800);
-            }
-        }
-
-        function placeWall(playerNum, dir, r, c) {
-            if(dir === 'h') state.h_walls[r][c] = true;
-            if(dir === 'v') state.v_walls[r][c] = true;
-            
-            let p = playerNum === 1 ? state.p1 : state.p2;
-            p.walls--;
-            renderWall(r, c, dir, playerNum);
-            
-            checkWin();
-            if(!state.gameOver) {
-                state.turn = state.turn === 1 ? 2 : 1;
-                updateView();
-                if(state.turn === 2 && state.mode !== 'human') setTimeout(doAITurn, 800);
-            }
-        }
-
-        const aiNames = { sprinter: 'Sprinter 🏃', builder: 'Baumeister 🧱', trapper: 'Fallenleger 🪤', shadow: 'Schatten 👤', super: 'Super Kloßi 👑', human: 'Pass & Play 🤜🤛' };
-
-        function checkWin() {
-            const aiLabel = aiNames[state.mode] || state.mode;
-            // Pass & Play: eigener Stats-Eintrag ohne Win-Rate (zwei Menschen spielen gegeneinander)
-            if(state.mode === 'human' && (state.p1.r === 0 || state.p2.r === 8)) {
-                const lillyWon = state.p1.r === 0;
-                state.gameOver = true;
-                showMsg(lillyWon ? "🎉 Lilly gewinnt! 🎉" : "🎉 Kloßi gewinnt! 🎉", lillyWon ? "#ec4899" : "#9333ea");
-                showMenuLater();
-                recordGameResult('miauern_pvp', {won: null, guesses: 1, maxGuesses: 1, extra: lillyWon ? {lilly_won: 1} : {klossi_won: 1}});
                 return;
             }
-            if(state.p1.r === 0) {
-                state.gameOver = true; showMsg(`🎉 Lilly gewinnt! (Gegner: ${aiLabel}) 🎉`, "#ec4899"); showMenuLater();
-                const extra = { as_lilly_played: 1, as_lilly_won: 1 };
-                extra['ai_' + state.mode + '_played'] = 1;
-                extra['ai_' + state.mode + '_lilly_won'] = 1;
-                recordGameResult('miauern', {won: true, guesses: 1, maxGuesses: 1, extra: extra});
-            } else if(state.p2.r === 8) {
-                state.gameOver = true; showMsg(`🎉 Kloßi gewinnt! (Gegner: ${aiLabel}) 🎉`, "#9333ea"); showMenuLater();
-                const extra = { as_klossi_played: 1, as_klossi_won: 1 };
-                extra['ai_' + state.mode + '_played'] = 1;
-                extra['ai_' + state.mode + '_klossi_won'] = 1;
-                recordGameResult('miauern', {won: false, guesses: 1, maxGuesses: 1, extra: extra});
-            }
-        }
+            // Zu viert: nur Platzierung zählt (keine Win-Rate). Gewertet wird der erste Mensch.
+            const me = players.find(p => p.human);
+            if (!me) return; // nur KIs gespielt
+            const place = ranking.indexOf(me) + 1;
+            const extra = { [`place_${place}`]: 1, place_sum: place, [`mode_${modeKey}`]: 1, [`mode_${modeKey}_place_sum`]: place };
+            if (players.some(p => !p.human)) extra[`diff_${settings.diff}_played`] = 1;
+            recordGameResult('miauern4', { won: null, guesses: place, maxGuesses: 4, extra });
+        } catch (e) { console.error(e); }
+    }
 
-        function showMenuLater() {
-            setTimeout(() => { document.getElementById('main-menu').style.display = 'flex'; }, 3500);
-        }
-
-        // --- BUGFIX: Sichere Wand-Abfrage ---
-        function hasHWall(r, c) {
-            if(r < 0 || r >= 8 || c < 0 || c >= 8) return false;
-            return state.h_walls[r][c];
-        }
-        function hasVWall(r, c) {
-            if(r < 0 || r >= 8 || c < 0 || c >= 8) return false;
-            return state.v_walls[r][c];
-        }
-
-        function hasWall(r, c, dR, dC) {
-            if(dR === -1) return hasHWall(r-1, c) || hasHWall(r-1, c-1); 
-            if(dR === 1)  return hasHWall(r, c)   || hasHWall(r, c-1); 
-            if(dC === -1) return hasVWall(r, c-1) || hasVWall(r-1, c-1); 
-            if(dC === 1)  return hasVWall(r, c)   || hasVWall(r-1, c); 
-            return false;
-        }
-
-        function getValidMoves(playerNum) {
-            let p = playerNum === 1 ? state.p1 : state.p2;
-            let opp = playerNum === 1 ? state.p2 : state.p1;
-            let moves = [];
-            let dirs = [[-1,0], [1,0], [0,-1], [0,1]];
-
-            const inB = (r, c) => r>=0 && r<9 && c>=0 && c<9;
-            dirs.forEach(d => {
-                let nr = p.r + d[0], nc = p.c + d[1];
-                if(nr>=0 && nr<9 && nc>=0 && nc<9 && !hasWall(p.r, p.c, d[0], d[1])) {
-                    if(nr === opp.r && nc === opp.c) {
-                        let nnr = nr + d[0], nnc = nc + d[1];
-                        if(nnr>=0 && nnr<9 && nnc>=0 && nnc<9 && !hasWall(nr, nc, d[0], d[1])) {
-                            moves.push({r: nnr, c: nnc});
-                        } else {
-                            // Quoridor-Regel: Sprung blockiert (Wand/Rand) -> schräg am Gegner vorbei
-                            const sides = d[0] !== 0 ? [[0,-1],[0,1]] : [[-1,0],[1,0]];
-                            sides.forEach(s => {
-                                const sr = nr + s[0], sc = nc + s[1];
-                                if(inB(sr, sc) && !hasWall(nr, nc, s[0], s[1]) && !(sr === p.r && sc === p.c)) moves.push({r: sr, c: sc});
-                            });
-                        }
-                    } else {
-                        moves.push({r: nr, c: nc});
-                    }
-                }
-            });
-            return moves;
-        }
-
-        function isValidWall(dir, r, c) {
-            if(r<0 || r>=8 || c<0 || c>=8) return false;
-            if(state.h_walls[r][c] || state.v_walls[r][c]) return false; 
-            if(dir === 'h' && ((c>0 && state.h_walls[r][c-1]) || (c<7 && state.h_walls[r][c+1]))) return false; 
-            if(dir === 'v' && ((r>0 && state.v_walls[r-1][c]) || (r<7 && state.v_walls[r+1][c]))) return false; 
-
-            if(dir==='h') state.h_walls[r][c] = true; else state.v_walls[r][c] = true;
-            let p1Path = getShortestPath(1);
-            let p2Path = getShortestPath(2);
-            if(dir==='h') state.h_walls[r][c] = false; else state.v_walls[r][c] = false;
-
-            return p1Path !== -1 && p2Path !== -1;
-        }
-
-        function getShortestPath(playerNum) {
-            let start = playerNum === 1 ? state.p1 : state.p2;
-            let targetRow = playerNum === 1 ? 0 : 8; 
-            
-            let queue = [{r: start.r, c: start.c, dist: 0}];
-            let visited = Array(9).fill(0).map(() => Array(9).fill(false));
-            visited[start.r][start.c] = true;
-            let dirs = [[-1,0], [1,0], [0,-1], [0,1]];
-
-            while(queue.length > 0) {
-                let curr = queue.shift();
-                if(curr.r === targetRow) return curr.dist;
-
-                dirs.forEach(d => {
-                    let nr = curr.r + d[0], nc = curr.c + d[1];
-                    if(nr>=0 && nr<9 && nc>=0 && nc<9 && !visited[nr][nc] && !hasWall(curr.r, curr.c, d[0], d[1])) {
-                        visited[nr][nc] = true;
-                        queue.push({r: nr, c: nc, dist: curr.dist + 1});
-                    }
-                });
-            }
-            return -1; 
-        }
-
-        // --- BACKUP DRAG & DROP ---
-        let dragging = null;
-        let currentDropSlot = null;
-
-        let dragDocListeners = false;
-        function initDragAndDrop() {
-            document.querySelectorAll('.drag-item').forEach(item => {
-                item.onpointerdown = (e) => {
-                    let pNum = parseInt(item.dataset.player);
-                    if(state.turn !== pNum || state.gameOver) return;
-                    if((pNum===1 && state.p1.walls<=0) || (pNum===2 && state.p2.walls<=0)) return;
-                    
-                    dragging = { dir: item.dataset.dir, player: pNum };
-                    ghost.style.display = 'block';
-                    ghost.style.width = item.offsetWidth + 'px'; ghost.style.height = item.offsetHeight + 'px';
-                    ghost.style.background = pNum === 1 ? '#ec4899' : '#9333ea';
-                    moveGhost(e.clientX, e.clientY);
-                };
-            });
-
-            if(dragDocListeners) return; // Dokument-Listener nur einmal anhängen
-            dragDocListeners = true;
-            document.addEventListener('pointermove', (e) => {
-                if(!dragging) return;
-                moveGhost(e.clientX, e.clientY);
-                
-                let elements = document.elementsFromPoint(e.clientX, e.clientY);
-                let slot = elements.find(el => el.classList.contains('wall-slot') && el.dataset.dir === dragging.dir);
-                
-                document.querySelectorAll('.wall-slot').forEach(s => s.classList.remove('hover'));
-                currentDropSlot = null;
-
-                if(slot) {
-                    let r = parseInt(slot.dataset.r), c = parseInt(slot.dataset.c);
-                    if(isValidWall(dragging.dir, r, c)) {
-                        slot.classList.add('hover');
-                        currentDropSlot = {r, c, dir: dragging.dir};
-                    }
-                }
-            });
-
-            document.addEventListener('pointerup', () => stopDrag());
-            document.addEventListener('pointercancel', () => stopDrag());
-        }
-        
-        function stopDrag() {
-            if(!dragging) return;
-            document.querySelectorAll('.wall-slot').forEach(s => s.classList.remove('hover'));
-            ghost.style.display = 'none';
-
-            if(currentDropSlot && state.selectedWallDir === null) {
-                placeWall(dragging.player, currentDropSlot.dir, currentDropSlot.r, currentDropSlot.c);
-            }
-            dragging = null; currentDropSlot = null;
-        }
-
-        function moveGhost(x, y) {
-            ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
-            ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
-        }
-
-        // --- KI (Kloßi - 5 Styles) ---
-        function doAITurn() {
-            if(state.gameOver || state.turn !== 2 || state.mode === 'human') return;
-            
-            let possibleMoves = getValidMoves(2); 
-            let possibleWalls = [];
-            if(state.p2.walls > 0) {
-                for(let r=0; r<8; r++) {
-                    for(let c=0; c<8; c++) {
-                        if(isValidWall('h', r, c)) possibleWalls.push({type: 'wall', dir: 'h', r, c});
-                        if(isValidWall('v', r, c)) possibleWalls.push({type: 'wall', dir: 'v', r, c});
-                    }
-                }
-            }
-
-            let p1DistBefore = getShortestPath(1);
-            let p2DistBefore = getShortestPath(2);
-            
-            let bestAction = null;
-            let bestScore = -9999;
-
-            // 1. Bewerte Laufen
-            possibleMoves.forEach(m => {
-                let oldR = state.p2.r, oldC = state.p2.c;
-                state.p2.r = m.r; state.p2.c = m.c;
-                let newDist = getShortestPath(2);
-                state.p2.r = oldR; state.p2.c = oldC; 
-                
-                let score = (p2DistBefore - newDist) * 10; 
-                if(state.mode === 'sprinter') score += 50; 
-                if(state.mode === 'super') score = (p2DistBefore - newDist) * 30; // Super Kloßi schätzt Bewegung sehr
-                
-                if(score > bestScore) { bestScore = score; bestAction = {type: 'move', m}; }
-            });
-
-            // 2. Bewerte Bauen (Mit KI-Styles)
-            let sampleWalls = possibleWalls;
-            if (state.mode !== 'super') {
-                // Nur Super Kloßi scant das ganze Feld, die anderen testen blind 30 Wände
-                sampleWalls = possibleWalls.sort(() => 0.5 - Math.random()).slice(0, 30);
-            }
-            
-            sampleWalls.forEach(w => {
-                if(w.dir==='h') state.h_walls[w.r][w.c] = true; else state.v_walls[w.r][w.c] = true;
-                let p1DistAfter = getShortestPath(1);
-                let p2DistAfter = getShortestPath(2);
-                if(w.dir==='h') state.h_walls[w.r][w.c] = false; else state.v_walls[w.r][w.c] = false;
-                
-                let score = 0;
-                let deltaP1 = p1DistAfter - p1DistBefore; 
-                let deltaP2 = p2DistAfter - p2DistBefore; 
-                
-                if (state.mode === 'sprinter') {
-                    score = deltaP1 * 2 - deltaP2 * 5; 
-                } else if (state.mode === 'builder') {
-                    score = deltaP1 * 15 - deltaP2 * 5 + 20; 
-                } else if (state.mode === 'trapper') {
-                    if (p1DistBefore <= 4) { 
-                        score = deltaP1 * 50 - deltaP2 * 2; 
-                    } else {
-                        score = deltaP1 * 2 - deltaP2 * 5; 
-                    }
-                } else if (state.mode === 'shadow') {
-                    if (state.p2.walls > state.p1.walls) { 
-                        score = deltaP1 * 15 - deltaP2 * 5 + 30; 
-                    } else {
-                        score = deltaP1 * 2 - deltaP2 * 5;
-                    }
-                } else if (state.mode === 'super') {
-                    // --- SUPER KLOßI HEURISTIK ---
-                    if (p1DistBefore <= 2 && deltaP1 > 0) {
-                        // Notfall: Lilly ist fast am Ziel! Alles blockieren!
-                        score = deltaP1 * 100 - deltaP2 * 20;
-                    } else if (p2DistBefore <= 2) {
-                        // Kloßi ist fast am Ziel: Lieber schnell laufen, Wände nur bauen wenn sie mega gut sind
-                        score = deltaP1 * 10 - deltaP2 * 50; 
-                    } else {
-                        // Wand-Ökonomie: Eine Wand muss Lilly signifikant aufhalten
-                        if (deltaP1 >= 2) {
-                            score = (deltaP1 * 35) - (deltaP2 * 30); // Starker Fokus auf Delta, sich selbst blockieren wird hart bestraft
-                            
-                            // Zentrumskontrolle: Wände in der Mitte des Spielfelds geben extra Punkte
-                            let centerBonus = (4 - Math.abs(3.5 - w.r)) + (4 - Math.abs(3.5 - w.c));
-                            score += centerBonus * 1.5;
-                            
-                            // Geizig sein: Wenn wir weniger Wände haben als Lilly, bauen wir seltener
-                            if (state.p2.walls < state.p1.walls) score -= 15;
-                        } else {
-                            score = -50; // Nutzloses Mauern vermeiden
-                        }
-                    }
-                }
-
-                if(score > bestScore && score > 0) { 
-                    bestScore = score; bestAction = w;
-                }
-            });
-
-            if(bestAction && bestAction.type === 'move') {
-                executeMove(2, bestAction.m.r, bestAction.m.c);
-            } else if (bestAction && (bestAction.dir === 'h' || bestAction.dir === 'v')) {
-                placeWall(2, bestAction.dir, bestAction.r, bestAction.c);
-            } else if(possibleMoves.length > 0) {
-                executeMove(2, possibleMoves[0].r, possibleMoves[0].c);
-            }
-        }
+    initMenu();
     </script>
 </body>
 </html>

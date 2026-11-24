@@ -139,11 +139,22 @@ const GAMES = {
         extra: (e, g) => [['Unentschieden', e.draws || 0], ['Ø Kästchen Leni', avg(e.points_sum, g.played)], ['Ø Kästchen Kloßi', avg(e.bot_points_sum, g.played)]] },
     miauern: { label: "🧱 Miauern (gegen Kloßi)", type: 'win',
         extra: e => {
-            const names = { sprinter: 'Sprinter', builder: 'Baumeister', trapper: 'Fallenleger', shadow: 'Schatten', super: 'Super Kloßi', human: 'Pass & Play (alt)' };
-            return Object.keys(e).filter(k => /^ai_.+_played$/.test(k)).map(k => {
+            const names = { sprinter: 'Sprinter', builder: 'Baumeister', trapper: 'Fallenleger', shadow: 'Schatten', super: 'Super Kloßi', human: 'Pass & Play (alt)',
+                tollpatsch: 'Tollpatsch', schlafmuetze: 'Schlafmütze', mitlaeufer: 'Mitläufer', geizhals: 'Geizhals', launisch: 'Launisch', abwarter: 'Abwarter',
+                verteidiger: 'Verteidiger', raecher: 'Rächer', architekt: 'Architekt', opportunist: 'Opportunist', fuchs: 'Fuchs', grosser: 'Kloßi der Große' };
+            const r = [['Leicht', 1], ['Mittel', 2], ['Schwer', 3]].filter(([, l]) => e[`diff_${l}_played`]).map(([t, l]) => [`Siege ${t}`, frac(e[`diff_${l}_won`], e[`diff_${l}_played`])]);
+            return r.concat(Object.keys(e).filter(k => /^ai_.+_played$/.test(k)).map(k => {
                 const m = k.slice(3, -7);
                 return [`Siege gegen ${names[m] || m}`, frac(e[`ai_${m}_lilly_won`], e[k])];
-            });
+            }));
+        } },
+    miauern4: { label: "🧱 Miauern (zu viert)", type: 'score',
+        extra: (e, g) => {
+            const r = [['Ø Platz', avg(e.place_sum, g.played)]];
+            [1, 2, 3, 4].forEach(n => r.push([['🥇 1. Platz', '🥈 2. Platz', '🥉 3. Platz', '4. Platz'][n - 1], e[`place_${n}`] || 0]));
+            if (e.mode_mitte) r.push(['Ø Platz „Zur Mitte“', avg(e.mode_mitte_place_sum, e.mode_mitte)]);
+            if (e.mode_klassik4) r.push(['Ø Platz „Zu viert“', avg(e.mode_klassik4_place_sum, e.mode_klassik4)]);
+            return r;
         } },
     miauern_pvp: { label: "🧱 Miauern (Pass & Play)", type: 'pvp',
         extra: e => [['Lilly gewinnt', e.lilly_won || 0], ['Kloßi gewinnt', e.klossi_won || 0]] },
